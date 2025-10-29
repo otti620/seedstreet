@@ -42,10 +42,13 @@ interface HomeScreenProps {
   toggleInterest: (startupId: string) => void; // Changed to string
   setSelectedStartup: (startup: Startup) => void;
   setSelectedChat: (chat: any) => void; // Still 'any' for now
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { startupId?: string }) => void; // Updated to accept params
   activeTab: string;
   setActiveTab: (tab: string) => void;
   loading: boolean; // New prop for loading state
+  userProfileId: string | null; // New prop for founder dashboard
+  userProfileName: string | null;
+  userProfileEmail: string | null;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -60,7 +63,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   setCurrentScreen,
   activeTab,
   setActiveTab,
-  loading, // Destructure loading prop
+  loading,
+  userProfileId,
+  userProfileName,
+  userProfileEmail,
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -72,11 +78,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setSelectedStartup={setSelectedStartup}
           setCurrentScreen={setCurrentScreen}
           setSelectedChat={setSelectedChat}
-          loading={loading} // Pass loading prop
+          loading={loading}
         />
       ) : (
         <FounderDashboard
           setActiveTab={setActiveTab}
+          setCurrentScreen={setCurrentScreen}
+          userProfileId={userProfileId || ''} // Pass userProfileId
+          loading={loading}
         />
       )}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />

@@ -19,7 +19,8 @@ import ChatListScreen from './screens/ChatListScreen';
 import ChatConversationScreen from './screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityFeedScreen from './screens/CommunityFeedScreen';
-import EditProfileScreen from './screens/EditProfileScreen'; // Import new EditProfileScreen
+import EditProfileScreen from './screens/EditProfileScreen';
+import ManageStartupScreen from './screens/ManageStartupScreen'; // Import new ManageStartupScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -89,13 +90,16 @@ interface CommunityPost {
 
 
 const SeedstreetApp = () => {
-  const [currentScreen, setCurrentScreen] = useState('splash');
+  const [currentScreen, setCurrentScreenState] = useState('splash'); // Renamed to avoid conflict
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   
+  // New state for managing startup editing
+  const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
+
   // Real data states
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
@@ -105,6 +109,16 @@ const SeedstreetApp = () => {
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
+
+  // Custom setCurrentScreen function to handle optional params
+  const setCurrentScreen = (screen: string, params?: { startupId?: string }) => {
+    setCurrentScreenState(screen);
+    if (params?.startupId) {
+      setSelectedStartupId(params.startupId);
+    } else {
+      setSelectedStartupId(undefined); // Clear selected ID if not provided
+    }
+  };
 
   // Auto-advance from splash
   useEffect(() => {
@@ -132,7 +146,7 @@ const SeedstreetApp = () => {
     });
 
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } = { session: null } } = await supabase.auth.getSession(); // Destructure with default
       if (session) {
         setIsLoggedIn(true);
         await fetchUserProfile(session.user.id);
@@ -496,14 +510,15 @@ const SeedstreetApp = () => {
     );
   }
 
-  // 11. LIST STARTUP
-  if (currentScreen === 'listStartup' && userProfile?.id && userProfile?.name && userProfile?.email) {
+  // 11. MANAGE STARTUP (formerly LIST STARTUP)
+  if (currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email) {
     return (
-      <ListStartupScreen
+      <ManageStartupScreen
         setCurrentScreen={setCurrentScreen}
         userProfileId={userProfile.id}
         userProfileName={userProfile.name}
         userProfileEmail={userProfile.email}
+        startupId={selectedStartupId} // Pass the selected startup ID for editing
       />
     );
   }
