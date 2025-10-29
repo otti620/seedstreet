@@ -9,19 +9,25 @@ import {
 } from 'lucide-react';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
-import SplashScreen from './screens/SplashScreen'; // Import the new SplashScreen component
+import SplashScreen from './screens/SplashScreen';
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
-  const [userRole, setUserRole] = useState(null); // 'investor' or 'founder'
+  const [userRole, setUserRole] = useState<string | null>(null); // 'investor' or 'founder'
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [selectedStartup, setSelectedStartup] = useState(null);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedStartup, setSelectedStartup] = useState<any>(null); // Using 'any' for simplicity, consider defining a Startup type
+  const [selectedChat, setSelectedChat] = useState<any>(null); // Using 'any' for simplicity, consider defining a Chat type
   const [activeTab, setActiveTab] = useState('home');
   const [messageInput, setMessageInput] = useState('');
-  const [bookmarkedStartups, setBookmarkedStartups] = useState([]);
-  const [interestedStartups, setInterestedStartups] = useState([]);
+  const [bookmarkedStartups, setBookmarkedStartups] = useState<number[]>([]);
+  const [interestedStartups, setInterestedStartups] = useState<number[]>([]);
+
+  // Auth screen specific states, moved to top level
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
   // Auto-advance from splash
   useEffect(() => {
@@ -142,7 +148,7 @@ const SeedstreetApp = () => {
   ];
 
   // Toggle bookmark
-  const toggleBookmark = (startupId) => {
+  const toggleBookmark = (startupId: number) => {
     setBookmarkedStartups(prev => 
       prev.includes(startupId) 
         ? prev.filter(id => id !== startupId)
@@ -151,7 +157,7 @@ const SeedstreetApp = () => {
   };
 
   // Toggle interest
-  const toggleInterest = (startupId) => {
+  const toggleInterest = (startupId: number) => {
     setInterestedStartups(prev => 
       prev.includes(startupId) 
         ? prev.filter(id => id !== startupId)
@@ -207,16 +213,6 @@ const SeedstreetApp = () => {
 
   // 3. AUTH (SIGN IN / SIGN UP)
   if (currentScreen === 'auth') {
-    const [isSignUp, setIsSignUp] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
-
-    const handleAuth = () => {
-      setIsLoggedIn(true);
-      setCurrentScreen('roleSelector');
-    };
-
     return (
       <div className="fixed inset-0 flex flex-col">
         {/* Hero Section */}
@@ -275,7 +271,10 @@ const SeedstreetApp = () => {
               </div>
             </div>
 
-            <button onClick={handleAuth} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all">
+            <button onClick={() => {
+              setIsLoggedIn(true);
+              setCurrentScreen('roleSelector');
+            }} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all">
               {isSignUp ? 'Create Account' : 'Log In'}
             </button>
 
