@@ -45,6 +45,7 @@ interface HomeScreenProps {
   setCurrentScreen: (screen: string) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  loading: boolean; // New prop for loading state
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -59,6 +60,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   setCurrentScreen,
   activeTab,
   setActiveTab,
+  loading, // Destructure loading prop
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -70,6 +72,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setSelectedStartup={setSelectedStartup}
           setCurrentScreen={setCurrentScreen}
           setSelectedChat={setSelectedChat}
+          loading={loading} // Pass loading prop
         />
       ) : (
         <FounderDashboard

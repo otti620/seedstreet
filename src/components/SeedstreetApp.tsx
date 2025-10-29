@@ -95,6 +95,7 @@ const SeedstreetApp = () => {
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
+  const [messageInput, setMessageInput] = useState('');
   
   // Real data states
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -126,9 +127,6 @@ const SeedstreetApp = () => {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        // Clear local states related to user data
-        // setBookmarkedStartups([]); // These are now derived from userProfile
-        // setInterestedStartups([]); // These are now derived from userProfile
         setCurrentScreen('auth');
       }
       setLoadingSession(false);
@@ -416,6 +414,7 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        loading={loadingData} // Pass loadingData to HomeScreen
       />
     );
   }
