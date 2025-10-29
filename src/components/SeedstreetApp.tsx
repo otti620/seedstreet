@@ -11,8 +11,9 @@ import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
-import AuthScreen from '@/components/screens/AuthScreen'; // Corrected import path
+import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
+import HomeScreen from '@/components/screens/HomeScreen'; // Corrected import path
 import { supabase } from '@/integrations/supabase/client';
 import { Toaster, toast } from 'sonner';
 
