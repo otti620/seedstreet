@@ -10,7 +10,11 @@ import {
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
-import OnboardingScreen from './screens/OnboardingScreen'; // Import the new OnboardingScreen component
+import OnboardingScreen from './screens/OnboardingScreen';
+import AuthScreen from './screens/AuthScreen';
+import RoleSelectorScreen from './screens/RoleSelectorScreen'; // Import the new RoleSelectorScreen component
+import { supabase } from '@/integrations/supabase/client';
+import { Toaster, toast } from 'sonner';
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -22,6 +26,7 @@ const SeedstreetApp = () => {
   const [messageInput, setMessageInput] = useState('');
   const [bookmarkedStartups, setBookmarkedStartups] = useState<number[]>([]);
   const [interestedStartups, setInterestedStartups] = useState<number[]>([]);
+  const [loadingSession, setLoadingSession] = useState(true); // New state for session loading
 
   // Auth screen specific states, moved to top level
   const [isSignUp, setIsSignUp] = useState(true);
@@ -39,7 +44,99 @@ const SeedstreetApp = () => {
     }
   }, [currentScreen]);
 
-  // Mock Data
+  // Supabase Auth Session Management
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        setIsLoggedIn(true);
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role, onboarding_complete')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+          toast.error("Failed to load user profile.");
+          setIsLoggedIn(false);
+          setCurrentScreen('auth');
+          setLoadingSession(false);
+          return;
+        }
+
+        if (profile) {
+          setUserRole(profile.role);
+          if (!profile.onboarding_complete) {
+            setCurrentScreen('roleSelector');
+          } else {
+            setCurrentScreen('home');
+          }
+        } else {
+          // User exists but no profile, direct to role selector
+          setCurrentScreen('roleSelector');
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+        // Only set to onboarding if not already on splash
+        if (currentScreen === 'splash') {
+          // Splash screen will handle transition to onboarding
+        } else {
+          setCurrentScreen('auth');
+        }
+      }
+      setLoadingSession(false);
+    });
+
+    // Initial session check
+    const getSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session) {
+        setIsLoggedIn(true);
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, onboarding_complete')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching profile on initial session check:", profileError);
+          toast.error("Failed to load user profile.");
+          setIsLoggedIn(false);
+          setCurrentScreen('auth');
+          setLoadingSession(false);
+          return;
+        }
+
+        if (profile) {
+          setUserRole(profile.role);
+          if (!profile.onboarding_complete) {
+            setCurrentScreen('roleSelector');
+          } else {
+            setCurrentScreen('home');
+          }
+        } else {
+          setCurrentScreen('roleSelector');
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+        // Only set to onboarding if not already on splash
+        if (currentScreen === 'splash') {
+          // Splash screen will handle transition to onboarding
+        } else {
+          setCurrentScreen('auth');
+        }
+      }
+      setLoadingSession(false);
+    };
+
+    getSession();
+
+    return () => subscription.unsubscribe();
+  }, []); // Empty dependency array to run only once on mount
+
+  // Mock Data (will be replaced with Supabase fetches later)
   const startups = [
     {
       id: 1,
@@ -143,9 +240,14 @@ const SeedstreetApp = () => {
     );
   };
 
+  // If session is still loading, show splash screen or a loading indicator
+  if (loadingSession) {
+    return <SplashScreen />; // Or a dedicated loading spinner
+  }
+
   // SCREENS
 
-  // 1. SPLASH SCREEN
+  // 1. SPLASH SCREEN (only shown initially if not authenticated)
   if (currentScreen === 'splash') {
     return <SplashScreen />;
   }
@@ -157,164 +259,12 @@ const SeedstreetApp = () => {
 
   // 3. AUTH (SIGN IN / SIGN UP)
   if (currentScreen === 'auth') {
-    return (
-      <div className="fixed inset-0 flex flex-col">
-        {/* Hero Section */}
-        <div className="h-2/5 bg-gradient-to-br from-purple-700 to-teal-500 relative overflow-hidden flex items-center justify-center">
-          <div className="absolute inset-0">
-            <div className="absolute top-20 left-20 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl opacity-30 animate-float" />
-            <div className="absolute bottom-20 right-20 w-48 h-48 bg-teal-400 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s" />
-          </div>
-          
-          <div className="relative z-10 text-center text-white">
-            <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-2xl shadow-xl flex items-center justify-center">
-              <svg viewBox="0 0 100 120" className="w-16 h-16">
-                <defs>
-                  <linearGradient id="sGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{ stopColor: '#6B21A8' }} />
-                    <stop offset="100%" style={{ stopColor: '#14B8A6' }} />
-                  </linearGradient>
-                </defs>
-                <path d="M 70 35 C 70 25, 60 20, 50 20 C 40 20, 30 25, 30 35 C 30 45, 40 50, 50 55 C 60 60, 70 65, 70 75 C 70 85, 60 90, 50 90 C 40 90, 30 85, 30 75" fill="none" stroke="url(#sGrad)" strokeWidth="12" strokeLinecap="round" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold">Seedstreet</h1>
-            <p className="text-white/80 text-sm mt-2">Where startups meet believers</p>
-          </div>
-        </div>
-
-        {/* Form Section */}
-        <div className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-10 p-6 overflow-y-auto">
-          <div className="max-w-md mx-auto space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent mb-2">
-                {isSignUp ? 'Create your account' : 'Welcome back, legend'} 👋
-              </h2>
-              <p className="text-sm text-gray-500">Join 650+ investors and founders</p>
-            </div>
-
-            <div className="space-y-4">
-              {isSignUp && (
-                <div className="relative">
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder=" " className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all" />
-                  <label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Full name</label>
-                  <User className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
-                </div>
-              )}
-
-              <div className="relative">
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all" />
-                <label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Email</label>
-                <span className="absolute left-4 top-4 text-gray-400 peer-focus:text-purple-700">✉️</span>
-              </div>
-
-              <div className="relative">
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder=" " className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all" />
-                <label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Password</label>
-                <span className="absolute left-4 top-4 text-gray-400 peer-focus:text-purple-700">🔒</span>
-              </div>
-            </div>
-
-            <button onClick={() => {
-              setIsLoggedIn(true);
-              setCurrentScreen('roleSelector');
-            }} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all">
-              {isSignUp ? 'Create Account' : 'Log In'}
-            </button>
-
-            <p className="text-center text-sm text-gray-600">
-              {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
-              <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent">
-                {isSignUp ? 'Log In' : 'Sign Up'}
-              </button>
-            </p>
-
-            {isSignUp && (
-              <p className="text-xs text-center text-gray-500">
-                By signing up, you agree to our <span className="underline">Terms & Privacy Policy</span>
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    return <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />;
   }
 
   // 4. ROLE SELECTOR
   if (currentScreen === 'roleSelector') {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center p-6 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-200 rounded-full filter blur-3xl opacity-30 animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-teal-200 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s" />
-        </div>
-
-        <div className="relative z-10 w-full max-w-2xl">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to Seedstreet, <span className="bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent">User</span>!
-            </h1>
-            <p className="text-gray-600">Choose your path</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Investor Card */}
-            <button 
-              onClick={() => {
-                setUserRole('investor');
-                setCurrentScreen('home');
-                setActiveTab('home');
-              }}
-              className="group relative bg-gradient-to-br from-purple-700 to-purple-900 rounded-3xl p-8 text-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 active:scale-95"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative space-y-6">
-                <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center text-5xl animate-float">
-                  💰
-                </div>
-                
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">I want to invest</h3>
-                  <p className="text-white/80 text-sm">Back startups and watch your impact grow</p>
-                </div>
-
-                <div className="inline-block px-4 py-1.5 bg-teal-500/30 border border-teal-400/40 rounded-full text-teal-100 text-sm font-semibold">
-                  Join 650+ investors
-                </div>
-              </div>
-            </button>
-
-            {/* Founder Card */}
-            <button 
-              onClick={() => {
-                setUserRole('founder');
-                setCurrentScreen('home');
-                setActiveTab('home');
-              }}
-              className="group relative bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-8 text-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 active:scale-95"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-teal-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative space-y-6">
-                <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center text-5xl animate-float-delay-1s">
-                  💡
-                </div>
-                
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">I'm building something</h3>
-                  <p className="text-white/80 text-sm">Get funded by people who actually get it</p>
-                </div>
-
-                <div className="inline-block px-4 py-1.5 bg-purple-500/30 border border-purple-400/40 rounded-full text-purple-100 text-sm font-semibold">
-                  Join 89 founders
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} />;
   }
 
   // 5. HOME / FEED (Different for Investor vs Founder)
@@ -527,7 +477,7 @@ const SeedstreetApp = () => {
                 {selectedStartup.logo}
               </div>
               <div className="flex-1">
-                <h2 className="2xl font-bold mb-1">{selectedStartup.name}</h2>
+                <h2 className="text-2xl font-bold mb-1">{selectedStartup.name}</h2>
                 <p className="text-white/80">{selectedStartup.tagline}</p>
               </div>
             </div>
@@ -857,10 +807,16 @@ const SeedstreetApp = () => {
 
           {/* Logout */}
           <button 
-            onClick={() => {
-              setIsLoggedIn(false);
-              setUserRole(null);
-              setCurrentScreen('splash');
+            onClick={async () => {
+              const { error } = await supabase.auth.signOut();
+              if (error) {
+                toast.error("Failed to log out: " + error.message);
+              } else {
+                toast.success("Logged out successfully!");
+                setIsLoggedIn(false);
+                setUserRole(null);
+                setCurrentScreen('auth'); // Redirect to auth screen after logout
+              }
             }}
             className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
