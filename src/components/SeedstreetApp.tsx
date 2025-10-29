@@ -21,7 +21,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import ManageStartupScreen from './screens/ManageStartupScreen';
-import NotificationsScreen from './screens/NotificationsScreen'; // Import new NotificationsScreen
+import NotificationsScreen from './screens/NotificationsScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -54,6 +54,7 @@ interface Startup {
   interests: number;
   founder_name: string; // Changed to match schema
   location: string; // Assuming location is a string
+  founder_id: string; // Added founder_id for chat creation
 }
 
 interface Chat {
@@ -65,6 +66,9 @@ interface Chat {
   last_message_timestamp: string;
   unread_count: number;
   isOnline: boolean; // This might need to be derived or fetched separately
+  investor_id: string; // Added for chat creation logic
+  founder_id: string; // Added for chat creation logic
+  user_ids: string[]; // Added for chat creation logic
 }
 
 interface Message {
@@ -89,7 +93,7 @@ interface CommunityPost {
   comments_count: number;
 }
 
-interface Notification { // Added Notification interface
+interface Notification {
   id: string;
   user_id: string;
   type: string;
@@ -102,38 +106,34 @@ interface Notification { // Added Notification interface
 
 
 const SeedstreetApp = () => {
-  const [currentScreen, setCurrentScreenState] = useState('splash'); // Renamed to avoid conflict
+  const [currentScreen, setCurrentScreenState] = useState('splash');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   
-  // New state for managing startup editing
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
 
-  // Real data states
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]); // For current chat messages
-  const [notifications, setNotifications] = useState<Notification[]>([]); // New state for notifications
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Custom setCurrentScreen function to handle optional params
   const setCurrentScreen = (screen: string, params?: { startupId?: string }) => {
     setCurrentScreenState(screen);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
     } else {
-      setSelectedStartupId(undefined); // Clear selected ID if not provided
+      setSelectedStartupId(undefined);
     }
   };
 
-  // Auto-advance from splash
   useEffect(() => {
     if (currentScreen === 'splash') {
       const timer = setTimeout(() => {
@@ -143,7 +143,6 @@ const SeedstreetApp = () => {
     }
   }, [currentScreen]);
 
-  // Supabase Auth Session Management
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
@@ -159,7 +158,7 @@ const SeedstreetApp = () => {
     });
 
     const getInitialSession = async () => {
-      const { data: { session } = { session: null } } = await supabase.auth.getSession(); // Destructure with default
+      const { data: { session } = { session: null } } = await supabase.auth.getSession();
       if (session) {
         setIsLoggedIn(true);
         await fetchUserProfile(session.user.id);
@@ -177,7 +176,6 @@ const SeedstreetApp = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch User Profile
   const fetchUserProfile = async (userId: string) => {
     setLoadingData(true);
     const { data, error } = await supabase
@@ -191,7 +189,6 @@ const SeedstreetApp = () => {
       toast.error("Failed to load user profile.");
       setUserProfile(null);
       setUserRole(null);
-      // If profile doesn't exist, might need to redirect to role selection or profile creation
       setCurrentScreen('roleSelector'); 
     } else if (data) {
       setUserProfile(data as Profile);
@@ -202,13 +199,11 @@ const SeedstreetApp = () => {
         setCurrentScreen('home');
       }
     } else {
-      // User exists but no profile data found, direct to role selector
       setCurrentScreen('roleSelector');
     }
     setLoadingData(false);
   };
 
-  // Fetch Startups (for InvestorFeed)
   useEffect(() => {
     if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && activeTab === 'home') {
       const fetchStartups = async () => {
@@ -216,7 +211,7 @@ const SeedstreetApp = () => {
         const { data, error } = await supabase
           .from('startups')
           .select('*')
-          .eq('status', 'Approved'); // Only show approved startups
+          .eq('status', 'Approved');
 
         if (error) {
           console.error("Error fetching startups:", error);
@@ -231,7 +226,6 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, userRole, currentScreen, activeTab]);
 
-  // Fetch Chats
   useEffect(() => {
     if (isLoggedIn && userProfile?.id && currentScreen === 'home' && activeTab === 'chats') {
       const fetchChats = async () => {
@@ -239,7 +233,7 @@ const SeedstreetApp = () => {
         const { data, error } = await supabase
           .from('chats')
           .select('*')
-          .contains('user_ids', [userProfile.id]); // Fetch chats where current user is a participant
+          .contains('user_ids', [userProfile.id]);
 
         if (error) {
           console.error("Error fetching chats:", error);
@@ -252,12 +246,10 @@ const SeedstreetApp = () => {
       };
       fetchChats();
 
-      // Realtime subscription for chats
       const channel = supabase
         .channel('public:chats')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, payload => {
-          // Handle new chat, updates, or deletes
-          fetchChats(); // Re-fetch all chats for simplicity
+          fetchChats();
         })
         .subscribe();
 
@@ -267,7 +259,6 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, userProfile?.id, currentScreen, activeTab]);
 
-  // Fetch Messages for selected chat
   useEffect(() => {
     if (isLoggedIn && selectedChat?.id && currentScreen === 'chat') {
       const fetchMessages = async () => {
@@ -289,12 +280,10 @@ const SeedstreetApp = () => {
       };
       fetchMessages();
 
-      // Realtime subscription for messages in the current chat
       const channel = supabase
         .channel(`chat:${selectedChat.id}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
-          // Handle new messages, updates, or deletes
-          fetchMessages(); // Re-fetch messages for simplicity
+          fetchMessages();
         })
         .subscribe();
 
@@ -304,7 +293,6 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, selectedChat?.id, currentScreen]);
 
-  // Fetch Community Posts
   useEffect(() => {
     if (isLoggedIn && currentScreen === 'home' && activeTab === 'community') {
       const fetchCommunityPosts = async () => {
@@ -325,11 +313,10 @@ const SeedstreetApp = () => {
       };
       fetchCommunityPosts();
 
-      // Realtime subscription for community posts
       const channel = supabase
         .channel('public:community_posts')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
-          fetchCommunityPosts(); // Re-fetch posts for simplicity
+          fetchCommunityPosts();
         })
         .subscribe();
 
@@ -339,7 +326,6 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, currentScreen, activeTab]);
 
-  // Fetch Notifications
   const fetchNotifications = async () => {
     if (!userProfile?.id) return;
     setLoadingData(true);
@@ -363,11 +349,10 @@ const SeedstreetApp = () => {
     if (isLoggedIn && userProfile?.id && currentScreen === 'notifications') {
       fetchNotifications();
 
-      // Realtime subscription for notifications
       const channel = supabase
         .channel(`user_notifications:${userProfile.id}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` }, payload => {
-          fetchNotifications(); // Re-fetch notifications on change
+          fetchNotifications();
         })
         .subscribe();
 
@@ -378,11 +363,9 @@ const SeedstreetApp = () => {
   }, [isLoggedIn, userProfile?.id, currentScreen]);
 
 
-  // Update bookmarked/interested startups from profile
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
 
-  // Toggle bookmark
   const toggleBookmark = async (startupId: string) => {
     if (!userProfile) {
       toast.error("Please log in to bookmark startups.");
@@ -409,7 +392,6 @@ const SeedstreetApp = () => {
     }
   };
 
-  // Toggle interest
   const toggleInterest = async (startupId: string) => {
     if (!userProfile) {
       toast.error("Please log in to signal interest.");
@@ -436,34 +418,114 @@ const SeedstreetApp = () => {
     }
   };
 
-  // If session is still loading, show splash screen or a loading indicator
+  const handleStartChat = async (startup: Startup) => {
+    if (!userProfile || userProfile.role !== 'investor') {
+      toast.error("Only investors can start chats with founders.");
+      return;
+    }
+    if (!userProfile.id || !userProfile.name) {
+      toast.error("Your profile information is incomplete. Cannot start chat.");
+      return;
+    }
+
+    setLoadingData(true);
+    
+    // Check if a chat already exists between this investor and founder for this startup
+    const { data: existingChats, error: fetchChatError } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('investor_id', userProfile.id)
+      .eq('founder_id', startup.founder_id)
+      .eq('startup_id', startup.id)
+      .single();
+
+    if (fetchChatError && fetchChatError.code !== 'PGRST116') { // PGRST116 means no rows found
+      toast.error("Failed to check for existing chat: " + fetchChatError.message);
+      console.error("Error checking existing chat:", fetchChatError);
+      setLoadingData(false);
+      return;
+    }
+
+    let chatToOpen: Chat | null = null;
+
+    if (existingChats) {
+      chatToOpen = existingChats as Chat;
+      toast.info("Continuing existing chat.");
+    } else {
+      // Fetch founder's name for the chat
+      const { data: founderProfile, error: founderError } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', startup.founder_id)
+        .single();
+
+      if (founderError || !founderProfile) {
+        toast.error("Failed to get founder details. Cannot start chat.");
+        console.error("Error fetching founder profile:", founderError);
+        setLoadingData(false);
+        return;
+      }
+
+      const founderName = founderProfile.name || founderProfile.email?.split('@')[0] || 'Founder';
+
+      // Create a new chat
+      const { data: newChat, error: createChatError } = await supabase
+        .from('chats')
+        .insert({
+          user_ids: [userProfile.id, startup.founder_id],
+          investor_id: userProfile.id,
+          investor_name: userProfile.name,
+          founder_id: startup.founder_id,
+          founder_name: founderName,
+          startup_id: startup.id,
+          startup_name: startup.name,
+          startup_logo: startup.logo,
+          last_message_text: 'Chat initiated!',
+          last_message_timestamp: new Date().toISOString(),
+          unread_counts: { [startup.founder_id]: 1 } // Mark as unread for the founder
+        })
+        .select()
+        .single();
+
+      if (createChatError) {
+        toast.error("Failed to start new chat: " + createChatError.message);
+        console.error("Error creating new chat:", createChatError);
+        setLoadingData(false);
+        return;
+      }
+      chatToOpen = newChat as Chat;
+      toast.success("New chat started!");
+    }
+
+    if (chatToOpen) {
+      setSelectedChat(chatToOpen);
+      setCurrentScreen('chat');
+      setActiveTab('chats'); // Ensure chats tab is active
+    }
+    setLoadingData(false);
+  };
+
+
   if (loadingSession) {
     return <SplashScreen />;
   }
 
-  // SCREENS
-
-  // 1. SPLASH SCREEN (only shown initially if not authenticated)
   if (currentScreen === 'splash') {
     return <SplashScreen />;
   }
 
-  // 2. ONBOARDING
   if (currentScreen === 'onboarding') {
     return <OnboardingScreen setCurrentScreen={setCurrentScreen} />;
   }
 
-  // 3. AUTH (SIGN IN / SIGN UP)
   if (currentScreen === 'auth') {
     return <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />;
   }
 
-  // 4. ROLE SELECTOR
   if (currentScreen === 'roleSelector') {
     return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} />;
   }
 
-  // 5. HOME / FEED (Different for Investor vs Founder)
   if (currentScreen === 'home' && activeTab === 'home') {
     return (
       <HomeScreen
@@ -478,15 +540,15 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        loading={loadingData} // Pass loadingData to HomeScreen
+        loading={loadingData}
         userProfileId={userProfile?.id || null}
         userProfileName={userProfile?.name || userProfile?.first_name || null}
         userProfileEmail={userProfile?.email || null}
+        handleStartChat={handleStartChat} // Pass handleStartChat
       />
     );
   }
 
-  // 6. STARTUP DETAIL PAGE
   if (currentScreen === 'startupDetail' && selectedStartup) {
     return (
       <StartupDetailScreen
@@ -500,11 +562,11 @@ const SeedstreetApp = () => {
         activeTab={activeTab}
         userRole={userRole}
         setActiveTab={setActiveTab}
+        handleStartChat={handleStartChat} // Pass handleStartChat
       />
     );
   }
 
-  // 7. CHATS LIST
   if (currentScreen === 'home' && activeTab === 'chats') {
     return (
       <ChatListScreen
@@ -518,7 +580,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // 8. CHAT CONVERSATION
   if (currentScreen === 'chat' && selectedChat) {
     return (
       <ChatConversationScreen
@@ -527,12 +588,11 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
         userProfileId={userProfile?.id || null}
-        userProfileName={userProfile?.name || userProfile?.email || null} // Pass user's name or email
+        userProfileName={userProfile?.name || userProfile?.email || null}
       />
     );
   }
 
-  // 9. PROFILE
   if (currentScreen === 'home' && activeTab === 'profile') {
     return (
       <ProfileScreen
@@ -545,12 +605,11 @@ const SeedstreetApp = () => {
         activeTab={activeTab}
         setIsLoggedIn={setIsLoggedIn}
         setUserRole={setUserRole}
-        setUserProfile={setUserProfile} // Pass setUserProfile
+        setUserProfile={setUserProfile}
       />
     );
   }
 
-  // 10. EDIT PROFILE
   if (currentScreen === 'editProfile' && userProfile) {
     return (
       <EditProfileScreen
@@ -561,7 +620,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // 11. MANAGE STARTUP (formerly LIST STARTUP)
   if (currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email) {
     return (
       <ManageStartupScreen
@@ -569,12 +627,11 @@ const SeedstreetApp = () => {
         userProfileId={userProfile.id}
         userProfileName={userProfile.name}
         userProfileEmail={userProfile.email}
-        startupId={selectedStartupId} // Pass the selected startup ID for editing
+        startupId={selectedStartupId}
       />
     );
   }
 
-  // 12. COMMUNITY FEED
   if (currentScreen === 'home' && activeTab === 'community') {
     return (
       <CommunityFeedScreen
@@ -587,7 +644,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // 13. NOTIFICATIONS SCREEN
   if (currentScreen === 'notifications' && userProfile) {
     return (
       <NotificationsScreen

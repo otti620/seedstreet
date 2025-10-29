@@ -3,21 +3,22 @@
 import React from 'react';
 import { ArrowLeft, Bookmark, Check, MessageCircle, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
-import BottomNav from '../BottomNav'; // Assuming BottomNav is needed here for consistency
+import BottomNav from '../BottomNav';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
-  id: string; // Changed to string to match UUID
+  id: string;
   name: string;
-  logo: string; // Assuming logo is a string (e.g., emoji or URL)
+  logo: string;
   tagline: string;
   description: string;
   category: string;
-  room_members: number; // Changed to match schema
-  active_chats: number; // Changed to match schema
+  room_members: number;
+  active_chats: number;
   interests: number;
-  founder_name: string; // Changed to match schema
-  location: string; // Assuming location is a string
+  founder_name: string;
+  location: string;
+  founder_id: string; // Added founder_id
 }
 
 interface StartupDetailScreenProps {
@@ -27,10 +28,11 @@ interface StartupDetailScreenProps {
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
   setCurrentScreen: (screen: string) => void;
-  setSelectedChat: (chat: any) => void; // Will refine 'any' later
-  activeTab: string; // Passed for BottomNav
-  userRole: string | null; // Passed for BottomNav
-  setActiveTab: (tab: string) => void; // Passed for BottomNav
+  setSelectedChat: (chat: any) => void;
+  activeTab: string;
+  userRole: string | null;
+  setActiveTab: (tab: string) => void;
+  handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
 }
 
 const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
@@ -44,6 +46,7 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
   activeTab,
   userRole,
   setActiveTab,
+  handleStartChat, // Destructure handleStartChat
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -164,12 +167,7 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
         </button>
         <div className="flex gap-3">
           <button 
-            onClick={() => {
-              // Placeholder for chat initiation
-              // setSelectedChat({ startup: selectedStartup });
-              // setCurrentScreen('chat');
-              toast.info("Chat functionality coming soon!");
-            }}
+            onClick={() => handleStartChat(selectedStartup)}
             className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all"
           >
             Start a Chat 💬

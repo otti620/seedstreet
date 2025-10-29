@@ -2,31 +2,33 @@
 
 import React from 'react';
 import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton component
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
-  id: string; // Changed to string to match UUID
+  id: string;
   name: string;
-  logo: string; // Assuming logo is a string (e.g., emoji or URL)
+  logo: string;
   tagline: string;
   description: string;
   category: string;
-  room_members: number; // Changed to match schema
-  active_chats: number; // Changed to match schema
+  room_members: number;
+  active_chats: number;
   interests: number;
-  founder_name: string; // Changed to match schema
-  location: string; // Assuming location is a string
+  founder_name: string;
+  location: string;
+  founder_id: string; // Added founder_id
 }
 
 interface InvestorFeedProps {
   startups: Startup[];
-  bookmarkedStartups: string[]; // Changed to string[]
-  toggleBookmark: (startupId: string) => void; // Changed to string
+  bookmarkedStartups: string[];
+  toggleBookmark: (startupId: string) => void;
   setSelectedStartup: (startup: Startup) => void;
   setCurrentScreen: (screen: string) => void;
-  setSelectedChat: (chat: any) => void; // Still 'any' for now
-  loading: boolean; // New prop for loading state
+  setSelectedChat: (chat: any) => void;
+  loading: boolean;
+  handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
 }
 
 const InvestorFeed: React.FC<InvestorFeedProps> = ({
@@ -36,7 +38,8 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
   setSelectedStartup,
   setCurrentScreen,
   setSelectedChat,
-  loading, // Destructure loading prop
+  loading,
+  handleStartChat, // Destructure handleStartChat
 }) => {
   const renderStartupCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse">
@@ -102,7 +105,6 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
         {loading ? (
-          // Render 3 skeleton cards while loading
           Array.from({ length: 3 }).map((_, i) => <React.Fragment key={i}>{renderStartupCardSkeleton()}</React.Fragment>)
         ) : (
           startups.map(startup => (
@@ -141,10 +143,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
               </div>
 
               <div className="flex gap-2">
-                <button onClick={() => {
-                  setSelectedChat({ startup });
-                  setCurrentScreen('chat');
-                }} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <button onClick={() => handleStartChat(startup)} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
                   <MessageCircle className="w-4 h-4" />
                   Slide in 💬
                 </button>
