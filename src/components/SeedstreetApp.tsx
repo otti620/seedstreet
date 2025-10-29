@@ -13,27 +13,90 @@ import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
-import HomeScreen from '@/components/screens/HomeScreen'; // Corrected import path
+import HomeScreen from '@/components/screens/HomeScreen';
 import { supabase } from '@/integrations/supabase/client';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
+
+// Define TypeScript interfaces for data structures
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  name: string | null;
+  role: 'investor' | 'founder' | null;
+  onboarding_complete: boolean;
+  bookmarked_startups: string[]; // Array of startup IDs
+  interested_startups: string[]; // Array of startup IDs
+}
+
+interface Startup {
+  id: string; // Changed to string to match UUID
+  name: string;
+  logo: string; // Assuming logo is a string (e.g., emoji or URL)
+  tagline: string;
+  description: string;
+  category: string;
+  room_members: number; // Changed to match schema
+  active_chats: number; // Changed to match schema
+  interests: number;
+  founder_name: string; // Changed to match schema
+  location: string; // Assuming location is a string
+}
+
+interface Chat {
+  id: string;
+  startup_id: string;
+  startup_name: string;
+  startup_logo: string;
+  last_message_text: string;
+  last_message_timestamp: string;
+  unread_count: number;
+  isOnline: boolean; // This might need to be derived or fetched separately
+}
+
+interface Message {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  sender_name: string;
+  text: string;
+  created_at: string;
+  read: boolean;
+}
+
+interface CommunityPost {
+  id: string;
+  author_id: string;
+  author_name: string;
+  author_avatar_url: string | null;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  likes: string[]; // Array of user IDs who liked
+  comments_count: number;
+}
+
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
-  const [userRole, setUserRole] = useState<string | null>(null); // 'investor' or 'founder'
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedStartup, setSelectedStartup] = useState<any>(null); // Using 'any' for simplicity, consider defining a Startup type
-  const [selectedChat, setSelectedChat] = useState<any>(null); // Using 'any' for simplicity, consider defining a Chat type
+  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   const [messageInput, setMessageInput] = useState('');
-  const [bookmarkedStartups, setBookmarkedStartups] = useState<number[]>([]);
-  const [interestedStartups, setInterestedStartups] = useState<number[]>([]);
-  const [loadingSession, setLoadingSession] = useState(true); // New state for session loading
+  
+  // Real data states
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [startups, setStartups] = useState<Startup[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]); // For current chat messages
 
-  // Auth screen specific states, moved to top level
-  const [isSignUp, setIsSignUp] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingData, setLoadingData] = useState(false);
 
   // Auto-advance from splash
   useEffect(() => {
@@ -50,200 +113,154 @@ const SeedstreetApp = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         setIsLoggedIn(true);
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role, onboarding_complete')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching profile:", error);
-          toast.error("Failed to load user profile.");
-          setIsLoggedIn(false);
-          setCurrentScreen('auth');
-          setLoadingSession(false);
-          return;
-        }
-
-        if (profile) {
-          setUserRole(profile.role);
-          if (!profile.onboarding_complete) {
-            setCurrentScreen('roleSelector');
-          } else {
-            setCurrentScreen('home');
-          }
-        } else {
-          // User exists but no profile, direct to role selector
-          setCurrentScreen('roleSelector');
-        }
+        await fetchUserProfile(session.user.id);
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
-        // Only set to onboarding if not already on splash
-        if (currentScreen === 'splash') {
-          // Splash screen will handle transition to onboarding
-        } else {
-          setCurrentScreen('auth');
-        }
+        setUserProfile(null);
+        setBookmarkedStartups([]);
+        setInterestedStartups([]);
+        setCurrentScreen('auth');
       }
       setLoadingSession(false);
     });
 
-    // Initial session check
-    const getSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsLoggedIn(true);
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, onboarding_complete')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching profile on initial session check:", profileError);
-          toast.error("Failed to load user profile.");
-          setIsLoggedIn(false);
-          setCurrentScreen('auth');
-          setLoadingSession(false);
-          return;
-        }
-
-        if (profile) {
-          setUserRole(profile.role);
-          if (!profile.onboarding_complete) {
-            setCurrentScreen('roleSelector');
-          } else {
-            setCurrentScreen('home');
-          }
-        } else {
-          setCurrentScreen('roleSelector');
-        }
+        await fetchUserProfile(session.user.id);
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
-        // Only set to onboarding if not already on splash
-        if (currentScreen === 'splash') {
-          // Splash screen will handle transition to onboarding
-        } else {
-          setCurrentScreen('auth');
-        }
+        setUserProfile(null);
+        setBookmarkedStartups([]);
+        setInterestedStartups([]);
+        setCurrentScreen('auth');
       }
       setLoadingSession(false);
     };
 
-    getSession();
+    getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, []); // Empty dependency array to run only once on mount
+  }, []);
 
-  // Mock Data (will be replaced with Supabase fetches later)
-  const startups = [
-    {
-      id: 1,
-      name: "GreenTech Africa",
-      logo: "🌱",
-      tagline: "Solar-powered solutions for every home",
-      description: "We're making clean energy affordable and accessible across Africa. One solar panel at a time.",
-      category: "Green Energy",
-      roomMembers: 156,
-      activeChats: 24,
-      interests: 12,
-      founder: "Jane Okafor",
-      location: "Lagos, Nigeria"
-    },
-    {
-      id: 2,
-      name: "EduFund",
-      logo: "📚",
-      tagline: "Democratizing education financing",
-      description: "Connecting students with investors who believe in education. Making university accessible for all.",
-      category: "EdTech",
-      roomMembers: 89,
-      activeChats: 15,
-      interests: 8,
-      founder: "David Mensah",
-      location: "Accra, Ghana"
-    },
-    {
-      id: 3,
-      name: "FreshCart",
-      logo: "🛒",
-      tagline: "Farm-to-table in 24 hours",
-      description: "Direct connection between farmers and consumers. Fresh produce, fair prices, zero waste.",
-      category: "AgriTech",
-      roomMembers: 203,
-      activeChats: 31,
-      interests: 18,
-      founder: "Amara Nwankwo",
-      location: "Enugu, Nigeria"
-    },
-    {
-      id: 4,
-      name: "HealthHub",
-      logo: "🏥",
-      tagline: "Telemedicine for underserved communities",
-      description: "Bringing quality healthcare to remote areas through mobile clinics and telehealth.",
-      category: "HealthTech",
-      roomMembers: 127,
-      activeChats: 19,
-      interests: 14,
-      founder: "Kwame Asante",
-      location: "Kumasi, Ghana"
+  // Fetch User Profile
+  const fetchUserProfile = async (userId: string) => {
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user profile:", error);
+      toast.error("Failed to load user profile.");
+      setUserProfile(null);
+      setUserRole(null);
+      // If profile doesn't exist, might need to redirect to role selection or profile creation
+      setCurrentScreen('roleSelector'); 
+    } else if (data) {
+      setUserProfile(data as Profile);
+      setUserRole(data.role);
+      if (!data.onboarding_complete) {
+        setCurrentScreen('roleSelector');
+      } else {
+        setCurrentScreen('home');
+      }
+    } else {
+      // User exists but no profile data found, direct to role selector
+      setCurrentScreen('roleSelector');
     }
-  ];
+    setLoadingData(false);
+  };
 
-  const chats = [
-    {
-      id: 1,
-      startupId: 1,
-      startupName: "GreenTech Africa",
-      startupLogo: "🌱",
-      lastMessage: "Thanks for your interest! Would love to discuss more",
-      timestamp: "2h ago",
-      unread: 2,
-      isOnline: true
-    },
-    {
-      id: 2,
-      startupId: 3,
-      startupName: "FreshCart",
-      startupLogo: "🛒",
-      lastMessage: "Our pilot launch is next week!",
-      timestamp: "1d ago",
-      unread: 0,
-      isOnline: false
+  // Fetch Startups (for InvestorFeed)
+  useEffect(() => {
+    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && activeTab === 'home') {
+      const fetchStartups = async () => {
+        setLoadingData(true);
+        const { data, error } = await supabase
+          .from('startups')
+          .select('*')
+          .eq('status', 'Approved'); // Only show approved startups
+
+        if (error) {
+          console.error("Error fetching startups:", error);
+          toast.error("Failed to load startups.");
+          setStartups([]);
+        } else if (data) {
+          setStartups(data as Startup[]);
+        }
+        setLoadingData(false);
+      };
+      fetchStartups();
     }
-  ];
+  }, [isLoggedIn, userRole, currentScreen, activeTab]);
 
-  const messages = [
-    { id: 1, text: "Hi! I'm really interested in GreenTech", sent: true, timestamp: "10:30 AM" },
-    { id: 2, text: "Thanks for reaching out! Great to connect", sent: false, timestamp: "10:32 AM" },
-    { id: 3, text: "What's your timeline for the next funding round?", sent: true, timestamp: "10:35 AM" },
-    { id: 4, text: "We're looking to close in Q1 2025. Would love to share our deck with you!", sent: false, timestamp: "10:38 AM" }
-  ];
+  // Update bookmarked/interested startups from profile
+  const bookmarkedStartups = userProfile?.bookmarked_startups || [];
+  const interestedStartups = userProfile?.interested_startups || [];
 
   // Toggle bookmark
-  const toggleBookmark = (startupId: number) => {
-    setBookmarkedStartups(prev => 
-      prev.includes(startupId) 
-        ? prev.filter(id => id !== startupId)
-        : [...prev, startupId]
-    );
+  const toggleBookmark = async (startupId: string) => {
+    if (!userProfile) {
+      toast.error("Please log in to bookmark startups.");
+      return;
+    }
+
+    const currentBookmarks = userProfile.bookmarked_startups || [];
+    const isBookmarked = currentBookmarks.includes(startupId);
+    const newBookmarks = isBookmarked
+      ? currentBookmarks.filter(id => id !== startupId)
+      : [...currentBookmarks, startupId];
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ bookmarked_startups: newBookmarks })
+      .eq('id', userProfile.id);
+
+    if (error) {
+      toast.error("Failed to update bookmarks: " + error.message);
+      console.error("Error updating bookmarks:", error);
+    } else {
+      setUserProfile(prev => prev ? { ...prev, bookmarked_startups: newBookmarks } : null);
+      toast.success(isBookmarked ? "Bookmark removed!" : "Startup bookmarked!");
+    }
   };
 
   // Toggle interest
-  const toggleInterest = (startupId: number) => {
-    setInterestedStartups(prev => 
-      prev.includes(startupId) 
-        ? prev.filter(id => id !== startupId)
-        : [...prev, startupId]
-    );
+  const toggleInterest = async (startupId: string) => {
+    if (!userProfile) {
+      toast.error("Please log in to signal interest.");
+      return;
+    }
+
+    const currentInterests = userProfile.interested_startups || [];
+    const isInterested = currentInterests.includes(startupId);
+    const newInterests = isInterested
+      ? currentInterests.filter(id => id !== startupId)
+      : [...currentInterests, startupId];
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ interested_startups: newInterests })
+      .eq('id', userProfile.id);
+
+    if (error) {
+      toast.error("Failed to update interest: " + error.message);
+      console.error("Error updating interest:", error);
+    } else {
+      setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
+      toast.success(isInterested ? "Interest removed!" : "Interest signaled!");
+    }
   };
 
   // If session is still loading, show splash screen or a loading indicator
   if (loadingSession) {
-    return <SplashScreen />; // Or a dedicated loading spinner
+    return <SplashScreen />;
   }
 
   // SCREENS
@@ -328,11 +345,11 @@ const SeedstreetApp = () => {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
-              <div className="text-2xl font-bold text-gray-900">{selectedStartup.roomMembers}</div>
+              <div className="text-2xl font-bold text-gray-900">{selectedStartup.room_members}</div>
               <div className="text-xs text-gray-500 mt-1">Room Members</div>
             </div>
             <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
-              <div className="text-2xl font-bold text-gray-900">{selectedStartup.activeChats}</div>
+              <div className="text-2xl font-bold text-gray-900">{selectedStartup.active_chats}</div>
               <div className="text-xs text-gray-500 mt-1">Active Chats</div>
             </div>
             <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
@@ -356,10 +373,10 @@ const SeedstreetApp = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4">Meet the Founder</h3>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-gradient-to-br from-purple-700 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                {selectedStartup.founder.split(' ').map(n => n[0]).join('')}
+                {selectedStartup.founder_name.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900">{selectedStartup.founder}</h4>
+                <h4 className="font-semibold text-gray-900">{selectedStartup.founder_name}</h4>
                 <p className="text-sm text-gray-500">Founder & CEO</p>
               </div>
             </div>
@@ -409,8 +426,10 @@ const SeedstreetApp = () => {
           <div className="flex gap-3">
             <button 
               onClick={() => {
-                setSelectedChat({ startup: selectedStartup });
-                setCurrentScreen('chat');
+                // Placeholder for chat initiation
+                // setSelectedChat({ startup: selectedStartup });
+                // setCurrentScreen('chat');
+                toast.info("Chat functionality coming soon!");
               }}
               className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all"
             >
@@ -460,7 +479,7 @@ const SeedstreetApp = () => {
               >
                 <div className="relative">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-2xl">
-                    {chat.startupLogo}
+                    {chat.startup_logo}
                   </div>
                   {chat.isOnline && (
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
@@ -468,16 +487,16 @@ const SeedstreetApp = () => {
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">{chat.startupName}</h3>
-                    <span className="text-xs text-gray-500">{chat.timestamp}</span>
+                    <h3 className="font-semibold text-gray-900 truncate">{chat.startup_name}</h3>
+                    <span className="text-xs text-gray-500">{chat.last_message_timestamp}</span>
                   </div>
-                  <p className={`text-sm truncate ${chat.unread > 0 ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                    {chat.lastMessage}
+                  <p className={`text-sm truncate ${chat.unread_count > 0 ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                    {chat.last_message_text}
                   </p>
                 </div>
-                {chat.unread > 0 && (
+                {chat.unread_count > 0 && (
                   <div className="w-6 h-6 bg-gradient-to-br from-purple-700 to-teal-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{chat.unread}</span>
+                    <span className="text-white text-xs font-bold">{chat.unread_count}</span>
                   </div>
                 )}
               </button>
@@ -517,12 +536,12 @@ const SeedstreetApp = () => {
             <div className="flex items-center gap-3 flex-1">
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl">
-                  {selectedChat.startup?.logo || selectedChat.startupLogo}
+                  {selectedChat.startup_logo}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-gray-900 truncate">{selectedChat.startup?.name || selectedChat.startupName}</h2>
+                <h2 className="font-semibold text-gray-900 truncate">{selectedChat.startup_name}</h2>
                 <p className="text-xs text-green-600">Online</p>
               </div>
             </div>
@@ -545,7 +564,7 @@ const SeedstreetApp = () => {
                   <p className="text-sm leading-relaxed">{msg.text}</p>
                 </div>
                 <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sent ? 'justify-end' : 'justify-start'}`}>
-                  <span className="text-xs text-gray-500">{msg.timestamp}</span>
+                  <span className="text-xs text-gray-500">{msg.created_at}</span>
                   {msg.sent && <Check className="w-3 h-3 text-teal-500" />}
                 </div>
               </div>
@@ -603,10 +622,14 @@ const SeedstreetApp = () => {
           </div>
           <div className="flex flex-col items-center text-white">
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl">
-              U
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
+              )}
             </div>
-            <h2 className="text-2xl font-bold mb-1">User Name</h2>
-            <p className="text-white/80 text-sm mb-3">user@email.com</p>
+            <h2 className="text-2xl font-bold mb-1">{userProfile?.name || userProfile?.email || 'User Name'}</h2>
+            <p className="text-white/80 text-sm mb-3">{userProfile?.email || 'user@email.com'}</p>
             <span className="px-4 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-semibold">
               {userRole === 'investor' ? '💰 Investor' : '💡 Founder'}
             </span>
@@ -620,27 +643,27 @@ const SeedstreetApp = () => {
             <h3 className="font-bold text-gray-900 mb-4">Your Activity</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userRole === 'investor' ? '5' : '24'}</div>
-                <div className="text-xs text-gray-500 mt-1">{userRole === 'investor' ? 'Bookmarks' : 'Chats'}</div>
+                <div className="text-2xl font-bold text-gray-900">{bookmarkedStartups.length}</div>
+                <div className="text-xs text-gray-500 mt-1">Bookmarks</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userRole === 'investor' ? '3' : '156'}</div>
-                <div className="text-xs text-gray-500 mt-1">{userRole === 'investor' ? 'Interested' : 'Members'}</div>
+                <div className="text-2xl font-bold text-gray-900">{interestedStartups.length}</div>
+                <div className="text-xs text-gray-500 mt-1">Interested</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userRole === 'investor' ? '2' : '12'}</div>
-                <div className="text-xs text-gray-500 mt-1">{userRole === 'investor' ? 'Committed' : 'Interested'}</div>
+                <div className="text-2xl font-bold text-gray-900">0</div> {/* Placeholder for committed */}
+                <div className="text-xs text-gray-500 mt-1">Committed</div>
               </div>
             </div>
           </div>
 
           {/* Menu Items */}
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
-            <MenuItem icon={<User />} label="Edit Profile" />
-            <MenuItem icon={<Bell />} label="Notifications" />
-            <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} />
-            <MenuItem icon={<Settings />} label="Settings" />
-            <MenuItem icon={<MessageCircle />} label="Help & Support" />
+            <MenuItem icon={<User />} label="Edit Profile" onClick={() => toast.info("Edit Profile coming soon!")} />
+            <MenuItem icon={<Bell />} label="Notifications" onClick={() => toast.info("Notifications coming soon!")} />
+            <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
+            <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
+            <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => toast.info("Help & Support coming soon!")} />
           </div>
 
           {/* Logout */}
@@ -670,13 +693,6 @@ const SeedstreetApp = () => {
 
   // 10. COMMUNITY FEED
   if (currentScreen === 'home' && activeTab === 'community') {
-    const communityPosts = [
-      { id: 1, user: "Jane O.", action: "joined GreenTech's room", startup: "GreenTech Africa", time: "2h ago", icon: "🌱" },
-      { id: 2, user: "David M.", action: "signaled interest in", startup: "EduFund", time: "5h ago", icon: "📚" },
-      { id: 3, user: "Amara N.", action: "started chatting with", startup: "FreshCart investors", time: "1d ago", icon: "🛒" },
-      { id: 4, user: "12 investors", action: "are chatting with", startup: "HealthHub right now", time: "Live", icon: "🏥" }
-    ];
-
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col">
         {/* Header */}
@@ -686,32 +702,39 @@ const SeedstreetApp = () => {
 
         {/* Feed */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {communityPosts.map(post => (
-            <div key={post.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
-                  {post.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">
-                    <span className="font-semibold">{post.user}</span> {post.action}{' '}
-                    <span className="font-semibold text-purple-700">{post.startup}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">{post.time}</p>
+          {communityPosts.length > 0 ? (
+            communityPosts.map(post => (
+              <div key={post.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
+                    {post.author_avatar_url ? (
+                      <img src={post.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-xl object-cover" />
+                    ) : (
+                      post.author_name?.[0] || '?'
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900">
+                      <span className="font-semibold">{post.author_name}</span> posted:
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(post.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-gray-700 mt-2">{post.content}</p>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
+                😴
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No community posts yet</h3>
+              <p className="text-gray-600 mb-6">Be the first to share something exciting!</p>
+              <button onClick={() => toast.info("Create Post coming soon!")} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                Create Post ✨
+              </button>
             </div>
-          ))}
-
-          {/* Discover CTA */}
-          <div className="bg-gradient-to-br from-purple-700 to-teal-600 rounded-2xl p-6 text-white text-center">
-            <Sparkles className="w-12 h-12 mx-auto mb-3" />
-            <h3 className="text-lg font-bold mb-2">Discover more startups</h3>
-            <p className="text-sm text-white/80 mb-4">Join the movement and start connecting</p>
-            <button onClick={() => setActiveTab('home')} className="bg-white text-purple-700 px-6 py-2.5 rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all">
-              Explore Now 🚀
-            </button>
-          </div>
+          )}
         </div>
 
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />

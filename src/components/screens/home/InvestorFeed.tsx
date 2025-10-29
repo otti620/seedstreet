@@ -3,27 +3,28 @@
 import React from 'react';
 import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter } from 'lucide-react';
 
+// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
-  id: number;
+  id: string; // Changed to string to match UUID
   name: string;
-  logo: string;
+  logo: string; // Assuming logo is a string (e.g., emoji or URL)
   tagline: string;
   description: string;
   category: string;
-  roomMembers: number;
-  activeChats: number;
+  room_members: number; // Changed to match schema
+  active_chats: number; // Changed to match schema
   interests: number;
-  founder: string;
-  location: string;
+  founder_name: string; // Changed to match schema
+  location: string; // Assuming location is a string
 }
 
 interface InvestorFeedProps {
   startups: Startup[];
-  bookmarkedStartups: number[];
-  toggleBookmark: (startupId: number) => void;
+  bookmarkedStartups: string[]; // Changed to string[]
+  toggleBookmark: (startupId: string) => void; // Changed to string
   setSelectedStartup: (startup: Startup) => void;
   setCurrentScreen: (screen: string) => void;
-  setSelectedChat: (chat: any) => void;
+  setSelectedChat: (chat: any) => void; // Still 'any' for now
 }
 
 const InvestorFeed: React.FC<InvestorFeedProps> = ({
@@ -86,11 +87,11 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
 
             <div className="flex gap-4 mb-4 p-3 bg-gradient-to-r from-purple-50 to-teal-50 rounded-xl">
               <div>
-                <div className="text-lg font-bold text-gray-900">{startup.roomMembers}</div>
+                <div className="text-lg font-bold text-gray-900">{startup.room_members}</div>
                 <div className="text-xs text-gray-500 uppercase">Members</div>
               </div>
               <div>
-                <div className="text-lg font-bold text-gray-900">{startup.activeChats}</div>
+                <div className="text-lg font-bold text-gray-900">{startup.active_chats}</div>
                 <div className="text-xs text-gray-500 uppercase">Active Chats</div>
               </div>
               <div>
