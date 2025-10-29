@@ -23,7 +23,7 @@ import EditProfileScreen from './screens/EditProfileScreen';
 import ManageStartupScreen from './screens/ManageStartupScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen';
-import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen'; // Import new screen
+import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -214,7 +214,8 @@ const SeedstreetApp = () => {
   };
 
   useEffect(() => {
-    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && activeTab === 'home') {
+    // Fetch startups if logged in as investor and on 'home' or 'startups' tab
+    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups')) {
       const fetchStartups = async () => {
         setLoadingData(true);
         const { data, error } = await supabase
@@ -547,29 +548,69 @@ const SeedstreetApp = () => {
     return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} />;
   }
 
-  if (currentScreen === 'home' && activeTab === 'home') {
-    return (
-      <HomeScreen
-        userRole={userRole}
-        startups={startups}
-        bookmarkedStartups={bookmarkedStartups}
-        interestedStartups={interestedStartups}
-        toggleBookmark={toggleBookmark}
-        toggleInterest={toggleInterest}
-        setSelectedStartup={setSelectedStartup}
-        setSelectedChat={setSelectedChat}
-        setCurrentScreen={setCurrentScreen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        loading={loadingData}
-        userProfileId={userProfile?.id || null}
-        userProfileName={userProfile?.name || userProfile?.first_name || null}
-        userProfileEmail={userProfile?.email || null}
-        handleStartChat={handleStartChat}
-      />
-    );
+  // Handle all 'home' related screens based on activeTab
+  if (currentScreen === 'home') {
+    if (activeTab === 'home' || activeTab === 'startups') { // Render HomeScreen for both 'home' and 'startups' tabs
+      return (
+        <HomeScreen
+          userRole={userRole}
+          startups={startups}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          setSelectedStartup={setSelectedStartup}
+          setSelectedChat={setSelectedChat}
+          setCurrentScreen={setCurrentScreen}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          loading={loadingData}
+          userProfileId={userProfile?.id || null}
+          userProfileName={userProfile?.name || userProfile?.first_name || null}
+          userProfileEmail={userProfile?.email || null}
+          handleStartChat={handleStartChat}
+        />
+      );
+    } else if (activeTab === 'chats') {
+      return (
+        <ChatListScreen
+          chats={chats}
+          setCurrentScreen={setCurrentScreen}
+          setSelectedChat={setSelectedChat}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+        />
+      );
+    } else if (activeTab === 'community') {
+      return (
+        <CommunityFeedScreen
+          communityPosts={communityPosts}
+          setCurrentScreen={setCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+        />
+      );
+    } else if (activeTab === 'profile') {
+      return (
+        <ProfileScreen
+          userProfile={userProfile}
+          userRole={userRole}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          setCurrentScreen={setCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          setIsLoggedIn={setIsLoggedIn}
+          setUserRole={setUserRole}
+          setUserProfile={setUserProfile}
+        />
+      );
+    }
   }
 
+  // Other specific screens outside the main tab navigation
   if (currentScreen === 'startupDetail' && selectedStartup) {
     return (
       <StartupDetailScreen
@@ -588,19 +629,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  if (currentScreen === 'home' && activeTab === 'chats') {
-    return (
-      <ChatListScreen
-        chats={chats}
-        setCurrentScreen={setCurrentScreen}
-        setSelectedChat={setSelectedChat}
-        setActiveTab={setActiveTab}
-        activeTab={activeTab}
-        userRole={userRole}
-      />
-    );
-  }
-
   if (currentScreen === 'chat' && selectedChat) {
     return (
       <ChatConversationScreen
@@ -608,24 +636,7 @@ const SeedstreetApp = () => {
         messages={messages}
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
-        userProfile={userProfile} // Pass the full userProfile
-      />
-    );
-  }
-
-  if (currentScreen === 'home' && activeTab === 'profile') {
-    return (
-      <ProfileScreen
         userProfile={userProfile}
-        userRole={userRole}
-        bookmarkedStartups={bookmarkedStartups}
-        interestedStartups={interestedStartups}
-        setCurrentScreen={setCurrentScreen}
-        setActiveTab={setActiveTab}
-        activeTab={activeTab}
-        setIsLoggedIn={setIsLoggedIn}
-        setUserRole={setUserRole}
-        setUserProfile={setUserProfile}
       />
     );
   }
@@ -652,19 +663,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  if (currentScreen === 'home' && activeTab === 'community') {
-    return (
-      <CommunityFeedScreen
-        communityPosts={communityPosts}
-        setCurrentScreen={setCurrentScreen}
-        setActiveTab={setActiveTab}
-        activeTab={activeTab}
-        userRole={userRole}
-      />
-    );
-  }
-
-  // New screen for creating community posts
   if (currentScreen === 'createCommunityPost' && userProfile) {
     return (
       <CreateCommunityPostScreen
