@@ -214,8 +214,7 @@ const SeedstreetApp = () => {
   };
 
   useEffect(() => {
-    // Fetch startups if logged in as investor and on 'home' or 'startups' tab
-    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups')) {
+    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && activeTab === 'home') {
       const fetchStartups = async () => {
         setLoadingData(true);
         const { data, error } = await supabase
@@ -548,69 +547,29 @@ const SeedstreetApp = () => {
     return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} />;
   }
 
-  // Handle all 'home' related screens based on activeTab
-  if (currentScreen === 'home') {
-    if (activeTab === 'home' || activeTab === 'startups') { // Render HomeScreen for both 'home' and 'startups' tabs
-      return (
-        <HomeScreen
-          userRole={userRole}
-          startups={startups}
-          bookmarkedStartups={bookmarkedStartups}
-          interestedStartups={interestedStartups}
-          toggleBookmark={toggleBookmark}
-          toggleInterest={toggleInterest}
-          setSelectedStartup={setSelectedStartup}
-          setSelectedChat={setSelectedChat}
-          setCurrentScreen={setCurrentScreen}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          loading={loadingData}
-          userProfileId={userProfile?.id || null}
-          userProfileName={userProfile?.name || userProfile?.first_name || null}
-          userProfileEmail={userProfile?.email || null}
-          handleStartChat={handleStartChat}
-        />
-      );
-    } else if (activeTab === 'chats') {
-      return (
-        <ChatListScreen
-          chats={chats}
-          setCurrentScreen={setCurrentScreen}
-          setSelectedChat={setSelectedChat}
-          setActiveTab={setActiveTab}
-          activeTab={activeTab}
-          userRole={userRole}
-        />
-      );
-    } else if (activeTab === 'community') {
-      return (
-        <CommunityFeedScreen
-          communityPosts={communityPosts}
-          setCurrentScreen={setCurrentScreen}
-          setActiveTab={setActiveTab}
-          activeTab={activeTab}
-          userRole={userRole}
-        />
-      );
-    } else if (activeTab === 'profile') {
-      return (
-        <ProfileScreen
-          userProfile={userProfile}
-          userRole={userRole}
-          bookmarkedStartups={bookmarkedStartups}
-          interestedStartups={interestedStartups}
-          setCurrentScreen={setCurrentScreen}
-          setActiveTab={setActiveTab}
-          activeTab={activeTab}
-          setIsLoggedIn={setIsLoggedIn}
-          setUserRole={setUserRole}
-          setUserProfile={setUserProfile}
-        />
-      );
-    }
+  if (currentScreen === 'home' && activeTab === 'home') {
+    return (
+      <HomeScreen
+        userRole={userRole}
+        startups={startups}
+        bookmarkedStartups={bookmarkedStartups}
+        interestedStartups={interestedStartups}
+        toggleBookmark={toggleBookmark}
+        toggleInterest={toggleInterest}
+        setSelectedStartup={setSelectedStartup}
+        setSelectedChat={setSelectedChat}
+        setCurrentScreen={setCurrentScreen}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        loading={loadingData}
+        userProfileId={userProfile?.id || null}
+        userProfileName={userProfile?.name || userProfile?.first_name || null}
+        userProfileEmail={userProfile?.email || null}
+        handleStartChat={handleStartChat}
+      />
+    );
   }
 
-  // Other specific screens outside the main tab navigation
   if (currentScreen === 'startupDetail' && selectedStartup) {
     return (
       <StartupDetailScreen
@@ -629,6 +588,19 @@ const SeedstreetApp = () => {
     );
   }
 
+  if (currentScreen === 'home' && activeTab === 'chats') {
+    return (
+      <ChatListScreen
+        chats={chats}
+        setCurrentScreen={setCurrentScreen}
+        setSelectedChat={setSelectedChat}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        userRole={userRole}
+      />
+    );
+  }
+
   if (currentScreen === 'chat' && selectedChat) {
     return (
       <ChatConversationScreen
@@ -637,6 +609,23 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
         userProfile={userProfile}
+      />
+    );
+  }
+
+  if (currentScreen === 'home' && activeTab === 'profile') {
+    return (
+      <ProfileScreen
+        userProfile={userProfile}
+        userRole={userRole}
+        bookmarkedStartups={bookmarkedStartups}
+        interestedStartups={interestedStartups}
+        setCurrentScreen={setCurrentScreen}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        setIsLoggedIn={setIsLoggedIn}
+        setUserRole={setUserRole}
+        setUserProfile={setUserProfile}
       />
     );
   }
@@ -659,6 +648,18 @@ const SeedstreetApp = () => {
         userProfileName={userProfile.name}
         userProfileEmail={userProfile.email}
         startupId={selectedStartupId}
+      />
+    );
+  }
+
+  if (currentScreen === 'home' && activeTab === 'community') {
+    return (
+      <CommunityFeedScreen
+        communityPosts={communityPosts}
+        setCurrentScreen={setCurrentScreen}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        userRole={userRole}
       />
     );
   }
