@@ -28,7 +28,8 @@ interface Startup {
   name: string;
   logo: string;
   tagline: string;
-  description: string;
+  description: string | null; // Made nullable as per schema
+  pitch: string; // Added as required
   category: string;
   room_members: number;
   active_chats: number;
@@ -37,9 +38,9 @@ interface Startup {
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   founder_id: string;
-  amount_sought: number | null; // Added
-  currency: string | null; // Added
-  funding_stage: string | null; // Added
+  amount_sought: number | null;
+  currency: string | null;
+  funding_stage: string | null;
 }
 
 interface ManageStartupScreenProps {
@@ -56,22 +57,23 @@ const startupCategories = [
   "Social Impact", "E-commerce", "Other"
 ];
 
-const currencies = ["Naira", "Euro", "Dollar", "Pounds Sterling"]; // New: Currencies
-const fundingStages = ["Pre-seed", "Seed", "Series A", "Series B", "Series C", "Growth", "IPO"]; // New: Funding Stages
+const currencies = ["Naira", "Euro", "Dollar", "Pounds Sterling"];
+const fundingStages = ["Pre-seed", "Seed", "Series A", "Series B", "Series C", "Growth", "IPO"];
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Startup name must be at least 3 characters." }),
   logo: z.string().emoji({ message: "Logo must be a single emoji." }).min(1, { message: "Logo is required." }),
   tagline: z.string().min(10, { message: "Tagline must be at least 10 characters." }).max(100, { message: "Tagline cannot exceed 100 characters." }),
-  description: z.string().min(50, { message: "Description must be at least 50 characters." }).max(1000, { message: "Description cannot exceed 1000 characters." }),
+  pitch: z.string().min(50, { message: "Pitch must be at least 50 characters." }).max(1000, { message: "Pitch cannot exceed 1000 characters." }), // New required field
+  description: z.string().max(1000, { message: "Description cannot exceed 1000 characters." }).optional().or(z.literal('')), // Existing field, now optional
   category: z.enum(startupCategories as [string, ...string[]], { message: "Please select a valid category." }),
   location: z.string().min(2, { message: "Location is required." }),
   amount_sought: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
     z.number().min(0, { message: "Amount must be a positive number." }).nullable()
-  ).optional(), // New: Amount sought
-  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).optional(), // New: Currency
-  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).optional(), // New: Funding Stage
+  ).optional(),
+  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).optional(),
+  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).optional(),
 });
 
 const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
@@ -79,10 +81,10 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   userProfileId,
   userProfileName,
   userProfileEmail,
-  startupId, // Destructure startupId
+  startupId,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // For loading existing data
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -90,16 +92,16 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       name: '',
       logo: '',
       tagline: '',
-      description: '',
-      category: undefined, // Use undefined for initial empty state of select
+      pitch: '', // Default for new required field
+      description: '', // Default for existing optional field
+      category: undefined,
       location: '',
-      amount_sought: null, // Default for new field
-      currency: undefined, // Default for new field
-      funding_stage: undefined, // Default for new field
+      amount_sought: null,
+      currency: undefined,
+      funding_stage: undefined,
     },
   });
 
-  // Fetch existing startup data if in edit mode
   useEffect(() => {
     if (startupId) {
       const fetchStartup = async () => {
@@ -113,25 +115,26 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
         if (error) {
           toast.error("Failed to load startup data: " + error.message);
           console.error("Error fetching startup:", error);
-          setCurrentScreen('home'); // Go back if data can't be loaded
+          setCurrentScreen('home');
         } else if (data) {
           form.reset({
             name: data.name,
             logo: data.logo,
             tagline: data.tagline,
-            description: data.description,
+            pitch: data.pitch, // Populate new field
+            description: data.description || '', // Populate existing optional field
             category: data.category,
             location: data.location,
-            amount_sought: data.amount_sought, // Populate new field
-            currency: data.currency, // Populate new field
-            funding_stage: data.funding_stage, // Populate new field
+            amount_sought: data.amount_sought,
+            currency: data.currency,
+            funding_stage: data.funding_stage,
           });
         }
         setInitialLoading(false);
       };
       fetchStartup();
     } else {
-      setInitialLoading(false); // Not in edit mode, no initial loading needed
+      setInitialLoading(false);
     }
   }, [startupId, form, setCurrentScreen]);
 
@@ -139,29 +142,33 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     setLoading(true);
 
     const startupData = {
-      ...values,
+      name: values.name,
+      logo: values.logo,
+      tagline: values.tagline,
+      pitch: values.pitch, // Map to pitch column
+      description: values.description || null, // Map to description column, ensure null if empty
+      category: values.category,
+      location: values.location,
+      amount_sought: values.amount_sought || null,
+      currency: values.currency || null,
+      funding_stage: values.funding_stage || null,
       founder_id: userProfileId,
       founder_name: userProfileName,
-      status: 'Pending', // New startups are pending, existing ones might retain status or be reset
+      status: 'Pending',
       room_members: 0,
       active_chats: 0,
       interests: 0,
       updated_at: new Date().toISOString(),
-      amount_sought: values.amount_sought || null, // Ensure null if empty
-      currency: values.currency || null, // Ensure null if empty
-      funding_stage: values.funding_stage || null, // Ensure null if empty
     };
 
     let error;
     if (startupId) {
-      // Update existing startup
       const { error: updateError } = await supabase
         .from('startups')
         .update(startupData)
         .eq('id', startupId);
       error = updateError;
     } else {
-      // Insert new startup
       const { error: insertError } = await supabase
         .from('startups')
         .insert(startupData);
@@ -169,16 +176,14 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     }
 
     if (error) {
-      // Improved error logging and toast message
       toast.error(`Failed to ${startupId ? 'update' : 'list'} startup: ${error.message || JSON.stringify(error)}`);
       console.error(`Error ${startupId ? 'updating' : 'listing'} startup:`, error);
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
       if (!startupId) {
-        // Only show celebration for new listings
         setCurrentScreen('startupListingCelebration', { startupName: values.name });
       } else {
-        setCurrentScreen('home'); // Go back to founder dashboard for edits
+        setCurrentScreen('home');
       }
     }
     setLoading(false);
@@ -195,7 +200,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {Array.from({ length: 10 }).map((_, i) => ( // Increased skeleton count
+          {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="space-y-2">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-12 w-full" />
@@ -258,7 +263,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                       {...field}
                       type="text"
                       placeholder=" "
-                      maxLength={2} // Restrict to 1-2 characters for emoji
+                      maxLength={2}
                       className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                     />
                     <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
@@ -290,13 +295,29 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
 
             <FormField
               control={form.control}
+              name="pitch"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Pitch (Required)</Label>
+                  <Textarea
+                    {...field}
+                    placeholder="Give us your elevator pitch! What problem are you solving and how?"
+                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Description</Label>
+                  <Label>Full Description (Optional)</Label>
                   <Textarea
                     {...field}
-                    placeholder="Tell us more about your startup..."
+                    placeholder="Tell us more about your startup, team, vision, etc."
                     className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                   />
                   <FormMessage />
@@ -347,7 +368,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               )}
             />
 
-            {/* New Field: Amount to be Raised */}
             <FormField
               control={form.control}
               name="amount_sought"
@@ -370,7 +390,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               )}
             />
 
-            {/* New Field: Currency */}
             <FormField
               control={form.control}
               name="currency"
@@ -394,7 +413,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               )}
             />
 
-            {/* New Field: Funding Stage */}
             <FormField
               control={form.control}
               name="funding_stage"

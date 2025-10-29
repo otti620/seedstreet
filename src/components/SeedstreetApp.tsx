@@ -49,7 +49,8 @@ interface Startup {
   name: string;
   logo: string; // Assuming logo is a string (e.g., emoji or URL)
   tagline: string;
-  description: string;
+  pitch: string; // Added as required
+  description: string | null; // Made nullable
   category: string;
   room_members: number; // Changed to match schema
   active_chats: number; // Changed to match schema
