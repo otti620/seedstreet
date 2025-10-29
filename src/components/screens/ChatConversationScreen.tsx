@@ -120,7 +120,8 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
                 {msg.sender_id === userProfileId && <Check className="w-3 h-3 text-teal-500" />}
               </div>
             </div>
-          ))}
+          </div>
+        ))} {/* Closing tag for messages.map */}
 
         {/* Interest Signal Card (always shown for now) */}
         <div className="mx-auto max-w-md">
