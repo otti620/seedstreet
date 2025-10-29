@@ -1,0 +1,127 @@
+"use client";
+
+import React from 'react';
+import { User, Bell, Bookmark, Settings, MessageCircle, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
+import BottomNav from '../BottomNav';
+import MenuItem from '../MenuItem';
+import { supabase } from '@/integrations/supabase/client';
+
+// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  name: string | null;
+  role: 'investor' | 'founder' | null;
+  onboarding_complete: boolean;
+  bookmarked_startups: string[]; // Array of startup IDs
+  interested_startups: string[]; // Array of startup IDs
+}
+
+interface ProfileScreenProps {
+  userProfile: Profile | null;
+  userRole: string | null;
+  bookmarkedStartups: string[];
+  interestedStartups: string[];
+  setCurrentScreen: (screen: string) => void;
+  setActiveTab: (tab: string) => void;
+  activeTab: string;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  setUserRole: (role: string | null) => void;
+}
+
+const ProfileScreen: React.FC<ProfileScreenProps> = ({
+  userProfile,
+  userRole,
+  bookmarkedStartups,
+  interestedStartups,
+  setCurrentScreen,
+  setActiveTab,
+  activeTab,
+  setIsLoggedIn,
+  setUserRole,
+}) => {
+  return (
+    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-12 pb-20">
+        <div className="flex justify-end mb-4">
+          <button className="text-white">
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex flex-col items-center text-white">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl">
+            {userProfile?.avatar_url ? (
+              <img src={userProfile.avatar_url} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
+            ) : (
+              userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
+            )}
+          </div>
+          <h2 className="text-2xl font-bold mb-1">{userProfile?.name || userProfile?.email || 'User Name'}</h2>
+          <p className="text-white/80 text-sm mb-3">{userProfile?.email || 'user@email.com'}</p>
+          <span className="px-4 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-semibold">
+            {userRole === 'investor' ? '💰 Investor' : '💡 Founder'}
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 -mt-12 overflow-y-auto px-6 pb-24">
+        {/* Stats Card */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
+          <h3 className="font-bold text-gray-900 mb-4">Your Activity</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{bookmarkedStartups.length}</div>
+              <div className="text-xs text-gray-500 mt-1">Bookmarks</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{interestedStartups.length}</div>
+              <div className="text-xs text-gray-500 mt-1">Interested</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">0</div> {/* Placeholder for committed */}
+              <div className="text-xs text-gray-500 mt-1">Committed</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
+          <MenuItem icon={<User />} label="Edit Profile" onClick={() => toast.info("Edit Profile coming soon!")} />
+          <MenuItem icon={<Bell />} label="Notifications" onClick={() => toast.info("Notifications coming soon!")} />
+          <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
+          <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
+          <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => toast.info("Help & Support coming soon!")} />
+        </div>
+
+        {/* Logout */}
+        <button 
+          onClick={async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              toast.error("Failed to log out: " + error.message);
+            } else {
+              toast.success("Logged out successfully!");
+              setIsLoggedIn(false);
+              setUserRole(null);
+              setCurrentScreen('auth'); // Redirect to auth screen after logout
+            }
+          }}
+          className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </button>
+      </div>
+
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
+    </div>
+  );
+};
+
+export default ProfileScreen;

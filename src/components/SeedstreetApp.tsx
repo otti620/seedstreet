@@ -17,6 +17,8 @@ import HomeScreen from '@/components/screens/HomeScreen';
 import StartupDetailScreen from './screens/StartupDetailScreen';
 import ChatListScreen from './screens/ChatListScreen'; // Import new ChatListScreen
 import ChatConversationScreen from './screens/ChatConversationScreen'; // Import new ChatConversationScreen
+import ProfileScreen from './screens/ProfileScreen'; // Import new ProfileScreen
+import CommunityFeedScreen from './screens/CommunityFeedScreen'; // Import new CommunityFeedScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -463,133 +465,30 @@ const SeedstreetApp = () => {
   // 9. PROFILE
   if (currentScreen === 'home' && activeTab === 'profile') {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-12 pb-20">
-          <div className="flex justify-end mb-4">
-            <button className="text-white">
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
-          <div className="flex flex-col items-center text-white">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl">
-              {userProfile?.avatar_url ? (
-                <img src={userProfile.avatar_url} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
-              )}
-            </div>
-            <h2 className="text-2xl font-bold mb-1">{userProfile?.name || userProfile?.email || 'User Name'}</h2>
-            <p className="text-white/80 text-sm mb-3">{userProfile?.email || 'user@email.com'}</p>
-            <span className="px-4 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-semibold">
-              {userRole === 'investor' ? '💰 Investor' : '💡 Founder'}
-            </span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 -mt-12 overflow-y-auto px-6 pb-24">
-          {/* Stats Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
-            <h3 className="font-bold text-gray-900 mb-4">Your Activity</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{bookmarkedStartups.length}</div>
-                <div className="text-xs text-gray-500 mt-1">Bookmarks</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{interestedStartups.length}</div>
-                <div className="text-xs text-gray-500 mt-1">Interested</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">0</div> {/* Placeholder for committed */}
-                <div className="text-xs text-gray-500 mt-1">Committed</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Menu Items */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
-            <MenuItem icon={<User />} label="Edit Profile" onClick={() => toast.info("Edit Profile coming soon!")} />
-            <MenuItem icon={<Bell />} label="Notifications" onClick={() => toast.info("Notifications coming soon!")} />
-            <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
-            <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
-            <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => toast.info("Help & Support coming soon!")} />
-          </div>
-
-          {/* Logout */}
-          <button 
-            onClick={async () => {
-              const { error } = await supabase.auth.signOut();
-              if (error) {
-                toast.error("Failed to log out: " + error.message);
-              } else {
-                toast.success("Logged out successfully!");
-                setIsLoggedIn(false);
-                setUserRole(null);
-                setCurrentScreen('auth'); // Redirect to auth screen after logout
-              }
-            }}
-            className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-5 h-5" />
-            Log Out
-          </button>
-        </div>
-
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
-      </div>
+      <ProfileScreen
+        userProfile={userProfile}
+        userRole={userRole}
+        bookmarkedStartups={bookmarkedStartups}
+        interestedStartups={interestedStartups}
+        setCurrentScreen={setCurrentScreen}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        setIsLoggedIn={setIsLoggedIn}
+        setUserRole={setUserRole}
+      />
     );
   }
 
   // 10. COMMUNITY FEED
   if (currentScreen === 'home' && activeTab === 'community') {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
-          <h1 className="text-xl font-bold text-gray-900">What's happening ✨</h1>
-        </div>
-
-        {/* Feed */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {communityPosts.length > 0 ? (
-            communityPosts.map(post => (
-              <div key={post.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
-                    {post.author_avatar_url ? (
-                      <img src={post.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-xl object-cover" />
-                    ) : (
-                      post.author_name?.[0] || '?'
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">
-                      <span className="font-semibold">{post.author_name}</span> posted:
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">{new Date(post.created_at).toLocaleString()}</p>
-                    <p className="text-sm text-gray-700 mt-2">{post.content}</p>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
-                😴
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No community posts yet</h3>
-              <p className="text-gray-600 mb-6">Be the first to share something exciting!</p>
-              <button onClick={() => toast.info("Create Post coming soon!")} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
-                Create Post ✨
-              </button>
-            </div>
-          )}
-        </div>
-
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
-      </div>
+      <CommunityFeedScreen
+        communityPosts={communityPosts}
+        setCurrentScreen={setCurrentScreen}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        userRole={userRole}
+      />
     );
   }
 
