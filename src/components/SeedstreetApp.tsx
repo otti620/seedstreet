@@ -14,7 +14,9 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
-import StartupDetailScreen from './screens/StartupDetailScreen'; // Import the new StartupDetailScreen component
+import StartupDetailScreen from './screens/StartupDetailScreen';
+import ChatListScreen from './screens/ChatListScreen'; // Import new ChatListScreen
+import ChatConversationScreen from './screens/ChatConversationScreen'; // Import new ChatConversationScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -200,6 +202,115 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, userRole, currentScreen, activeTab]);
 
+  // Fetch Chats
+  useEffect(() => {
+    if (isLoggedIn && userProfile?.id && currentScreen === 'home' && activeTab === 'chats') {
+      const fetchChats = async () => {
+        setLoadingData(true);
+        const { data, error } = await supabase
+          .from('chats')
+          .select('*')
+          .contains('user_ids', [userProfile.id]); // Fetch chats where current user is a participant
+
+        if (error) {
+          console.error("Error fetching chats:", error);
+          toast.error("Failed to load chats.");
+          setChats([]);
+        } else if (data) {
+          setChats(data as Chat[]);
+        }
+        setLoadingData(false);
+      };
+      fetchChats();
+
+      // Realtime subscription for chats
+      const channel = supabase
+        .channel('public:chats')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, payload => {
+          // Handle new chat, updates, or deletes
+          fetchChats(); // Re-fetch all chats for simplicity
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isLoggedIn, userProfile?.id, currentScreen, activeTab]);
+
+  // Fetch Messages for selected chat
+  useEffect(() => {
+    if (isLoggedIn && selectedChat?.id && currentScreen === 'chat') {
+      const fetchMessages = async () => {
+        setLoadingData(true);
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('chat_id', selectedChat.id)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error("Error fetching messages:", error);
+          toast.error("Failed to load messages.");
+          setMessages([]);
+        } else if (data) {
+          setMessages(data as Message[]);
+        }
+        setLoadingData(false);
+      };
+      fetchMessages();
+
+      // Realtime subscription for messages in the current chat
+      const channel = supabase
+        .channel(`chat:${selectedChat.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
+          // Handle new messages, updates, or deletes
+          fetchMessages(); // Re-fetch messages for simplicity
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isLoggedIn, selectedChat?.id, currentScreen]);
+
+  // Fetch Community Posts
+  useEffect(() => {
+    if (isLoggedIn && currentScreen === 'home' && activeTab === 'community') {
+      const fetchCommunityPosts = async () => {
+        setLoadingData(true);
+        const { data, error } = await supabase
+          .from('community_posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching community posts:", error);
+          toast.error("Failed to load community posts.");
+          setCommunityPosts([]);
+        } else if (data) {
+          setCommunityPosts(data as CommunityPost[]);
+        }
+        setLoadingData(false);
+      };
+      fetchCommunityPosts();
+
+      // Realtime subscription for community posts
+      const channel = supabase
+        .channel('public:community_posts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
+          fetchCommunityPosts(); // Re-fetch posts for simplicity
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isLoggedIn, currentScreen, activeTab]);
+
+
   // Update bookmarked/interested startups from profile
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
@@ -325,165 +436,27 @@ const SeedstreetApp = () => {
   // 7. CHATS LIST
   if (currentScreen === 'home' && activeTab === 'chats') {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
-          <h1 className="text-xl font-bold text-gray-900">Chats 💬</h1>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white border-b border-gray-100 px-6">
-          <div className="flex gap-6">
-            <button className="py-3 text-sm font-semibold text-purple-700 border-b-2 border-purple-700">
-              DMs
-            </button>
-            <button className="py-3 text-sm font-semibold text-gray-500">
-              Rooms
-            </button>
-          </div>
-        </div>
-
-        {/* Chat List */}
-        <div className="flex-1 overflow-y-auto">
-          {chats.length > 0 ? (
-            chats.map(chat => (
-              <button 
-                key={chat.id}
-                onClick={() => {
-                  setSelectedChat(chat);
-                  setCurrentScreen('chat');
-                }}
-                className="w-full flex items-center gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-              >
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-2xl">
-                    {chat.startup_logo}
-                  </div>
-                  {chat.isOnline && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-                  )}
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">{chat.startup_name}</h3>
-                    <span className="text-xs text-gray-500">{chat.last_message_timestamp}</span>
-                  </div>
-                  <p className={`text-sm truncate ${chat.unread_count > 0 ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                    {chat.last_message_text}
-                  </p>
-                </div>
-                {chat.unread_count > 0 && (
-                  <div className="w-6 h-6 bg-gradient-to-br from-purple-700 to-teal-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{chat.unread_count}</span>
-                  </div>
-                )}
-              </button>
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
-                😴
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No chats yet</h3>
-              <p className="text-gray-600 mb-6">Slide into some founder DMs 🚀</p>
-              <button onClick={() => setActiveTab('home')} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
-                Browse Startups
-              </button>
-            </div>
-          )}
-        </div>
-
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
-      </div>
+      <ChatListScreen
+        chats={chats}
+        setCurrentScreen={setCurrentScreen}
+        setSelectedChat={setSelectedChat}
+        setActiveTab={setActiveTab}
+        activeTab={activeTab}
+        userRole={userRole}
+      />
     );
   }
 
   // 8. CHAT CONVERSATION
   if (currentScreen === 'chat' && selectedChat) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => {
-              setCurrentScreen('home');
-              setActiveTab('chats');
-            }} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
-            </button>
-            <div className="flex items-center gap-3 flex-1">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl">
-                  {selectedChat.startup_logo}
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-gray-900 truncate">{selectedChat.startup_name}</h2>
-                <p className="text-xs text-green-600">Online</p>
-              </div>
-            </div>
-            <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-              <MoreVertical className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${msg.sent ? 'order-2' : 'order-1'}`}>
-                <div className={`rounded-2xl p-3 ${
-                  msg.sent 
-                    ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md' 
-                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                }`}>
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
-                </div>
-                <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sent ? 'justify-end' : 'justify-start'}`}>
-                  <span className="text-xs text-gray-500">{msg.created_at}</span>
-                  {msg.sent && <Check className="w-3 h-3 text-teal-500" />}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Interest Signal Card */}
-          <div className="mx-auto max-w-md">
-            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl animate-float">👀</span>
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm mb-1">You signaled interest!</h4>
-                  <p className="text-xs opacity-90">The founder knows you're serious about this</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Input Bar */}
-        <div className="bg-white border-t border-gray-100 p-4">
-          <div className="flex items-end gap-2">
-            <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-gray-600">
-              <Plus className="w-5 h-5" />
-            </button>
-            <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center">
-              <input 
-                type="text"
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-transparent outline-none text-sm"
-              />
-            </div>
-            <button className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg">
-              <Send className="w-5 h-5 text-white" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <ChatConversationScreen
+        selectedChat={selectedChat}
+        messages={messages}
+        setCurrentScreen={setCurrentScreen}
+        setActiveTab={setActiveTab}
+        userProfileId={userProfile?.id || null}
+      />
     );
   }
 
