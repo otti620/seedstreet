@@ -57,6 +57,9 @@ interface Startup {
   founder_name: string; // Changed to match schema
   location: string; // Assuming location is a string
   founder_id: string; // Added founder_id for chat creation
+  amount_sought: number | null; // Added
+  currency: string | null; // Added
+  funding_stage: string | null; // Added
 }
 
 interface Chat {

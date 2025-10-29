@@ -37,10 +37,13 @@ interface Startup {
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   founder_id: string;
+  amount_sought: number | null; // Added
+  currency: string | null; // Added
+  funding_stage: string | null; // Added
 }
 
 interface ManageStartupScreenProps {
-  setCurrentScreen: (screen: string, params?: { startupName?: string }) => void; // Updated to accept startupName
+  setCurrentScreen: (screen: string, params?: { startupName?: string }) => void;
   userProfileId: string;
   userProfileName: string;
   userProfileEmail: string;
@@ -53,6 +56,9 @@ const startupCategories = [
   "Social Impact", "E-commerce", "Other"
 ];
 
+const currencies = ["Naira", "Euro", "Dollar", "Pounds Sterling"]; // New: Currencies
+const fundingStages = ["Pre-seed", "Seed", "Series A", "Series B", "Series C", "Growth", "IPO"]; // New: Funding Stages
+
 const formSchema = z.object({
   name: z.string().min(3, { message: "Startup name must be at least 3 characters." }),
   logo: z.string().emoji({ message: "Logo must be a single emoji." }).min(1, { message: "Logo is required." }),
@@ -60,6 +66,12 @@ const formSchema = z.object({
   description: z.string().min(50, { message: "Description must be at least 50 characters." }).max(1000, { message: "Description cannot exceed 1000 characters." }),
   category: z.enum(startupCategories as [string, ...string[]], { message: "Please select a valid category." }),
   location: z.string().min(2, { message: "Location is required." }),
+  amount_sought: z.preprocess(
+    (val) => (val === "" ? null : Number(val)),
+    z.number().min(0, { message: "Amount must be a positive number." }).nullable()
+  ).optional(), // New: Amount sought
+  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).optional(), // New: Currency
+  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).optional(), // New: Funding Stage
 });
 
 const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
@@ -81,6 +93,9 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       description: '',
       category: undefined, // Use undefined for initial empty state of select
       location: '',
+      amount_sought: null, // Default for new field
+      currency: undefined, // Default for new field
+      funding_stage: undefined, // Default for new field
     },
   });
 
@@ -107,6 +122,9 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             description: data.description,
             category: data.category,
             location: data.location,
+            amount_sought: data.amount_sought, // Populate new field
+            currency: data.currency, // Populate new field
+            funding_stage: data.funding_stage, // Populate new field
           });
         }
         setInitialLoading(false);
@@ -129,6 +147,9 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       active_chats: 0,
       interests: 0,
       updated_at: new Date().toISOString(),
+      amount_sought: values.amount_sought || null, // Ensure null if empty
+      currency: values.currency || null, // Ensure null if empty
+      funding_stage: values.funding_stage || null, // Ensure null if empty
     };
 
     let error;
@@ -173,7 +194,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {Array.from({ length: 7 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => ( // Increased skeleton count
             <div key={i} className="space-y-2">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-12 w-full" />
@@ -320,6 +341,77 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     />
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* New Field: Amount to be Raised */}
+            <FormField
+              control={form.control}
+              name="amount_sought"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Amount to be Raised</Label>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type="number"
+                      placeholder="e.g., 500000"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                      value={field.value === null ? '' : field.value}
+                    />
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* New Field: Currency */}
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Currency</Label>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all">
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {currencies.map(currency => (
+                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* New Field: Funding Stage */}
+            <FormField
+              control={form.control}
+              name="funding_stage"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Funding Stage</Label>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all">
+                        <SelectValue placeholder="Select funding stage" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {fundingStages.map(stage => (
+                        <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
