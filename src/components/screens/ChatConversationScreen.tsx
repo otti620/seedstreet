@@ -16,6 +16,9 @@ interface Chat {
   unread_count: number;
   isOnline: boolean;
   unread_counts: { [key: string]: number }; // Added for read receipts
+  investor_id: string; // Added for chat creation logic
+  founder_id: string; // Added for chat creation logic
+  user_ids: string[]; // Added for chat creation logic
 }
 
 interface Message {
@@ -40,6 +43,7 @@ interface ChatConversationScreenProps {
   setCurrentScreen: (screen: string) => void;
   setActiveTab: (tab: string) => void;
   userProfile: Profile | null; // Pass the full user profile
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
@@ -48,6 +52,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   setCurrentScreen,
   setActiveTab,
   userProfile,
+  logActivity, // Destructure logActivity
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -126,6 +131,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
           last_message_timestamp: new Date().toISOString(),
           unread_counts: newUnreadCounts,
         }).eq('id', selectedChat.id);
+        logActivity('message_sent', `Sent a message in chat with ${selectedChat.startup_name}`, selectedChat.id, 'Send');
       }
       setSending(false);
     } else if (!userProfileId || !userProfileName) {

@@ -49,6 +49,7 @@ interface ManageStartupScreenProps {
   userProfileName: string;
   userProfileEmail: string;
   startupId?: string; // Optional prop for editing
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
 }
 
 const startupCategories = [
@@ -82,6 +83,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   userProfileName,
   userProfileEmail,
   startupId,
+  logActivity, // Destructure logActivity
 }) => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -92,8 +94,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       name: '',
       logo: '',
       tagline: '',
-      pitch: '', // Default for new required field
-      description: '', // Default for existing optional field
+      pitch: '',
+      description: '',
       category: undefined,
       location: '',
       amount_sought: null,
@@ -121,8 +123,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             name: data.name,
             logo: data.logo,
             tagline: data.tagline,
-            pitch: data.pitch, // Populate new field
-            description: data.description || '', // Populate existing optional field
+            pitch: data.pitch,
+            description: data.description || '',
             category: data.category,
             location: data.location,
             amount_sought: data.amount_sought,
@@ -145,8 +147,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       name: values.name,
       logo: values.logo,
       tagline: values.tagline,
-      pitch: values.pitch, // Map to pitch column
-      description: values.description || null, // Map to description column, ensure null if empty
+      pitch: values.pitch,
+      description: values.description || null,
       category: values.category,
       location: values.location,
       amount_sought: values.amount_sought || null,
@@ -162,6 +164,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     };
 
     let error;
+    let newStartupId = startupId;
     if (startupId) {
       const { error: updateError } = await supabase
         .from('startups')
@@ -169,10 +172,13 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
         .eq('id', startupId);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('startups')
-        .insert(startupData);
+        .insert(startupData)
+        .select('id')
+        .single();
       error = insertError;
+      if (data) newStartupId = data.id;
     }
 
     if (error) {
@@ -181,8 +187,10 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
       if (!startupId) {
+        logActivity('startup_listed', `Listed new startup: ${values.name}`, newStartupId, 'Rocket');
         setCurrentScreen('startupListingCelebration', { startupName: values.name });
       } else {
+        logActivity('startup_updated', `Updated startup: ${values.name}`, newStartupId, 'Rocket');
         setCurrentScreen('home');
       }
     }

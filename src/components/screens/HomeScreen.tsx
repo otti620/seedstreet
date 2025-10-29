@@ -33,6 +33,16 @@ interface Startup {
   location: string; // Assuming location is a string
 }
 
+interface ActivityLog { // New interface for activity log entries
+  id: string;
+  user_id: string;
+  type: string; // e.g., 'startup_listed', 'chat_started', 'profile_updated', 'bookmark_added'
+  description: string;
+  timestamp: string;
+  entity_id: string | null; // ID of the related entity (startup, chat, etc.)
+  icon: string | null; // Lucide icon name or emoji
+}
+
 interface HomeScreenProps {
   userRole: string | null;
   startups: Startup[];
@@ -49,6 +59,8 @@ interface HomeScreenProps {
   userProfileId: string | null; // New prop for founder dashboard
   userProfileName: string | null;
   userProfileEmail: string | null;
+  handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
+  recentActivities: ActivityLog[]; // New prop for recent activities
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -67,6 +79,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   userProfileId,
   userProfileName,
   userProfileEmail,
+  handleStartChat,
+  recentActivities, // Destructure recentActivities
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -79,6 +93,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setCurrentScreen={setCurrentScreen}
           setSelectedChat={setSelectedChat}
           loading={loading}
+          handleStartChat={handleStartChat}
         />
       ) : (
         <FounderDashboard
@@ -86,6 +101,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setCurrentScreen={setCurrentScreen}
           userProfileId={userProfileId || ''} // Pass userProfileId
           loading={loading}
+          recentActivities={recentActivities} // Pass recent activities to FounderDashboard
         />
       )}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />

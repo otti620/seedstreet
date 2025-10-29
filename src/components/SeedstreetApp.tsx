@@ -111,6 +111,16 @@ interface Notification {
   related_entity_id: string | null;
 }
 
+interface ActivityLog { // New interface for activity log entries
+  id: string;
+  user_id: string;
+  type: string; // e.g., 'startup_listed', 'chat_started', 'profile_updated', 'bookmark_added'
+  description: string;
+  timestamp: string;
+  entity_id: string | null; // ID of the related entity (startup, chat, etc.)
+  icon: string | null; // Lucide icon name or emoji
+}
+
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreenState] = useState('splash');
@@ -129,6 +139,7 @@ const SeedstreetApp = () => {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]); // New state for recent activities
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
@@ -144,6 +155,24 @@ const SeedstreetApp = () => {
       setListedStartupName(params.startupName);
     } else {
       setListedStartupName(undefined);
+    }
+  };
+
+  // Function to log activity
+  const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
+    if (!userProfile?.id) {
+      console.warn("Attempted to log activity without a user profile.");
+      return;
+    }
+    const { error } = await supabase.from('activity_log').insert({
+      user_id: userProfile.id,
+      type,
+      description,
+      entity_id,
+      icon,
+    });
+    if (error) {
+      console.error("Error logging activity:", error);
     }
   };
 
@@ -382,6 +411,45 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, userProfile?.id, currentScreen]);
 
+  // Fetch Recent Activities for the current user
+  const fetchRecentActivities = async () => {
+    if (!userProfile?.id) return;
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('timestamp', { ascending: false })
+      .limit(5); // Fetch a few recent activities
+
+    if (error) {
+      console.error("Error fetching recent activities:", error);
+      // toast.error("Failed to load recent activities."); // Don't spam user with this error
+      setRecentActivities([]);
+    } else if (data) {
+      setRecentActivities(data as ActivityLog[]);
+    }
+    setLoadingData(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && userProfile?.id && currentScreen === 'home' && userRole === 'founder') {
+      fetchRecentActivities();
+
+      // Realtime subscription for activity log
+      const channel = supabase
+        .channel(`user_activity:${userProfile.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userProfile.id}` }, payload => {
+          fetchRecentActivities();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isLoggedIn, userProfile?.id, currentScreen, userRole]);
+
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
@@ -409,6 +477,7 @@ const SeedstreetApp = () => {
     } else {
       setUserProfile(prev => prev ? { ...prev, bookmarked_startups: newBookmarks } : null);
       toast.success(isBookmarked ? "Bookmark removed!" : "Startup bookmarked!");
+      logActivity(isBookmarked ? 'bookmark_removed' : 'bookmark_added', `${isBookmarked ? 'Removed' : 'Added'} a startup to bookmarks`, startupId, 'Bookmark');
     }
   };
 
@@ -435,6 +504,7 @@ const SeedstreetApp = () => {
     } else {
       setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
       toast.success(isInterested ? "Interest removed!" : "Interest signaled!");
+      logActivity(isInterested ? 'interest_removed' : 'interest_added', `${isInterested ? 'Removed' : 'Signaled'} interest in a startup`, startupId, 'Eye');
     }
   };
 
@@ -521,6 +591,7 @@ const SeedstreetApp = () => {
       }
       chatToOpen = newChat as Chat;
       toast.success("New chat started!");
+      logActivity('chat_started', `Started a chat with ${founderName} about ${startup.name}`, chatToOpen.id, 'MessageCircle');
     }
 
     if (chatToOpen) {
@@ -549,7 +620,7 @@ const SeedstreetApp = () => {
   }
 
   if (currentScreen === 'roleSelector') {
-    return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} />;
+    return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} logActivity={logActivity} />;
   }
 
   // Handle all 'home' related screens based on activeTab
@@ -573,6 +644,7 @@ const SeedstreetApp = () => {
           userProfileName={userProfile?.name || userProfile?.first_name || null}
           userProfileEmail={userProfile?.email || null}
           handleStartChat={handleStartChat}
+          recentActivities={recentActivities} // Pass recent activities
         />
       );
     } else if (activeTab === 'chats') {
@@ -663,6 +735,7 @@ const SeedstreetApp = () => {
         userProfileName={userProfile.name}
         userProfileEmail={userProfile.email}
         startupId={selectedStartupId}
+        logActivity={logActivity} // Pass logActivity
       />
     );
   }

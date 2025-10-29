@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageCircle, Bell, Rocket, Check } from 'lucide-react';
+import { Plus, MessageCircle, Bell, Rocket, Check, Bookmark, Eye } from 'lucide-react'; // Import Bookmark and Eye icons
 import BottomNav from '../../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,11 +24,22 @@ interface Startup {
   founder_id: string;
 }
 
+interface ActivityLog { // New interface for activity log entries
+  id: string;
+  user_id: string;
+  type: string; // e.g., 'startup_listed', 'chat_started', 'profile_updated', 'bookmark_added'
+  description: string;
+  timestamp: string;
+  entity_id: string | null; // ID of the related entity (startup, chat, etc.)
+  icon: string | null; // Lucide icon name or emoji
+}
+
 interface FounderDashboardProps {
   setActiveTab: (tab: string) => void;
-  setCurrentScreen: (screen: string, params?: { startupId?: string }) => void; // Added params for startupId
+  setCurrentScreen: (screen: string, params?: { startupId?: string }) => void;
   userProfileId: string;
-  loading: boolean; // Prop for loading state
+  loading: boolean;
+  recentActivities: ActivityLog[]; // New prop for recent activities
 }
 
 const FounderDashboard: React.FC<FounderDashboardProps> = ({
@@ -36,6 +47,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   setCurrentScreen,
   userProfileId,
   loading,
+  recentActivities, // Destructure recentActivities
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
@@ -116,6 +128,18 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
       </div>
     </div>
   );
+
+  const getActivityIcon = (iconName: string | null) => {
+    switch (iconName) {
+      case 'Rocket': return <Rocket className="w-5 h-5 text-white" />;
+      case 'MessageCircle': return <MessageCircle className="w-5 h-5 text-white" />;
+      case 'Bookmark': return <Bookmark className="w-5 h-5 text-white" />;
+      case 'Eye': return <Eye className="w-5 h-5 text-white" />;
+      case '💰': return <span className="text-white text-sm">💰</span>;
+      case '💡': return <span className="text-white text-sm">💡</span>;
+      default: return <Bell className="w-5 h-5 text-white" />;
+    }
+  };
 
   return (
     <>
@@ -236,20 +260,21 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <h3 className="font-bold text-gray-900 mb-4">Recent Activity</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl">
-                  <div className="w-8 h-8 bg-purple-700 rounded-lg flex items-center justify-center text-white text-xs">JO</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Jane started a chat</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl">
-                  <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white text-xs">DA</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">David joined your room</p>
-                    <p className="text-xs text-gray-500">5 hours ago</p>
-                  </div>
-                </div>
+                {recentActivities.length > 0 ? (
+                  recentActivities.map(activity => (
+                    <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-700 to-teal-600 rounded-lg flex items-center justify-center text-white text-xs">
+                        {getActivityIcon(activity.icon)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                        <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 py-4">No recent activity.</div>
+                )}
               </div>
             </div>
           </div>

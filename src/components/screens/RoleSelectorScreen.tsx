@@ -8,9 +8,10 @@ interface RoleSelectorScreenProps {
   setCurrentScreen: (screen: string) => void;
   setUserRole: (role: string | null) => void;
   setActiveTab: (tab: string) => void;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
 }
 
-const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setUserRole, setActiveTab }) => {
+const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setUserRole, setActiveTab, logActivity }) => {
   const handleRoleSelection = async (role: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -27,6 +28,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
         setCurrentScreen('home');
         setActiveTab('home');
         toast.success(`Welcome, ${role}!`);
+        logActivity('role_selected', `Selected role: ${role}`, user.id, role === 'investor' ? '💰' : '💡'); // Log activity
       }
     } else {
       toast.error("No active user session found.");

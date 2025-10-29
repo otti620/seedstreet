@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Bookmark, Check, MessageCircle, Rocket } from 'lucide-react';
+import { ArrowLeft, Bookmark, Check, MessageCircle, Rocket, Eye } from 'lucide-react'; // Import Eye icon
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
 
@@ -32,7 +32,8 @@ interface StartupDetailScreenProps {
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
-  handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
+  handleStartChat: (startup: Startup) => Promise<void>;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
 }
 
 const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
@@ -46,7 +47,8 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
   activeTab,
   userRole,
   setActiveTab,
-  handleStartChat, // Destructure handleStartChat
+  handleStartChat,
+  logActivity, // Destructure logActivity
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -59,7 +61,15 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
           <div className="flex-1">
             <h1 className="text-lg font-bold text-gray-900">{selectedStartup.name}</h1>
           </div>
-          <button onClick={() => toggleBookmark(selectedStartup.id)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${bookmarkedStartups.includes(selectedStartup.id) ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+          <button onClick={() => {
+            toggleBookmark(selectedStartup.id);
+            logActivity(
+              bookmarkedStartups.includes(selectedStartup.id) ? 'bookmark_removed' : 'bookmark_added',
+              `${bookmarkedStartups.includes(selectedStartup.id) ? 'Removed' : 'Added'} ${selectedStartup.name} to bookmarks`,
+              selectedStartup.id,
+              'Bookmark'
+            );
+          }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${bookmarkedStartups.includes(selectedStartup.id) ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
             <Bookmark className="w-5 h-5" fill={bookmarkedStartups.includes(selectedStartup.id) ? 'currentColor' : 'none'} />
           </button>
         </div>
@@ -155,6 +165,12 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
         <button 
           onClick={() => {
             toggleInterest(selectedStartup.id);
+            logActivity(
+              interestedStartups.includes(selectedStartup.id) ? 'interest_removed' : 'interest_added',
+              `${interestedStartups.includes(selectedStartup.id) ? 'Removed' : 'Signaled'} interest in ${selectedStartup.name}`,
+              selectedStartup.id,
+              'Eye'
+            );
           }}
           className={`w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
             interestedStartups.includes(selectedStartup.id)
