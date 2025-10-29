@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Plus } from 'lucide-react'; // Import Plus icon
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
 
@@ -37,7 +37,12 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-900">What's happening ✨</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-900">What's happening ✨</h1>
+          <button onClick={() => setCurrentScreen('createCommunityPost')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center hover:bg-purple-200 transition-colors">
+            <Plus className="w-5 h-5 text-purple-700" />
+          </button>
+        </div>
       </div>
 
       {/* Feed */}
@@ -59,6 +64,9 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                   </p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(post.created_at).toLocaleString()}</p>
                   <p className="text-sm text-gray-700 mt-2">{post.content}</p>
+                  {post.image_url && (
+                    <img src={post.image_url} alt="Post Image" className="mt-3 rounded-lg max-h-48 object-cover w-full" />
+                  )}
                 </div>
               </div>
             </div>
@@ -70,7 +78,7 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">No community posts yet</h3>
             <p className="text-gray-600 mb-6">Be the first to share something exciting!</p>
-            <button onClick={() => toast.info("Create Post coming soon!")} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
+            <button onClick={() => setCurrentScreen('createCommunityPost')} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
               Create Post ✨
             </button>
           </div>

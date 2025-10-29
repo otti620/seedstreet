@@ -22,7 +22,8 @@ import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import ManageStartupScreen from './screens/ManageStartupScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
-import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen'; // Import new screen
+import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen';
+import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen'; // Import new screen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -659,6 +660,16 @@ const SeedstreetApp = () => {
         setActiveTab={setActiveTab}
         activeTab={activeTab}
         userRole={userRole}
+      />
+    );
+  }
+
+  // New screen for creating community posts
+  if (currentScreen === 'createCommunityPost' && userProfile) {
+    return (
+      <CreateCommunityPostScreen
+        setCurrentScreen={setCurrentScreen}
+        userProfile={userProfile}
       />
     );
   }
