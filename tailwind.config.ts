@@ -82,11 +82,35 @@ export default {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+            logoEntry: {
+                '0%': { transform: 'scale(0.5) rotate(-10deg)', opacity: '0' },
+                '60%': { transform: 'scale(1.1) rotate(2deg)' },
+                '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+            },
+            float: {
+                '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                '50%': { transform: 'translateY(-20px) rotate(3deg)' },
+            },
+            bounce: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-8px)' },
+            },
+            'pulse-dot': {
+                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                '50%': { opacity: '0.6', transform: 'scale(1.2)' },
+            },
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+            logoEntry: 'logoEntry 0.8s cubic-bezier(0.68,-0.55,0.265,1.55)',
+            float: 'float 3s ease-in-out infinite',
+            'float-delay': 'float 12s ease-in-out infinite 2s',
+            'float-delay-1s': 'float 3s ease-in-out infinite 1s',
+            'float-delay-2s': 'float 10s ease-in-out infinite 2s',
+            bounce: 'bounce 1s ease-in-out infinite',
+            'pulse-dot': 'pulse-dot 2s ease-in-out infinite',
   		}
   	}
   },
