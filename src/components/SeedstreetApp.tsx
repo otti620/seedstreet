@@ -15,10 +15,11 @@ import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
 import StartupDetailScreen from './screens/StartupDetailScreen';
-import ChatListScreen from './screens/ChatListScreen'; // Import new ChatListScreen
-import ChatConversationScreen from './screens/ChatConversationScreen'; // Import new ChatConversationScreen
-import ProfileScreen from './screens/ProfileScreen'; // Import new ProfileScreen
-import CommunityFeedScreen from './screens/CommunityFeedScreen'; // Import new CommunityFeedScreen
+import ChatListScreen from './screens/ChatListScreen';
+import ChatConversationScreen from './screens/ChatConversationScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import CommunityFeedScreen from './screens/CommunityFeedScreen';
+import EditProfileScreen from './screens/EditProfileScreen'; // Import new EditProfileScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -34,6 +35,9 @@ interface Profile {
   onboarding_complete: boolean;
   bookmarked_startups: string[]; // Array of startup IDs
   interested_startups: string[]; // Array of startup IDs
+  bio: string | null;
+  location: string | null;
+  phone: string | null;
 }
 
 interface Startup {
@@ -91,7 +95,6 @@ const SeedstreetApp = () => {
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
-  const [messageInput, setMessageInput] = useState('');
   
   // Real data states
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -476,11 +479,23 @@ const SeedstreetApp = () => {
         activeTab={activeTab}
         setIsLoggedIn={setIsLoggedIn}
         setUserRole={setUserRole}
+        setUserProfile={setUserProfile} // Pass setUserProfile
       />
     );
   }
 
-  // 10. COMMUNITY FEED
+  // 10. EDIT PROFILE
+  if (currentScreen === 'editProfile' && userProfile) {
+    return (
+      <EditProfileScreen
+        userProfile={userProfile}
+        setCurrentScreen={setCurrentScreen}
+        setUserProfile={setUserProfile}
+      />
+    );
+  }
+
+  // 11. COMMUNITY FEED
   if (currentScreen === 'home' && activeTab === 'community') {
     return (
       <CommunityFeedScreen

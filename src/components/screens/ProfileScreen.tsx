@@ -19,6 +19,9 @@ interface Profile {
   onboarding_complete: boolean;
   bookmarked_startups: string[]; // Array of startup IDs
   interested_startups: string[]; // Array of startup IDs
+  bio: string | null;
+  location: string | null;
+  phone: string | null;
 }
 
 interface ProfileScreenProps {
@@ -31,6 +34,7 @@ interface ProfileScreenProps {
   activeTab: string;
   setIsLoggedIn: (loggedIn: boolean) => void;
   setUserRole: (role: string | null) => void;
+  setUserProfile: (profile: Profile | null) => void; // Added to update profile after edit
 }
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -43,6 +47,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   activeTab,
   setIsLoggedIn,
   setUserRole,
+  setUserProfile,
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -92,7 +97,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         {/* Menu Items */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
-          <MenuItem icon={<User />} label="Edit Profile" onClick={() => toast.info("Edit Profile coming soon!")} />
+          <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
           <MenuItem icon={<Bell />} label="Notifications" onClick={() => toast.info("Notifications coming soon!")} />
           <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
           <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
