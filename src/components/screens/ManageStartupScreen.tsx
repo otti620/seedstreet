@@ -169,7 +169,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     }
 
     if (error) {
-      toast.error(`Failed to ${startupId ? 'update' : 'list'} startup: ` + error.message);
+      // Improved error logging and toast message
+      toast.error(`Failed to ${startupId ? 'update' : 'list'} startup: ${error.message || JSON.stringify(error)}`);
       console.error(`Error ${startupId ? 'updating' : 'listing'} startup:`, error);
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
