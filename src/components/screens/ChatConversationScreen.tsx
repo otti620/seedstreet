@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Check, MoreVertical, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client'; // Import supabase client
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -24,7 +25,6 @@ interface Message {
   text: string;
   created_at: string;
   read: boolean;
-  sent?: boolean; // Added for mock messages, will be removed with real data
 }
 
 interface ChatConversationScreenProps {
@@ -33,6 +33,7 @@ interface ChatConversationScreenProps {
   setCurrentScreen: (screen: string) => void;
   setActiveTab: (tab: string) => void;
   userProfileId: string | null; // To determine if message is sent by current user
+  userProfileName: string | null; // To attribute sender name
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
@@ -41,14 +42,35 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   setCurrentScreen,
   setActiveTab,
   userProfileId,
+  userProfileName,
 }) => {
   const [messageInput, setMessageInput] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      toast.info(`Sending message: "${messageInput}"`);
-      // In a real implementation, this would send to Supabase
-      setMessageInput('');
+  const handleSendMessage = async () => {
+    if (messageInput.trim() && userProfileId && userProfileName) {
+      setSending(true);
+      const { error } = await supabase.from('messages').insert({
+        chat_id: selectedChat.id,
+        sender_id: userProfileId,
+        sender_name: userProfileName,
+        text: messageInput.trim(),
+      });
+
+      if (error) {
+        toast.error("Failed to send message: " + error.message);
+        console.error("Error sending message:", error);
+      } else {
+        setMessageInput('');
+        // Optionally, update the last message in the chat list
+        await supabase.from('chats').update({
+          last_message_text: messageInput.trim(),
+          last_message_timestamp: new Date().toISOString(),
+        }).eq('id', selectedChat.id);
+      }
+      setSending(false);
+    } else if (!userProfileId || !userProfileName) {
+      toast.error("User information missing. Cannot send message.");
     }
   };
 
@@ -94,12 +116,11 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
                 <p className="text-sm leading-relaxed">{msg.text}</p>
               </div>
               <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
-                <span className="text-xs text-gray-500">{msg.created_at}</span>
+                <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 {msg.sender_id === userProfileId && <Check className="w-3 h-3 text-teal-500" />}
               </div>
             </div>
-          </div>
-        ))}
+          ))}
 
         {/* Interest Signal Card (always shown for now) */}
         <div className="mx-auto max-w-md">
@@ -128,10 +149,18 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               onChange={(e) => setMessageInput(e.target.value)}
               placeholder="Type a message..."
               className="flex-1 bg-transparent outline-none text-sm"
+              disabled={sending}
             />
           </div>
-          <button onClick={handleSendMessage} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg">
-            <Send className="w-5 h-5 text-white" />
+          <button onClick={handleSendMessage} disabled={sending || !messageInput.trim()} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            {sending ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <Send className="w-5 h-5 text-white" />
+            )}
           </button>
         </div>
       </div>

@@ -458,6 +458,7 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
         userProfileId={userProfile?.id || null}
+        userProfileName={userProfile?.name || userProfile?.email || null} // Pass user's name or email
       />
     );
   }
