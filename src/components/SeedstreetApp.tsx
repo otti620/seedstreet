@@ -95,7 +95,6 @@ const SeedstreetApp = () => {
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
-  const [messageInput, setMessageInput] = useState('');
   
   // Real data states
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -415,6 +414,9 @@ const SeedstreetApp = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         loading={loadingData} // Pass loadingData to HomeScreen
+        userProfileId={userProfile?.id || null}
+        userProfileName={userProfile?.name || userProfile?.first_name || null}
+        userProfileEmail={userProfile?.email || null}
       />
     );
   }
@@ -494,7 +496,19 @@ const SeedstreetApp = () => {
     );
   }
 
-  // 11. COMMUNITY FEED
+  // 11. LIST STARTUP
+  if (currentScreen === 'listStartup' && userProfile?.id && userProfile?.name && userProfile?.email) {
+    return (
+      <ListStartupScreen
+        setCurrentScreen={setCurrentScreen}
+        userProfileId={userProfile.id}
+        userProfileName={userProfile.name}
+        userProfileEmail={userProfile.email}
+      />
+    );
+  }
+
+  // 12. COMMUNITY FEED
   if (currentScreen === 'home' && activeTab === 'community') {
     return (
       <CommunityFeedScreen
