@@ -22,6 +22,7 @@ import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import ManageStartupScreen from './screens/ManageStartupScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen'; // Import new screen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -114,6 +115,7 @@ const SeedstreetApp = () => {
   const [activeTab, setActiveTab] = useState('home');
   
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
+  const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined); // New state for celebration screen
 
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
@@ -125,12 +127,17 @@ const SeedstreetApp = () => {
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
 
-  const setCurrentScreen = (screen: string, params?: { startupId?: string }) => {
+  const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string }) => {
     setCurrentScreenState(screen);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
     } else {
       setSelectedStartupId(undefined);
+    }
+    if (params?.startupName) {
+      setListedStartupName(params.startupName);
+    } else {
+      setListedStartupName(undefined);
     }
   };
 
@@ -544,7 +551,7 @@ const SeedstreetApp = () => {
         userProfileId={userProfile?.id || null}
         userProfileName={userProfile?.name || userProfile?.first_name || null}
         userProfileEmail={userProfile?.email || null}
-        handleStartChat={handleStartChat} // Pass handleStartChat
+        handleStartChat={handleStartChat}
       />
     );
   }
@@ -562,7 +569,7 @@ const SeedstreetApp = () => {
         activeTab={activeTab}
         userRole={userRole}
         setActiveTab={setActiveTab}
-        handleStartChat={handleStartChat} // Pass handleStartChat
+        handleStartChat={handleStartChat}
       />
     );
   }
@@ -650,6 +657,16 @@ const SeedstreetApp = () => {
         notifications={notifications}
         setCurrentScreen={setCurrentScreen}
         fetchNotifications={fetchNotifications}
+      />
+    );
+  }
+
+  // New screen for startup listing celebration
+  if (currentScreen === 'startupListingCelebration' && listedStartupName) {
+    return (
+      <StartupListingCelebrationScreen
+        startupName={listedStartupName}
+        setCurrentScreen={setCurrentScreen}
       />
     );
   }

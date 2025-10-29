@@ -40,7 +40,7 @@ interface Startup {
 }
 
 interface ManageStartupScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { startupName?: string }) => void; // Updated to accept startupName
   userProfileId: string;
   userProfileName: string;
   userProfileEmail: string;
@@ -152,7 +152,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       console.error(`Error ${startupId ? 'updating' : 'listing'} startup:`, error);
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
-      setCurrentScreen('home'); // Go back to founder dashboard
+      if (!startupId) {
+        // Only show celebration for new listings
+        setCurrentScreen('startupListingCelebration', { startupName: values.name });
+      } else {
+        setCurrentScreen('home'); // Go back to founder dashboard for edits
+      }
     }
     setLoading(false);
   };
