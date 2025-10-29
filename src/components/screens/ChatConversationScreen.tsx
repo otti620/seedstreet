@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Check, MoreVertical, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client'; // Import supabase client
@@ -15,6 +15,7 @@ interface Chat {
   last_message_timestamp: string;
   unread_count: number;
   isOnline: boolean;
+  unread_counts: { [key: string]: number }; // Added for read receipts
 }
 
 interface Message {
@@ -27,13 +28,18 @@ interface Message {
   read: boolean;
 }
 
+interface Profile { // Added Profile interface for user details
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
 interface ChatConversationScreenProps {
   selectedChat: Chat;
   messages: Message[];
   setCurrentScreen: (screen: string) => void;
   setActiveTab: (tab: string) => void;
-  userProfileId: string | null; // To determine if message is sent by current user
-  userProfileName: string | null; // To attribute sender name
+  userProfile: Profile | null; // Pass the full user profile
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
@@ -41,15 +47,67 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   messages,
   setCurrentScreen,
   setActiveTab,
-  userProfileId,
-  userProfileName,
+  userProfile,
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userProfileId = userProfile?.id || null;
+  const userProfileName = userProfile?.name || userProfile?.email || null;
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Mark messages as read and update unread count when chat is opened
+  useEffect(() => {
+    const markChatAsRead = async () => {
+      if (userProfileId && selectedChat.id) {
+        // 1. Mark all messages in this chat as read for the current user
+        // Note: RLS policy for messages allows users to update their own messages.
+        // For marking *all* messages in a chat as read, we might need a server function
+        // or a more permissive RLS policy if messages are not owned by the reader.
+        // For now, we'll assume messages are marked as read by the sender, or we'll update the chat's unread_counts.
+        // A more robust solution would involve a separate 'read_receipts' table or a server function.
+
+        // 2. Update the unread_counts for the current user in the chats table
+        const currentUnreadCounts = selectedChat.unread_counts || {};
+        const newUnreadCounts = {
+          ...currentUnreadCounts,
+          [userProfileId]: 0, // Set current user's unread count to 0
+        };
+
+        const { error: updateChatError } = await supabase
+          .from('chats')
+          .update({ unread_counts: newUnreadCounts })
+          .eq('id', selectedChat.id);
+
+        if (updateChatError) {
+          console.error("Error updating chat unread counts:", updateChatError);
+          // toast.error("Failed to update chat read status."); // Don't spam user with this error
+        }
+      }
+    };
+
+    markChatAsRead();
+  }, [selectedChat.id, userProfileId, selectedChat.unread_counts]);
+
 
   const handleSendMessage = async () => {
     if (messageInput.trim() && userProfileId && userProfileName) {
       setSending(true);
+
+      // Update unread_counts for all other participants in the chat
+      const otherUserIds = selectedChat.user_ids.filter(id => id !== userProfileId);
+      const newUnreadCounts = { ...selectedChat.unread_counts };
+      otherUserIds.forEach(id => {
+        newUnreadCounts[id] = (newUnreadCounts[id] || 0) + 1;
+      });
+      // Also set current user's count to 0 as they just sent a message
+      newUnreadCounts[userProfileId] = 0;
+
       const { error } = await supabase.from('messages').insert({
         chat_id: selectedChat.id,
         sender_id: userProfileId,
@@ -62,10 +120,11 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         console.error("Error sending message:", error);
       } else {
         setMessageInput('');
-        // Optionally, update the last message in the chat list
+        // Update the last message in the chat list and unread counts
         await supabase.from('chats').update({
           last_message_text: messageInput.trim(),
           last_message_timestamp: new Date().toISOString(),
+          unread_counts: newUnreadCounts,
         }).eq('id', selectedChat.id);
       }
       setSending(false);
@@ -121,7 +180,9 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               </div>
             </div>
           </div>
-        ))} {/* Closing tag for messages.map */}
+        ))}
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
 
         {/* Interest Signal Card (always shown for now) */}
         <div className="mx-auto max-w-md">

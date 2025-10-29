@@ -70,6 +70,7 @@ interface Chat {
   investor_id: string; // Added for chat creation logic
   founder_id: string; // Added for chat creation logic
   user_ids: string[]; // Added for chat creation logic
+  unread_counts: { [key: string]: number }; // Added for read receipts
 }
 
 interface Message {
@@ -239,15 +240,21 @@ const SeedstreetApp = () => {
         setLoadingData(true);
         const { data, error } = await supabase
           .from('chats')
-          .select('*')
-          .contains('user_ids', [userProfile.id]);
+          .select('*, unread_counts'); // Select unread_counts
+          // .contains('user_ids', [userProfile.id]); // Fetch chats where current user is a participant
+          // The RLS policy already handles this, so no need for .contains() here.
 
         if (error) {
           console.error("Error fetching chats:", error);
           toast.error("Failed to load chats.");
           setChats([]);
         } else if (data) {
-          setChats(data as Chat[]);
+          // Calculate unread_count for display based on current user's ID
+          const chatsWithUnreadCount = data.map(chat => ({
+            ...chat,
+            unread_count: chat.unread_counts?.[userProfile.id] || 0,
+          }));
+          setChats(chatsWithUnreadCount as Chat[]);
         }
         setLoadingData(false);
       };
@@ -475,6 +482,12 @@ const SeedstreetApp = () => {
 
       const founderName = founderProfile.name || founderProfile.email?.split('@')[0] || 'Founder';
 
+      // Initialize unread_counts for both users, marking 1 unread for the founder
+      const initialUnreadCounts = {
+        [userProfile.id]: 0, // Investor starts the chat, so 0 unread for them
+        [startup.founder_id]: 1, // 1 unread for the founder
+      };
+
       // Create a new chat
       const { data: newChat, error: createChatError } = await supabase
         .from('chats')
@@ -489,7 +502,7 @@ const SeedstreetApp = () => {
           startup_logo: startup.logo,
           last_message_text: 'Chat initiated!',
           last_message_timestamp: new Date().toISOString(),
-          unread_counts: { [startup.founder_id]: 1 } // Mark as unread for the founder
+          unread_counts: initialUnreadCounts, // Use initialUnreadCounts
         })
         .select()
         .single();
@@ -594,8 +607,7 @@ const SeedstreetApp = () => {
         messages={messages}
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
-        userProfileId={userProfile?.id || null}
-        userProfileName={userProfile?.name || userProfile?.email || null}
+        userProfile={userProfile} // Pass the full userProfile
       />
     );
   }
@@ -661,7 +673,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // New screen for startup listing celebration
   if (currentScreen === 'startupListingCelebration' && listedStartupName) {
     return (
       <StartupListingCelebrationScreen
