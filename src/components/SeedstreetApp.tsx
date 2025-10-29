@@ -20,7 +20,8 @@ import ChatConversationScreen from './screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
-import ManageStartupScreen from './screens/ManageStartupScreen'; // Import new ManageStartupScreen
+import ManageStartupScreen from './screens/ManageStartupScreen';
+import NotificationsScreen from './screens/NotificationsScreen'; // Import new NotificationsScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -88,6 +89,17 @@ interface CommunityPost {
   comments_count: number;
 }
 
+interface Notification { // Added Notification interface
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+  related_entity_id: string | null;
+}
+
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreenState] = useState('splash'); // Renamed to avoid conflict
@@ -106,6 +118,7 @@ const SeedstreetApp = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [messages, setMessages] = useState<Message[]>([]); // For current chat messages
+  const [notifications, setNotifications] = useState<Notification[]>([]); // New state for notifications
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
@@ -326,6 +339,44 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, currentScreen, activeTab]);
 
+  // Fetch Notifications
+  const fetchNotifications = async () => {
+    if (!userProfile?.id) return;
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      toast.error("Failed to load notifications.");
+      setNotifications([]);
+    } else if (data) {
+      setNotifications(data as Notification[]);
+    }
+    setLoadingData(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && userProfile?.id && currentScreen === 'notifications') {
+      fetchNotifications();
+
+      // Realtime subscription for notifications
+      const channel = supabase
+        .channel(`user_notifications:${userProfile.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` }, payload => {
+          fetchNotifications(); // Re-fetch notifications on change
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isLoggedIn, userProfile?.id, currentScreen]);
+
 
   // Update bookmarked/interested startups from profile
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
@@ -532,6 +583,17 @@ const SeedstreetApp = () => {
         setActiveTab={setActiveTab}
         activeTab={activeTab}
         userRole={userRole}
+      />
+    );
+  }
+
+  // 13. NOTIFICATIONS SCREEN
+  if (currentScreen === 'notifications' && userProfile) {
+    return (
+      <NotificationsScreen
+        notifications={notifications}
+        setCurrentScreen={setCurrentScreen}
+        fetchNotifications={fetchNotifications}
       />
     );
   }

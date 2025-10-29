@@ -1,0 +1,137 @@
+"use client";
+
+import React from 'react';
+import { ArrowLeft, Bell, CheckCircle, XCircle, Info, Mail, Rocket, Bookmark } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+
+interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+  related_entity_id: string | null;
+}
+
+interface NotificationsScreenProps {
+  notifications: Notification[];
+  setCurrentScreen: (screen: string) => void;
+  fetchNotifications: () => void; // Function to re-fetch notifications after an action
+}
+
+const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
+  notifications,
+  setCurrentScreen,
+  fetchNotifications,
+}) => {
+  const handleMarkAsRead = async (notificationId: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+
+    if (error) {
+      toast.error("Failed to mark notification as read: " + error.message);
+      console.error("Error marking notification as read:", error);
+    } else {
+      toast.success("Notification marked as read!");
+      fetchNotifications(); // Re-fetch to update the list
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'new_chat':
+        return <MessageCircle className="w-5 h-5 text-blue-600" />;
+      case 'startup_approved':
+        return <Rocket className="w-5 h-5 text-green-600" />;
+      case 'startup_rejected':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      case 'bookmark_update':
+        return <Bookmark className="w-5 h-5 text-purple-600" />;
+      case 'general':
+      default:
+        return <Info className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 flex-1">Notifications</h2>
+        </div>
+      </div>
+
+      {/* Notifications List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`flex items-start gap-3 p-4 rounded-xl shadow-sm border ${
+                notification.read ? 'bg-white border-gray-100' : 'bg-purple-50 border-purple-100'
+              } hover:shadow-md transition-shadow`}
+            >
+              <div className="flex-shrink-0 mt-1">
+                {getNotificationIcon(notification.type)}
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm ${notification.read ? 'text-gray-700' : 'text-gray-900 font-semibold'}`}>
+                  {notification.message}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(notification.created_at).toLocaleString()}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  {notification.link && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Handle navigation to the link
+                        toast.info(`Navigating to: ${notification.link}`);
+                        // Example: setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      View Details
+                    </Button>
+                  )}
+                  {!notification.read && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      className="h-8 text-xs text-purple-700 hover:bg-purple-100"
+                    >
+                      Mark as Read
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
+              🔔
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No new notifications</h3>
+            <p className="text-gray-600 mb-6">You're all caught up!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default NotificationsScreen;

@@ -98,7 +98,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Menu Items */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
           <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
-          <MenuItem icon={<Bell />} label="Notifications" onClick={() => toast.info("Notifications coming soon!")} />
+          <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} /> {/* Updated onClick */}
           <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
           <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
           <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => toast.info("Help & Support coming soon!")} />

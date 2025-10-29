@@ -126,7 +126,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
             <h1 className="text-xl font-bold text-gray-900">Your Dashboard</h1>
             <p className="text-sm text-gray-500">Manage your startup</p>
           </div>
-          <button className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
             <Bell className="w-5 h-5 text-purple-700" />
           </button>
         </div>
