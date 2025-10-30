@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { User, Bell, Bookmark, Settings, MessageCircle, LogOut } from 'lucide-react';
+import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag } from 'lucide-react'; // Import ShoppingBag
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
 import MenuItem from '../MenuItem';
@@ -98,10 +98,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Menu Items */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
           <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
-          <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} /> {/* Updated onClick */}
+          <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} />
           <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
+          <MenuItem icon={<ShoppingBag />} label="Merch Store" onClick={() => toast.info("Merch Store coming soon!")} /> {/* New Merch Store item */}
           <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
-          <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => toast.info("Help & Support coming soon!")} />
+          <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => setCurrentScreen('helpAndSupport')} /> {/* Updated onClick */}
         </div>
 
         {/* Logout */}

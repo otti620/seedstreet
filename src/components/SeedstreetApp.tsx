@@ -542,16 +542,22 @@ const SeedstreetApp = () => {
       chatToOpen = existingChats as Chat;
       toast.info("Continuing existing chat.");
     } else {
-      // Fetch founder's name for the chat
+      // Fetch founder's name and role for the chat
       const { data: founderProfile, error: founderError } = await supabase
         .from('profiles')
-        .select('name, email')
+        .select('name, email, role') // Select role as well
         .eq('id', startup.founder_id)
         .single();
 
       if (founderError || !founderProfile) {
         toast.error("Failed to get founder details. Cannot start chat.");
         console.error("Error fetching founder profile:", founderError);
+        setLoadingData(false);
+        return;
+      }
+
+      if (founderProfile.role !== 'founder') { // New check: Ensure target is a founder
+        toast.error(`Cannot start chat: ${founderProfile.name || founderProfile.email?.split('@')[0] || 'This user'} is not registered as a founder.`);
         setLoadingData(false);
         return;
       }
@@ -713,6 +719,7 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
         userProfile={userProfile}
+        logActivity={logActivity} // Pass logActivity
       />
     );
   }
@@ -763,6 +770,15 @@ const SeedstreetApp = () => {
     return (
       <StartupListingCelebrationScreen
         startupName={listedStartupName}
+        setCurrentScreen={setCurrentScreen}
+      />
+    );
+  }
+
+  // New screen for Help & Support
+  if (currentScreen === 'helpAndSupport') {
+    return (
+      <HelpAndSupportScreen
         setCurrentScreen={setCurrentScreen}
       />
     );
