@@ -24,7 +24,8 @@ import ManageStartupScreen from './screens/ManageStartupScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen';
 import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
-import HelpAndSupportScreen from './screens/HelpAndSupportScreen'; // Import HelpAndSupportScreen
+import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
+import MerchStoreScreen from './screens/MerchStoreScreen'; // Import MerchStoreScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -780,6 +781,15 @@ const SeedstreetApp = () => {
   if (currentScreen === 'helpAndSupport') {
     return (
       <HelpAndSupportScreen
+        setCurrentScreen={setCurrentScreen}
+      />
+    );
+  }
+
+  // New screen for Merch Store
+  if (currentScreen === 'merchStore') {
+    return (
+      <MerchStoreScreen
         setCurrentScreen={setCurrentScreen}
       />
     );
