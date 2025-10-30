@@ -1,9 +1,10 @@
 "use client";
 
 import React from 'react';
-import { Sparkles, Plus } from 'lucide-react'; // Import Plus icon
+import { Sparkles, Plus, Heart, MessageCircle } from 'lucide-react'; // Import Heart and MessageCircle icons
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface CommunityPost {
@@ -20,10 +21,12 @@ interface CommunityPost {
 
 interface CommunityFeedScreenProps {
   communityPosts: CommunityPost[];
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { postId?: string }) => void; // Updated to accept postId
   setActiveTab: (tab: string) => void;
   activeTab: string;
   userRole: string | null;
+  userProfileId: string | null; // New prop for current user's ID
+  fetchCommunityPosts: () => void; // Function to re-fetch posts after an action
 }
 
 const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
@@ -32,7 +35,35 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
   setActiveTab,
   activeTab,
   userRole,
+  userProfileId,
+  fetchCommunityPosts,
 }) => {
+
+  const handleLikeToggle = async (postId: string, currentLikes: string[]) => {
+    if (!userProfileId) {
+      toast.error("Please log in to like posts.");
+      return;
+    }
+
+    const isLiked = currentLikes.includes(userProfileId);
+    const newLikes = isLiked
+      ? currentLikes.filter(id => id !== userProfileId)
+      : [...currentLikes, userProfileId];
+
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ likes: newLikes })
+      .eq('id', postId);
+
+    if (error) {
+      toast.error("Failed to update like: " + error.message);
+      console.error("Error updating like:", error);
+    } else {
+      // No toast success here to avoid spamming, UI update is enough
+      fetchCommunityPosts(); // Re-fetch posts to update the UI
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
@@ -67,6 +98,24 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                   {post.image_url && (
                     <img src={post.image_url} alt="Post Image" className="mt-3 rounded-lg max-h-48 object-cover w-full" />
                   )}
+                  <div className="flex items-center gap-4 mt-3">
+                    <button
+                      onClick={() => handleLikeToggle(post.id, post.likes)}
+                      className={`flex items-center gap-1 text-sm font-medium ${
+                        userProfileId && post.likes.includes(userProfileId) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${userProfileId && post.likes.includes(userProfileId) ? 'fill-current' : ''}`} />
+                      {post.likes.length > 0 && <span>{post.likes.length}</span>}
+                    </button>
+                    <button
+                      onClick={() => setCurrentScreen('communityPostDetail', { postId: post.id })}
+                      className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-blue-500"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {post.comments_count > 0 && <span>{post.comments_count}</span>}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

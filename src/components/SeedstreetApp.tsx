@@ -25,7 +25,8 @@ import NotificationsScreen from './screens/NotificationsScreen';
 import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen';
 import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
 import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
-import MerchStoreScreen from './screens/MerchStoreScreen'; // Import MerchStoreScreen
+import MerchStoreScreen from './screens/MerchStoreScreen';
+import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen'; // Import new screen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -134,6 +135,7 @@ const SeedstreetApp = () => {
   
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
   const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined); // New state for celebration screen
+  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined); // New state for community post detail
 
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
@@ -146,7 +148,7 @@ const SeedstreetApp = () => {
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
 
-  const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string }) => {
+  const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
     setCurrentScreenState(screen);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
@@ -157,6 +159,11 @@ const SeedstreetApp = () => {
       setListedStartupName(params.startupName);
     } else {
       setListedStartupName(undefined);
+    }
+    if (params?.postId) {
+      setSelectedCommunityPostId(params.postId);
+    } else {
+      setSelectedCommunityPostId(undefined);
     }
   };
 
@@ -344,24 +351,25 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, selectedChat?.id, currentScreen]);
 
-  useEffect(() => {
-    if (isLoggedIn && currentScreen === 'home' && activeTab === 'community') {
-      const fetchCommunityPosts = async () => {
-        setLoadingData(true);
-        const { data, error } = await supabase
-          .from('community_posts')
-          .select('*')
-          .order('created_at', { ascending: false });
+  const fetchCommunityPosts = async () => {
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error("Error fetching community posts:", error);
-          toast.error("Failed to load community posts.");
-          setCommunityPosts([]);
-        } else if (data) {
-          setCommunityPosts(data as CommunityPost[]);
-        }
-        setLoadingData(false);
-      };
+    if (error) {
+      console.error("Error fetching community posts:", error);
+      toast.error("Failed to load community posts.");
+      setCommunityPosts([]);
+    } else if (data) {
+      setCommunityPosts(data as CommunityPost[]);
+    }
+    setLoadingData(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && currentScreen === 'home' && (activeTab === 'community' || currentScreen === 'communityPostDetail')) {
       fetchCommunityPosts();
 
       const channel = supabase
@@ -674,6 +682,8 @@ const SeedstreetApp = () => {
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
+          userProfileId={userProfile?.id || null} // Pass userProfileId
+          fetchCommunityPosts={fetchCommunityPosts} // Pass fetch function
         />
       );
     } else if (activeTab === 'profile') {
@@ -791,6 +801,17 @@ const SeedstreetApp = () => {
     return (
       <MerchStoreScreen
         setCurrentScreen={setCurrentScreen}
+      />
+    );
+  }
+
+  // New screen for Community Post Detail
+  if (currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile) {
+    return (
+      <CommunityPostDetailScreen
+        setCurrentScreen={setCurrentScreen}
+        selectedCommunityPostId={selectedCommunityPostId}
+        userProfile={userProfile}
       />
     );
   }
