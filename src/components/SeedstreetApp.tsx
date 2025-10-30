@@ -787,7 +787,7 @@ const SeedstreetApp = () => {
       <CreateCommunityPostScreen
         setCurrentScreen={setCurrentScreen}
         userProfile={userProfile}
-        postId={selectedCommunityPostId} // Pass postId for editing
+        postId={selectedCommunityPostId}
       />
     );
   }
