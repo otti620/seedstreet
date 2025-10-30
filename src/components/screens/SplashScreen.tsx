@@ -2,10 +2,19 @@
 
 import React from 'react';
 import { MadeWithDyad } from '../made-with-dyad';
+import { cn } from '@/lib/utils'; // Import cn utility
 
-const SplashScreen: React.FC = () => {
+interface SplashScreenProps {
+  isFadingOut?: boolean; // New prop
+}
+
+const SplashScreen: React.FC<SplashScreenProps> = ({ isFadingOut = false }) => {
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-700 via-purple-600 to-teal-500 flex items-center justify-center overflow-hidden">
+    <div className={cn(
+      "fixed inset-0 bg-gradient-to-br from-purple-700 via-purple-600 to-teal-500 flex items-center justify-center overflow-hidden",
+      "transition-opacity duration-500 ease-out", // Add transition for opacity
+      isFadingOut && "opacity-0 pointer-events-none" // Fade out and disable pointer events
+    )}>
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />

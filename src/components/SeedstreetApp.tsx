@@ -147,6 +147,7 @@ const SeedstreetApp = () => {
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
+  const [isSplashFadingOut, setIsSplashFadingOut] = useState(false); // New state for splash fade-out
 
   const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
     setCurrentScreenState(screen);
@@ -187,10 +188,18 @@ const SeedstreetApp = () => {
 
   useEffect(() => {
     if (currentScreen === 'splash') {
-      const timer = setTimeout(() => {
-        setCurrentScreen('onboarding');
-      }, 2500);
-      return () => clearTimeout(timer);
+      const fadeOutTimer = setTimeout(() => {
+        setIsSplashFadingOut(true); // Start fade-out animation
+      }, 2000); // Start fading after 2 seconds
+
+      const transitionTimer = setTimeout(() => {
+        setCurrentScreen('onboarding'); // Transition to next screen after fade
+      }, 2500); // Total time for splash screen (2s + 0.5s fade)
+
+      return () => {
+        clearTimeout(fadeOutTimer);
+        clearTimeout(transitionTimer);
+      };
     }
   }, [currentScreen]);
 
@@ -623,8 +632,9 @@ const SeedstreetApp = () => {
     return <SplashScreen />;
   }
 
+  // Render SplashScreen with fade-out class if it's the current screen
   if (currentScreen === 'splash') {
-    return <SplashScreen />;
+    return <SplashScreen isFadingOut={isSplashFadingOut} />;
   }
 
   if (currentScreen === 'onboarding') {
