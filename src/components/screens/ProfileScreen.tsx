@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag } from 'lucide-react'; // Import ShoppingBag
+import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag, ShieldCheck } from 'lucide-react'; // Import ShieldCheck
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
 import MenuItem from '../MenuItem';
@@ -15,7 +15,7 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   name: string | null;
-  role: 'investor' | 'founder' | null;
+  role: 'investor' | 'founder' | 'admin' | null; // Added 'admin' role
   onboarding_complete: boolean;
   bookmarked_startups: string[]; // Array of startup IDs
   interested_startups: string[]; // Array of startup IDs
@@ -49,6 +49,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   setUserRole,
   setUserProfile,
 }) => {
+  const isAdmin = userProfile?.role === 'admin';
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
@@ -69,7 +71,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <h2 className="text-2xl font-bold mb-1">{userProfile?.name || userProfile?.email || 'User Name'}</h2>
           <p className="text-white/80 text-sm mb-3">{userProfile?.email || 'user@email.com'}</p>
           <span className="px-4 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-semibold">
-            {userRole === 'investor' ? '💰 Investor' : '💡 Founder'}
+            {userRole === 'investor' ? '💰 Investor' : userRole === 'founder' ? '💡 Founder' : '👤 User'}
           </span>
         </div>
       </div>
@@ -100,9 +102,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
           <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} />
           <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
-          <MenuItem icon={<ShoppingBag />} label="Merch Store" onClick={() => setCurrentScreen('merchStore')} /> {/* Updated onClick */}
+          <MenuItem icon={<ShoppingBag />} label="Merch Store" onClick={() => setCurrentScreen('merchStore')} />
           <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
           <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => setCurrentScreen('helpAndSupport')} />
+          {isAdmin && ( // Conditionally render Admin Dashboard for admins
+            <MenuItem icon={<ShieldCheck />} label="Admin Dashboard" onClick={() => setCurrentScreen('adminDashboard')} />
+          )}
         </div>
 
         {/* Logout */}

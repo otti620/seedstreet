@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Check, MoreVertical, Plus, Send } from 'lucide-react';
+import { ArrowLeft, Check, MoreVertical, Plus, Send, Flag } from 'lucide-react'; // Import Flag icon
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -70,14 +76,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   useEffect(() => {
     const markChatAsRead = async () => {
       if (userProfileId && selectedChat.id) {
-        // 1. Mark all messages in this chat as read for the current user
-        // Note: RLS policy for messages allows users to update their own messages.
-        // For marking *all* messages in a chat as read, we might need a server function
-        // or a more permissive RLS policy if messages are not owned by the reader.
-        // For now, we'll assume messages are marked as read by the sender, or we'll update the chat's unread_counts.
-        // A more robust solution would involve a separate 'read_receipts' table or a server function.
-
-        // 2. Update the unread_counts for the current user in the chats table
+        // Update the unread_counts for the current user in the chats table
         const currentUnreadCounts = selectedChat.unread_counts || {};
         const newUnreadCounts = {
           ...currentUnreadCounts,
@@ -91,7 +90,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
         if (updateChatError) {
           console.error("Error updating chat unread counts:", updateChatError);
-          // toast.error("Failed to update chat read status."); // Don't spam user with this error
         }
       }
     };
@@ -139,6 +137,41 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     }
   };
 
+  const handleReportMessage = async (message: Message) => {
+    if (!userProfileId) {
+      toast.error("You must be logged in to report a message.");
+      return;
+    }
+
+    const reason = prompt("Please provide a reason for reporting this message:");
+    if (!reason || reason.trim() === "") {
+      toast.info("Message not reported. A reason is required.");
+      return;
+    }
+
+    setSending(true); // Use sending state for reporting as well
+    const { error } = await supabase.from('flagged_messages').insert({
+      message_id: message.id,
+      chat_id: message.chat_id,
+      sender: message.sender_name,
+      sender_id: message.sender_id,
+      chat_type: 'DM', // Assuming DM for now, could be 'Room'
+      startup_name: selectedChat.startup_name,
+      reason: reason.trim(),
+      reported_by: userProfileId,
+      status: 'Pending',
+    });
+
+    if (error) {
+      toast.error("Failed to report message: " + error.message);
+      console.error("Error reporting message:", error);
+    } else {
+      toast.success("Message reported successfully. We will review it shortly.");
+      logActivity('message_reported', `Reported a message in chat with ${selectedChat.startup_name}`, message.id, 'Flag');
+    }
+    setSending(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
@@ -173,13 +206,22 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[75%] ${msg.sender_id === userProfileId ? 'order-2' : 'order-1'}`}>
-              <div className={`rounded-2xl p-3 ${
-                msg.sender_id === userProfileId
-                  ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md' 
-                  : 'bg-gray-100 text-gray-900 rounded-bl-md'
-              }`}>
-                <p className="text-sm leading-relaxed">{msg.text}</p>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className={`rounded-2xl p-3 cursor-pointer ${
+                    msg.sender_id === userProfileId
+                      ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md' 
+                      : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                  }`}>
+                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleReportMessage(msg)} className="flex items-center gap-2 text-red-600">
+                    <Flag className="w-4 h-4" /> Report Message
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
                 <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 {msg.sender_id === userProfileId && <Check className="w-3 h-3 text-teal-500" />}

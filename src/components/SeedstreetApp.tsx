@@ -26,7 +26,8 @@ import StartupListingCelebrationScreen from './screens/StartupListingCelebration
 import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
 import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
 import MerchStoreScreen from './screens/MerchStoreScreen';
-import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen'; // Import new screen
+import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
+import AdminDashboardScreen from './screens/AdminDashboardScreen'; // Import AdminDashboardScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -38,7 +39,7 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   name: string | null;
-  role: 'investor' | 'founder' | null;
+  role: 'investor' | 'founder' | 'admin' | null; // Added 'admin' role
   onboarding_complete: boolean;
   bookmarked_startups: string[]; // Array of startup IDs
   interested_startups: string[]; // Array of startup IDs
@@ -822,6 +823,15 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         selectedCommunityPostId={selectedCommunityPostId}
         userProfile={userProfile}
+      />
+    );
+  }
+
+  // New screen for Admin Dashboard (only accessible to admins)
+  if (currentScreen === 'adminDashboard' && userProfile?.role === 'admin') {
+    return (
+      <AdminDashboardScreen
+        setCurrentScreen={setCurrentScreen}
       />
     );
   }

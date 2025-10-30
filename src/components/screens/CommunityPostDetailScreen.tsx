@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Send, Flag } from 'lucide-react'; // Import Flag icon
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -177,6 +183,41 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     setSubmittingComment(false);
   };
 
+  const handleReportPost = async () => {
+    if (!userProfile?.id || !post) {
+      toast.error("You must be logged in to report a post.");
+      return;
+    }
+
+    const reason = prompt("Please provide a reason for reporting this post:");
+    if (!reason || reason.trim() === "") {
+      toast.info("Post not reported. A reason is required.");
+      return;
+    }
+
+    setSubmittingComment(true); // Use submittingComment state for reporting as well
+    const { error } = await supabase.from('flagged_messages').insert({ // Using flagged_messages for posts too
+      message_id: post.id, // Using message_id for post_id
+      original_message_id: post.id, // Store original post ID
+      chat_id: 'community', // A generic ID for community posts
+      sender: post.author_name,
+      sender_id: post.author_id,
+      chat_type: 'Community',
+      startup_name: null, // Not applicable for community posts
+      reason: reason.trim(),
+      reported_by: userProfile.id,
+      status: 'Pending',
+    });
+
+    if (error) {
+      toast.error("Failed to report post: " + error.message);
+      console.error("Error reporting post:", error);
+    } else {
+      toast.success("Post reported successfully. We will review it shortly.");
+    }
+    setSubmittingComment(false);
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -222,6 +263,18 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1">Post Details</h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="w-5 h-5 text-gray-700" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleReportPost} className="flex items-center gap-2 text-red-600">
+                <Flag className="w-4 h-4" /> Report Post
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
