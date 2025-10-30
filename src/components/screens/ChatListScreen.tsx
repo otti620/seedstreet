@@ -1,8 +1,10 @@
 "use client";
 
-import React from 'react';
-import { MessageCircle, Rocket } from 'lucide-react';
-import BottomNav from '../BottomNav';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Search, Bell, MessageCircle } from 'lucide-react';
+import BottomNav from '../../BottomNav';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -13,7 +15,16 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean;
+  isOnline: boolean; // This might need to be derived or fetched separately
+  unread_counts: { [key: string]: number };
+  user_ids: string[]; // To determine other participant
+}
+
+interface Profile {
+  id: string;
+  name: string | null;
+  email: string | null;
+  last_seen: string | null; // Added for presence
 }
 
 interface ChatListScreenProps {
@@ -33,72 +44,156 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   activeTab,
   userRole,
 }) => {
+  const [loading, setLoading] = useState(true);
+  const [userProfiles, setUserProfiles] = useState<{ [key: string]: Profile }>({}); // Store other user profiles
+  const [onlineStatuses, setOnlineStatuses] = useState<{ [key: string]: boolean }>({}); // Store online status
+
+  const currentUserId = supabase.auth.currentUser?.id;
+
+  useEffect(() => {
+    const fetchAndSubscribeToProfiles = async () => {
+      setLoading(true);
+      const profileMap: { [key: string]: Profile } = {};
+      const onlineMap: { [key: string]: boolean } = {};
+      const userIdsToFetch: string[] = [];
+
+      chats.forEach(chat => {
+        const otherUserId = chat.user_ids.find(id => id !== currentUserId);
+        if (otherUserId && !userIdsToFetch.includes(otherUserId)) {
+          userIdsToFetch.push(otherUserId);
+        }
+      });
+
+      if (userIdsToFetch.length > 0) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name, email, last_seen')
+          .in('id', userIdsToFetch);
+
+        if (error) {
+          console.error("Error fetching chat participant profiles:", error);
+        } else if (data) {
+          data.forEach(profile => {
+            profileMap[profile.id] = profile as Profile;
+            const lastSeen = new Date(profile.last_seen || 0).getTime();
+            onlineMap[profile.id] = Date.now() - lastSeen < 30000; // Online if seen in last 30 seconds
+          });
+        }
+      }
+      setUserProfiles(profileMap);
+      setOnlineStatuses(onlineMap);
+      setLoading(false);
+
+      // Subscribe to presence updates for all relevant profiles
+      const channels: any[] = [];
+      userIdsToFetch.forEach(id => {
+        const channel = supabase
+          .channel(`profile_presence_list:${id}`)
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${id}` }, payload => {
+            const updatedProfile = payload.new as Profile;
+            setUserProfiles(prev => ({ ...prev, [updatedProfile.id]: updatedProfile }));
+            const lastSeen = new Date(updatedProfile.last_seen || 0).getTime();
+            setOnlineStatuses(prev => ({ ...prev, [updatedProfile.id]: Date.now() - lastSeen < 30000 }));
+          })
+          .subscribe();
+        channels.push(channel);
+      });
+
+      return () => {
+        channels.forEach(channel => supabase.removeChannel(channel));
+      };
+    };
+
+    if (chats.length > 0 && currentUserId) {
+      fetchAndSubscribeToProfiles();
+    } else {
+      setLoading(false);
+    }
+  }, [chats, currentUserId]);
+
+  const renderChatCardSkeleton = () => (
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse">
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-12 h-12 rounded-xl" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+        <Skeleton className="w-6 h-6 rounded-full" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-900">Chats 💬</h1>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 px-6">
-        <div className="flex gap-6">
-          <button className="py-3 text-sm font-semibold text-purple-700 border-b-2 border-purple-700">
-            DMs
-          </button>
-          <button className="py-3 text-sm font-semibold text-gray-500">
-            Rooms
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Chats</h1>
+            <p className="text-sm text-gray-500">Your conversations</p>
+          </div>
+          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+            <Bell className="w-5 h-5 text-purple-700" />
           </button>
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="bg-white px-6 py-4 border-b border-gray-100">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search chats..."
+            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+          />
+        </div>
+      </div>
+
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
-        {chats.length > 0 ? (
-          chats.map(chat => (
-            <button 
-              key={chat.id}
-              onClick={() => {
-                setSelectedChat(chat);
-                setCurrentScreen('chat');
-              }}
-              className="w-full flex items-center gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-            >
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-2xl">
-                  {chat.startup_logo}
-                </div>
-                {chat.isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-                )}
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-gray-900 truncate">{chat.startup_name}</h3>
-                  <span className="text-xs text-gray-500">{chat.last_message_timestamp}</span>
-                </div>
-                <p className={`text-sm truncate ${chat.unread_count > 0 ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                  {chat.last_message_text}
-                </p>
-              </div>
-              {chat.unread_count > 0 && (
-                <div className="w-6 h-6 bg-gradient-to-br from-purple-700 to-teal-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{chat.unread_count}</span>
-                </div>
-              )}
-            </button>
-          ))
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <React.Fragment key={i}>{renderChatCardSkeleton()}</React.Fragment>)
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
-              😴
+          chats.length > 0 ? (
+            chats.map((chat) => {
+              const otherUserId = chat.user_ids.find(id => id !== currentUserId);
+              const isOnline = otherUserId ? onlineStatuses[otherUserId] : false;
+
+              return (
+                <button
+                  key={chat.id}
+                  onClick={() => setSelectedChat(chat)}
+                  className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md hover:-translate-y-1 transition-all"
+                >
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl shadow-lg">
+                      {chat.startup_logo}
+                    </div>
+                    {isOnline && (
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{chat.startup_name}</h3>
+                    <p className="text-sm text-gray-600 truncate">{chat.last_message_text}</p>
+                  </div>
+                  {chat.unread_count > 0 && (
+                    <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {chat.unread_count}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No active chats</h3>
+              <p className="text-gray-600 mb-6">Start a conversation with a founder or investor!</p>
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No chats yet</h3>
-            <p className="text-gray-600 mb-6">Slide into some founder DMs 🚀</p>
-            <button onClick={() => setActiveTab('home')} className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
-              Browse Startups
-            </button>
-          </div>
+          )
         )}
       </div>
 

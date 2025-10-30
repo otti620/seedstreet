@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Rocket, Users, MessageCircle, User, Search, TrendingUp, 
-  Heart, Bookmark, Send, ArrowLeft, Plus, Settings, 
+import {
+  Rocket, Users, MessageCircle, User, Search, TrendingUp,
+  Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
@@ -27,7 +27,7 @@ import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
 import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
 import MerchStoreScreen from './screens/MerchStoreScreen';
 import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen'; // Import AdminDashboardScreen
+import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -39,32 +39,33 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null; // Added 'admin' role
+  role: 'investor' | 'founder' | 'admin' | null;
   onboarding_complete: boolean;
-  bookmarked_startups: string[]; // Array of startup IDs
-  interested_startups: string[]; // Array of startup IDs
+  bookmarked_startups: string[];
+  interested_startups: string[];
   bio: string | null;
   location: string | null;
   phone: string | null;
+  last_seen: string | null;
 }
 
 interface Startup {
-  id: string; // Changed to string to match UUID
+  id: string;
   name: string;
-  logo: string; // Assuming logo is a string (e.g., emoji or URL)
+  logo: string;
   tagline: string;
-  pitch: string; // Added as required
-  description: string | null; // Made nullable
+  pitch: string;
+  description: string | null;
   category: string;
-  room_members: number; // Changed to match schema
-  active_chats: number; // Changed to match schema
+  room_members: number;
+  active_chats: number;
   interests: number;
-  founder_name: string; // Changed to match schema
-  location: string; // Assuming location is a string
-  founder_id: string; // Added founder_id for chat creation
-  amount_sought: number | null; // Added
-  currency: string | null; // Added
-  funding_stage: string | null; // Added
+  founder_name: string;
+  location: string;
+  founder_id: string;
+  amount_sought: number | null;
+  currency: string | null;
+  funding_stage: string | null;
 }
 
 interface Chat {
@@ -75,11 +76,11 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean; // This might need to be derived or fetched separately
-  investor_id: string; // Added for chat creation logic
-  founder_id: string; // Added for chat creation logic
-  user_ids: string[]; // Added for chat creation logic
-  unread_counts: { [key: string]: number }; // Added for read receipts
+  isOnline: boolean;
+  investor_id: string;
+  founder_id: string;
+  user_ids: string[];
+  unread_counts: { [key: string]: number };
 }
 
 interface Message {
@@ -100,7 +101,7 @@ interface CommunityPost {
   content: string;
   image_url: string | null;
   created_at: string;
-  likes: string[]; // Array of user IDs who liked
+  likes: string[];
   comments_count: number;
 }
 
@@ -115,14 +116,14 @@ interface Notification {
   related_entity_id: string | null;
 }
 
-interface ActivityLog { // New interface for activity log entries
+interface ActivityLog {
   id: string;
   user_id: string;
-  type: string; // e.g., 'startup_listed', 'chat_started', 'profile_updated', 'bookmark_added'
+  type: string;
   description: string;
   timestamp: string;
-  entity_id: string | null; // ID of the related entity (startup, chat, etc.)
-  icon: string | null; // Lucide icon name or emoji
+  entity_id: string | null;
+  icon: string | null;
 }
 
 
@@ -133,10 +134,10 @@ const SeedstreetApp = () => {
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
-  
+
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
-  const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined); // New state for celebration screen
-  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined); // New state for community post detail
+  const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined);
+  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
 
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
@@ -144,11 +145,11 @@ const SeedstreetApp = () => {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]); // New state for recent activities
+  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
-  const [isSplashFadingOut, setIsSplashFadingOut] = useState(false); // New state for splash fade-out
+  const [isSplashFadingOut, setIsSplashFadingOut] = useState(false);
 
   const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
     setCurrentScreenState(screen);
@@ -169,7 +170,6 @@ const SeedstreetApp = () => {
     }
   };
 
-  // Function to log activity
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
       console.warn("Attempted to log activity without a user profile.");
@@ -190,12 +190,12 @@ const SeedstreetApp = () => {
   useEffect(() => {
     if (currentScreen === 'splash') {
       const fadeOutTimer = setTimeout(() => {
-        setIsSplashFadingOut(true); // Start fade-out animation
-      }, 2000); // Start fading after 2 seconds
+        setIsSplashFadingOut(true);
+      }, 2000);
 
       const transitionTimer = setTimeout(() => {
-        setCurrentScreen('onboarding'); // Transition to next screen after fade
-      }, 2500); // Total time for splash screen (2s + 0.5s fade)
+        setCurrentScreen('onboarding');
+      }, 2500);
 
       return () => {
         clearTimeout(fadeOutTimer);
@@ -250,7 +250,7 @@ const SeedstreetApp = () => {
       toast.error("Failed to load user profile.");
       setUserProfile(null);
       setUserRole(null);
-      setCurrentScreen('roleSelector'); 
+      setCurrentScreen('roleSelector');
     } else if (data) {
       setUserProfile(data as Profile);
       setUserRole(data.role);
@@ -266,7 +266,6 @@ const SeedstreetApp = () => {
   };
 
   useEffect(() => {
-    // Fetch startups if logged in as investor and on 'home' or 'startups' tab
     if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups')) {
       const fetchStartups = async () => {
         setLoadingData(true);
@@ -294,16 +293,13 @@ const SeedstreetApp = () => {
         setLoadingData(true);
         const { data, error } = await supabase
           .from('chats')
-          .select('*, unread_counts'); // Select unread_counts
-          // .contains('user_ids', [userProfile.id]); // Fetch chats where current user is a participant
-          // The RLS policy already handles this, so no need for .contains() here.
+          .select('*, unread_counts');
 
         if (error) {
           console.error("Error fetching chats:", error);
           toast.error("Failed to load chats.");
           setChats([]);
         } else if (data) {
-          // Calculate unread_count for display based on current user's ID
           const chatsWithUnreadCount = data.map(chat => ({
             ...chat,
             unread_count: chat.unread_counts?.[userProfile.id] || 0,
@@ -431,7 +427,6 @@ const SeedstreetApp = () => {
     }
   }, [isLoggedIn, userProfile?.id, currentScreen]);
 
-  // Fetch Recent Activities for the current user
   const fetchRecentActivities = async () => {
     if (!userProfile?.id) return;
     setLoadingData(true);
@@ -440,11 +435,10 @@ const SeedstreetApp = () => {
       .select('*')
       .eq('user_id', userProfile.id)
       .order('timestamp', { ascending: false })
-      .limit(5); // Fetch a few recent activities
+      .limit(5);
 
     if (error) {
       console.error("Error fetching recent activities:", error);
-      // toast.error("Failed to load recent activities."); // Don't spam user with this error
       setRecentActivities([]);
     } else if (data) {
       setRecentActivities(data as ActivityLog[]);
@@ -456,7 +450,6 @@ const SeedstreetApp = () => {
     if (isLoggedIn && userProfile?.id && currentScreen === 'home' && userRole === 'founder') {
       fetchRecentActivities();
 
-      // Realtime subscription for activity log
       const channel = supabase
         .channel(`user_activity:${userProfile.id}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userProfile.id}` }, payload => {
@@ -525,6 +518,24 @@ const SeedstreetApp = () => {
       setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
       toast.success(isInterested ? "Interest removed!" : "Interest signaled!");
       logActivity(isInterested ? 'interest_removed' : 'interest_added', `${isInterested ? 'Removed' : 'Signaled'} interest in a startup`, startupId, 'Eye');
+
+      if (!isInterested) {
+        const { data: startupData, error: startupError } = await supabase
+          .from('startups')
+          .select('founder_id, name')
+          .eq('id', startupId)
+          .single();
+
+        if (startupData && !startupError) {
+          await supabase.from('notifications').insert({
+            user_id: startupData.founder_id,
+            type: 'new_interest',
+            message: `${userProfile.name || userProfile.email} is interested in your startup ${startupData.name}!`,
+            link: `/startup/${startupId}`,
+            related_entity_id: startupId,
+          });
+        }
+      }
     }
   };
 
@@ -539,8 +550,7 @@ const SeedstreetApp = () => {
     }
 
     setLoadingData(true);
-    
-    // Check if a chat already exists between this investor and founder for this startup
+
     const { data: existingChats, error: fetchChatError } = await supabase
       .from('chats')
       .select('*')
@@ -549,7 +559,7 @@ const SeedstreetApp = () => {
       .eq('startup_id', startup.id)
       .single();
 
-    if (fetchChatError && fetchChatError.code !== 'PGRST116') { // PGRST116 means no rows found
+    if (fetchChatError && fetchChatError.code !== 'PGRST116') {
       toast.error("Failed to check for existing chat: " + fetchChatError.message);
       console.error("Error checking existing chat:", fetchChatError);
       setLoadingData(false);
@@ -562,10 +572,9 @@ const SeedstreetApp = () => {
       chatToOpen = existingChats as Chat;
       toast.info("Continuing existing chat.");
     } else {
-      // Fetch founder's name and role for the chat
       const { data: founderProfile, error: founderError } = await supabase
         .from('profiles')
-        .select('name, email, role') // Select role as well
+        .select('name, email, role')
         .eq('id', startup.founder_id)
         .single();
 
@@ -576,7 +585,7 @@ const SeedstreetApp = () => {
         return;
       }
 
-      if (founderProfile.role !== 'founder') { // New check: Ensure target is a founder
+      if (founderProfile.role !== 'founder') {
         toast.error(`Cannot start chat: ${founderProfile.name || founderProfile.email?.split('@')[0] || 'This user'} is not registered as a founder.`);
         setLoadingData(false);
         return;
@@ -584,13 +593,11 @@ const SeedstreetApp = () => {
 
       const founderName = founderProfile.name || founderProfile.email?.split('@')[0] || 'Founder';
 
-      // Initialize unread_counts for both users, marking 1 unread for the founder
       const initialUnreadCounts = {
-        [userProfile.id]: 0, // Investor starts the chat, so 0 unread for them
-        [startup.founder_id]: 1, // 1 unread for the founder
+        [userProfile.id]: 0,
+        [startup.founder_id]: 1,
       };
 
-      // Create a new chat
       const { data: newChat, error: createChatError } = await supabase
         .from('chats')
         .insert({
@@ -604,7 +611,7 @@ const SeedstreetApp = () => {
           startup_logo: startup.logo,
           last_message_text: 'Chat initiated!',
           last_message_timestamp: new Date().toISOString(),
-          unread_counts: initialUnreadCounts, // Use initialUnreadCounts
+          unread_counts: initialUnreadCounts,
         })
         .select()
         .single();
@@ -618,12 +625,20 @@ const SeedstreetApp = () => {
       chatToOpen = newChat as Chat;
       toast.success("New chat started!");
       logActivity('chat_started', `Started a chat with ${founderName} about ${startup.name}`, chatToOpen.id, 'MessageCircle');
+
+      await supabase.from('notifications').insert({
+        user_id: startup.founder_id,
+        type: 'new_chat',
+        message: `${userProfile.name || userProfile.email} started a chat with you about ${startup.name}!`,
+        link: `/chat/${chatToOpen.id}`,
+        related_entity_id: chatToOpen.id,
+      });
     }
 
     if (chatToOpen) {
       setSelectedChat(chatToOpen);
       setCurrentScreen('chat');
-      setActiveTab('chats'); // Ensure chats tab is active
+      setActiveTab('chats');
     }
     setLoadingData(false);
   };
@@ -633,7 +648,6 @@ const SeedstreetApp = () => {
     return <SplashScreen />;
   }
 
-  // Render SplashScreen with fade-out class if it's the current screen
   if (currentScreen === 'splash') {
     return <SplashScreen isFadingOut={isSplashFadingOut} />;
   }
@@ -650,9 +664,8 @@ const SeedstreetApp = () => {
     return <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserRole={setUserRole} setActiveTab={setActiveTab} logActivity={logActivity} />;
   }
 
-  // Handle all 'home' related screens based on activeTab
   if (currentScreen === 'home') {
-    if (activeTab === 'home' || activeTab === 'startups') { // Render HomeScreen for both 'home' and 'startups' tabs
+    if (activeTab === 'home' || activeTab === 'startups') {
       return (
         <HomeScreen
           userRole={userRole}
@@ -671,7 +684,7 @@ const SeedstreetApp = () => {
           userProfileName={userProfile?.name || userProfile?.first_name || null}
           userProfileEmail={userProfile?.email || null}
           handleStartChat={handleStartChat}
-          recentActivities={recentActivities} // Pass recent activities
+          recentActivities={recentActivities}
         />
       );
     } else if (activeTab === 'chats') {
@@ -693,8 +706,8 @@ const SeedstreetApp = () => {
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
-          userProfileId={userProfile?.id || null} // Pass userProfileId
-          fetchCommunityPosts={fetchCommunityPosts} // Pass fetch function
+          userProfileId={userProfile?.id || null}
+          fetchCommunityPosts={fetchCommunityPosts}
         />
       );
     } else if (activeTab === 'profile') {
@@ -715,7 +728,6 @@ const SeedstreetApp = () => {
     }
   }
 
-  // Other specific screens outside the main tab navigation
   if (currentScreen === 'startupDetail' && selectedStartup) {
     return (
       <StartupDetailScreen
@@ -742,7 +754,7 @@ const SeedstreetApp = () => {
         setCurrentScreen={setCurrentScreen}
         setActiveTab={setActiveTab}
         userProfile={userProfile}
-        logActivity={logActivity} // Pass logActivity
+        logActivity={logActivity}
       />
     );
   }
@@ -765,7 +777,7 @@ const SeedstreetApp = () => {
         userProfileName={userProfile.name}
         userProfileEmail={userProfile.email}
         startupId={selectedStartupId}
-        logActivity={logActivity} // Pass logActivity
+        logActivity={logActivity}
       />
     );
   }
@@ -775,6 +787,7 @@ const SeedstreetApp = () => {
       <CreateCommunityPostScreen
         setCurrentScreen={setCurrentScreen}
         userProfile={userProfile}
+        postId={selectedCommunityPostId} // Pass postId for editing
       />
     );
   }
@@ -798,7 +811,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // New screen for Help & Support
   if (currentScreen === 'helpAndSupport') {
     return (
       <HelpAndSupportScreen
@@ -807,7 +819,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // New screen for Merch Store
   if (currentScreen === 'merchStore') {
     return (
       <MerchStoreScreen
@@ -816,7 +827,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // New screen for Community Post Detail
   if (currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile) {
     return (
       <CommunityPostDetailScreen
@@ -827,7 +837,6 @@ const SeedstreetApp = () => {
     );
   }
 
-  // New screen for Admin Dashboard (only accessible to admins)
   if (currentScreen === 'adminDashboard' && userProfile?.role === 'admin') {
     return (
       <AdminDashboardScreen

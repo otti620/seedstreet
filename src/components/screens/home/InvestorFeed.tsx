@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState } from 'react'; // Import useState
+import React, { useState } from 'react';
 import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -17,7 +23,10 @@ interface Startup {
   interests: number;
   founder_name: string;
   location: string;
-  founder_id: string; // Added founder_id
+  founder_id: string;
+  amount_sought: number | null;
+  currency: string | null;
+  funding_stage: string | null;
 }
 
 interface InvestorFeedProps {
@@ -31,6 +40,12 @@ interface InvestorFeedProps {
   handleStartChat: (startup: Startup) => Promise<void>;
 }
 
+const startupCategories = [
+  "AgriTech", "AI/ML", "CleanTech", "EdTech", "FinTech", "Food & Beverage",
+  "HealthTech", "Logistics", "Media & Entertainment", "PropTech", "SaaS",
+  "Social Impact", "E-commerce", "Other"
+];
+
 const InvestorFeed: React.FC<InvestorFeedProps> = ({
   startups,
   bookmarkedStartups,
@@ -41,14 +56,20 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
   loading,
   handleStartChat,
 }) => {
-  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const filteredStartups = startups.filter(startup =>
-    startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    startup.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    startup.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    startup.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStartups = startups.filter(startup => {
+    const matchesSearch =
+      startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      startup.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      startup.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      startup.location.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory = selectedCategory ? startup.category === selectedCategory : true;
+
+    return matchesSearch && matchesCategory;
+  });
 
   const renderStartupCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse">
@@ -111,9 +132,27 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors">
-            <Filter className="w-5 h-5 text-gray-600" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${selectedCategory ? 'bg-purple-700 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>
+                <Filter className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setSelectedCategory(null)} className={!selectedCategory ? 'font-semibold bg-gray-100' : ''}>
+                All Categories
+              </DropdownMenuItem>
+              {startupCategories.map(category => (
+                <DropdownMenuItem
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={selectedCategory === category ? 'font-semibold bg-gray-100' : ''}
+                >
+                  {category}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User as UserIcon, Mail, Phone, MapPin, Info, Save } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase, Image as ImageIcon, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -28,88 +29,125 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   name: string | null;
-  role: 'investor' | 'founder' | null;
+  role: 'investor' | 'founder' | 'admin' | null;
   onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
   bio: string | null;
   location: string | null;
   phone: string | null;
 }
 
 interface EditProfileScreenProps {
-  userProfile: Profile;
   setCurrentScreen: (screen: string) => void;
+  userProfile: Profile;
   setUserProfile: (profile: Profile | null) => void;
 }
 
-const profileSchema = z.object({
-  first_name: z.string().min(2, { message: "First name must be at least 2 characters." }).optional().or(z.literal('')),
-  last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }).optional().or(z.literal('')),
-  name: z.string().min(2, { message: "Display name must be at least 2 characters." }).optional().or(z.literal('')),
-  email: z.string().email({ message: "Invalid email address." }).optional(), // Email might not be editable directly
-  bio: z.string().max(500, { message: "Bio cannot exceed 500 characters." }).optional().or(z.literal('')),
-  location: z.string().optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  avatar_url: z.string().url({ message: "Invalid URL for avatar." }).optional().or(z.literal('')),
+const formSchema = z.object({
+  first_name: z.string().min(1, { message: "First name is required." }),
+  last_name: z.string().min(1, { message: "Last name is required." }),
+  email: z.string().email({ message: "Invalid email address." }),
+  bio: z.string().max(500, { message: "Bio cannot exceed 500 characters." }).nullable(),
+  location: z.string().nullable(),
+  phone: z.string().nullable(),
+  // avatar_url is handled separately by file upload
 });
 
-const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setCurrentScreen, setUserProfile }) => {
+const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
+  setCurrentScreen,
+  userProfile,
+  setUserProfile,
+}) => {
   const [loading, setLoading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.avatar_url);
 
-  const form = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       first_name: userProfile.first_name || '',
       last_name: userProfile.last_name || '',
-      name: userProfile.name || '',
       email: userProfile.email || '',
       bio: userProfile.bio || '',
       location: userProfile.location || '',
       phone: userProfile.phone || '',
-      avatar_url: userProfile.avatar_url || '',
     },
   });
 
-  // Reset form with new userProfile data if it changes
   useEffect(() => {
-    form.reset({
-      first_name: userProfile.first_name || '',
-      last_name: userProfile.last_name || '',
-      name: userProfile.name || '',
-      email: userProfile.email || '',
-      bio: userProfile.bio || '',
-      location: userProfile.location || '',
-      phone: userProfile.phone || '',
-      avatar_url: userProfile.avatar_url || '',
-    });
-  }, [userProfile, form]);
+    if (avatarFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(avatarFile);
+    } else if (!userProfile.avatar_url) {
+      setAvatarPreview(null);
+    }
+  }, [avatarFile, userProfile.avatar_url]);
 
-  const onSubmit = async (values: z.infer<typeof profileSchema>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setAvatarFile(event.target.files[0]);
+    } else {
+      setAvatarFile(null);
+      setAvatarPreview(userProfile.avatar_url);
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    const { data, error } = await supabase
+    let avatarUrl = userProfile.avatar_url;
+
+    if (avatarFile) {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${userProfile.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, avatarFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        toast.error("Failed to upload avatar: " + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      avatarUrl = publicUrlData.publicUrl;
+    }
+
+    const { error } = await supabase
       .from('profiles')
       .update({
-        first_name: values.first_name || null,
-        last_name: values.last_name || null,
-        name: values.name || null,
-        bio: values.bio || null,
-        location: values.location || null,
-        phone: values.phone || null,
-        avatar_url: values.avatar_url || null,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        name: `${values.first_name} ${values.last_name}`, // Update full name
+        email: values.email,
+        bio: values.bio,
+        location: values.location,
+        phone: values.phone,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', userProfile.id)
-      .select()
-      .single();
+      .eq('id', userProfile.id);
 
     if (error) {
       toast.error("Failed to update profile: " + error.message);
       console.error("Error updating profile:", error);
-    } else if (data) {
-      setUserProfile(data as Profile); // Update local state with new profile data
+    } else {
       toast.success("Profile updated successfully!");
-      setCurrentScreen('home'); // Go back to profile screen or home
+      // Update local userProfile state
+      setUserProfile({
+        ...userProfile,
+        ...values,
+        name: `${values.first_name} ${values.last_name}`,
+        avatar_url: avatarUrl,
+      });
+      setCurrentScreen('home'); // Go back to profile dashboard
     }
     setLoading(false);
   };
@@ -124,7 +162,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setC
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1">Edit Profile</h2>
           <Button type="submit" form="profile-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white">
-            {loading ? 'Saving...' : <Save className="w-4 h-4" />}
+            {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>
@@ -133,21 +171,45 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setC
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Form {...form}>
           <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Avatar Upload */}
+            <FormItem className="flex flex-col items-center gap-3">
+              <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 hover:border-purple-700 transition-all">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U'
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <Upload className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              </Label>
+              <Input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={loading}
+              />
+              <p className="text-sm text-gray-500">Click to upload new avatar</p>
+            </FormItem>
+
             <FormField
               control={form.control}
-              name="avatar_url"
+              name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Avatar URL</Label>
+                  <Label>First Name</Label>
                   <div className="relative">
                     <Input
                       {...field}
-                      type="url"
+                      type="text"
                       placeholder=" "
                       className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                     />
-                    {/* Placeholder for image upload button */}
-                    <Button variant="outline" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => toast.info("Image upload coming soon!")}>Upload</Button>
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -156,10 +218,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setC
 
             <FormField
               control={form.control}
-              name="name"
+              name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Display Name</Label>
+                  <Label>Last Name</Label>
                   <div className="relative">
                     <Input
                       {...field}
@@ -167,46 +229,33 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setC
                       placeholder=" "
                       className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                     />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label>First Name</Label>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Email</Label>
+                  <div className="relative">
                     <Input
                       {...field}
-                      type="text"
+                      type="email"
                       placeholder=" "
                       className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      disabled // Email is usually not editable directly here
                     />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="last_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label>Last Name</Label>
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -217,7 +266,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ userProfile, setC
                   <Textarea
                     {...field}
                     placeholder="Tell us about yourself..."
-                    className="min-h-[80px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                   />
                   <FormMessage />
                 </FormItem>

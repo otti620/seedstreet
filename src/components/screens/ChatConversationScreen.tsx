@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Check, MoreVertical, Plus, Send, Flag } from 'lucide-react'; // Import Flag icon
+import { ArrowLeft, Check, MoreVertical, Plus, Send, Flag } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
+} from '@/components/ui/dropdown-menu';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -21,10 +21,10 @@ interface Chat {
   last_message_timestamp: string;
   unread_count: number;
   isOnline: boolean;
-  unread_counts: { [key: string]: number }; // Added for read receipts
-  investor_id: string; // Added for chat creation logic
-  founder_id: string; // Added for chat creation logic
-  user_ids: string[]; // Added for chat creation logic
+  unread_counts: { [key: string]: number };
+  investor_id: string;
+  founder_id: string;
+  user_ids: string[];
 }
 
 interface Message {
@@ -37,10 +37,11 @@ interface Message {
   read: boolean;
 }
 
-interface Profile { // Added Profile interface for user details
+interface Profile {
   id: string;
   name: string | null;
   email: string | null;
+  last_seen: string | null; // Added for presence
 }
 
 interface ChatConversationScreenProps {
@@ -48,8 +49,8 @@ interface ChatConversationScreenProps {
   messages: Message[];
   setCurrentScreen: (screen: string) => void;
   setActiveTab: (tab: string) => void;
-  userProfile: Profile | null; // Pass the full user profile
-  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
+  userProfile: Profile | null;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
@@ -58,14 +59,72 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   setCurrentScreen,
   setActiveTab,
   userProfile,
-  logActivity, // Destructure logActivity
+  logActivity,
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null); // State for the other chat participant
+  const [isOtherUserOnline, setIsOtherUserOnline] = useState(false); // Real-time online status
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false); // Placeholder for typing indicator
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userProfileId = userProfile?.id || null;
   const userProfileName = userProfile?.name || userProfile?.email || null;
+
+  // Determine the ID of the other participant
+  const otherParticipantId = selectedChat.user_ids.find(id => id !== userProfileId);
+
+  // Fetch other participant's profile and subscribe to presence
+  useEffect(() => {
+    if (otherParticipantId) {
+      const fetchOtherUserProfile = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name, email, last_seen')
+          .eq('id', otherParticipantId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching other user profile:", error);
+        } else if (data) {
+          setOtherUserProfile(data as Profile);
+          // Initial check for online status
+          const lastSeen = new Date(data.last_seen || 0).getTime();
+          setIsOtherUserOnline(Date.now() - lastSeen < 30000); // Online if seen in last 30 seconds
+        }
+      };
+      fetchOtherUserProfile();
+
+      // Subscribe to changes in the other user's profile for presence updates
+      const channel = supabase
+        .channel(`profile_presence:${otherParticipantId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${otherParticipantId}` }, payload => {
+          const updatedProfile = payload.new as Profile;
+          setOtherUserProfile(updatedProfile);
+          const lastSeen = new Date(updatedProfile.last_seen || 0).getTime();
+          setIsOtherUserOnline(Date.now() - lastSeen < 30000); // Update online status
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [otherParticipantId]);
+
+  // Update current user's last_seen timestamp periodically
+  useEffect(() => {
+    const updateLastSeen = async () => {
+      if (userProfileId) {
+        await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', userProfileId);
+      }
+    };
+
+    const interval = setInterval(updateLastSeen, 15000); // Update every 15 seconds
+    updateLastSeen(); // Initial update
+
+    return () => clearInterval(interval);
+  }, [userProfileId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -76,11 +135,10 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   useEffect(() => {
     const markChatAsRead = async () => {
       if (userProfileId && selectedChat.id) {
-        // Update the unread_counts for the current user in the chats table
         const currentUnreadCounts = selectedChat.unread_counts || {};
         const newUnreadCounts = {
           ...currentUnreadCounts,
-          [userProfileId]: 0, // Set current user's unread count to 0
+          [userProfileId]: 0,
         };
 
         const { error: updateChatError } = await supabase
@@ -102,13 +160,11 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     if (messageInput.trim() && userProfileId && userProfileName) {
       setSending(true);
 
-      // Update unread_counts for all other participants in the chat
       const otherUserIds = selectedChat.user_ids.filter(id => id !== userProfileId);
       const newUnreadCounts = { ...selectedChat.unread_counts };
       otherUserIds.forEach(id => {
         newUnreadCounts[id] = (newUnreadCounts[id] || 0) + 1;
       });
-      // Also set current user's count to 0 as they just sent a message
       newUnreadCounts[userProfileId] = 0;
 
       const { error } = await supabase.from('messages').insert({
@@ -123,7 +179,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         console.error("Error sending message:", error);
       } else {
         setMessageInput('');
-        // Update the last message in the chat list and unread counts
         await supabase.from('chats').update({
           last_message_text: messageInput.trim(),
           last_message_timestamp: new Date().toISOString(),
@@ -149,13 +204,13 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       return;
     }
 
-    setSending(true); // Use sending state for reporting as well
+    setSending(true);
     const { error } = await supabase.from('flagged_messages').insert({
       message_id: message.id,
       chat_id: message.chat_id,
       sender: message.sender_name,
       sender_id: message.sender_id,
-      chat_type: 'DM', // Assuming DM for now, could be 'Room'
+      chat_type: 'DM',
       startup_name: selectedChat.startup_name,
       reason: reason.trim(),
       reported_by: userProfileId,
@@ -188,11 +243,15 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl">
                 {selectedChat.startup_logo}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+              {isOtherUserOnline && (
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-gray-900 truncate">{selectedChat.startup_name}</h2>
-              <p className="text-xs text-green-600">Online</p>
+              <p className={`text-xs ${isOtherUserOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                {isOtherUserOnline ? 'Online' : 'Offline'}
+              </p>
             </div>
           </div>
           <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
@@ -210,7 +269,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
                 <DropdownMenuTrigger asChild>
                   <div className={`rounded-2xl p-3 cursor-pointer ${
                     msg.sender_id === userProfileId
-                      ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md' 
+                      ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md'
                       : 'bg-gray-100 text-gray-900 rounded-bl-md'
                   }`}>
                     <p className="text-sm leading-relaxed">{msg.text}</p>
@@ -229,6 +288,17 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             </div>
           </div>
         ))}
+        {/* Typing Indicator Placeholder */}
+        {isOtherUserTyping && (
+          <div className="flex justify-start">
+            <div className="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md p-3">
+              <div className="flex items-center space-x-1">
+                <span className="text-sm">Typing</span>
+                <span className="animate-pulse">...</span>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
 
@@ -253,7 +323,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             <Plus className="w-5 h-5" />
           </button>
           <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center">
-            <input 
+            <input
               type="text"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}

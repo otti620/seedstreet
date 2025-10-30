@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Send, Flag } from 'lucide-react'; // Import Flag icon
+import { ArrowLeft, Heart, MessageCircle, Send, Flag, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
+} from '@/components/ui/dropdown-menu';
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -92,7 +92,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (postError) {
       toast.error("Failed to load post: " + postError.message);
       console.error("Error fetching post:", postError);
-      setCurrentScreen('home'); // Go back if post not found
+      setCurrentScreen('home');
       setLoading(false);
       return;
     }
@@ -107,7 +107,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
     if (commentsError) {
       console.error("Error fetching comments:", commentsError);
-      // Don't toast error for comments, just show no comments
       setComments([]);
     } else {
       setComments(commentsData as CommunityComment[]);
@@ -119,11 +118,10 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (selectedCommunityPostId) {
       fetchPostAndComments();
 
-      // Realtime subscription for comments
       const channel = supabase
         .channel(`post_comments:${selectedCommunityPostId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments', filter: `post_id=eq.${selectedCommunityPostId}` }, payload => {
-          fetchPostAndComments(); // Re-fetch comments on change
+          fetchPostAndComments();
         })
         .subscribe();
 
@@ -154,6 +152,16 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       console.error("Error updating like:", error);
     } else {
       setPost(prev => prev ? { ...prev, likes: newLikes } : null);
+      // Notify post author of new like
+      if (!isLiked && post.author_id !== userProfile.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.author_id,
+          type: 'post_liked',
+          message: `${userProfile.name || userProfile.email} liked your post!`,
+          link: `/communityPostDetail/${post.id}`,
+          related_entity_id: post.id,
+        });
+      }
     }
   };
 
@@ -177,8 +185,18 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       console.error("Error adding comment:", error);
     } else {
       toast.success("Comment added!");
-      form.reset(); // Clear the comment input
-      fetchPostAndComments(); // Re-fetch to update comments list and count
+      form.reset();
+      fetchPostAndComments();
+      // Notify post author of new comment
+      if (post.author_id !== userProfile.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.author_id,
+          type: 'new_comment',
+          message: `${userProfile.name || userProfile.email} commented on your post!`,
+          link: `/communityPostDetail/${post.id}`,
+          related_entity_id: post.id,
+        });
+      }
     }
     setSubmittingComment(false);
   };
@@ -195,15 +213,15 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       return;
     }
 
-    setSubmittingComment(true); // Use submittingComment state for reporting as well
-    const { error } = await supabase.from('flagged_messages').insert({ // Using flagged_messages for posts too
-      message_id: post.id, // Using message_id for post_id
-      original_message_id: post.id, // Store original post ID
-      chat_id: 'community', // A generic ID for community posts
+    setSubmittingComment(true);
+    const { error } = await supabase.from('flagged_messages').insert({
+      message_id: post.id,
+      original_message_id: post.id,
+      chat_id: 'community',
       sender: post.author_name,
       sender_id: post.author_id,
       chat_type: 'Community',
-      startup_name: null, // Not applicable for community posts
+      startup_name: null,
       reason: reason.trim(),
       reported_by: userProfile.id,
       status: 'Pending',
@@ -216,6 +234,35 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       toast.success("Post reported successfully. We will review it shortly.");
     }
     setSubmittingComment(false);
+  };
+
+  const handleDeleteComment = async (commentId: string, commentAuthorId: string) => {
+    if (!userProfile?.id) {
+      toast.error("You must be logged in to delete comments.");
+      return;
+    }
+    if (userProfile.id !== commentAuthorId) {
+      toast.error("You can only delete your own comments.");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('community_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('author_id', userProfile.id);
+
+    if (error) {
+      toast.error("Failed to delete comment: " + error.message);
+      console.error("Error deleting comment:", error);
+    } else {
+      toast.success("Comment deleted!");
+      fetchPostAndComments();
+    }
   };
 
   if (loading) {
@@ -253,6 +300,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
   }
 
   const isLikedByUser = userProfile?.id && post.likes.includes(userProfile.id);
+  const isPostAuthor = userProfile?.id === post.author_id;
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -270,6 +318,16 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {isPostAuthor && (
+                <>
+                  <DropdownMenuItem onClick={() => setCurrentScreen('createCommunityPost', { postId: post.id })} className="flex items-center gap-2">
+                    <Edit className="w-4 h-4" /> Edit Post
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDeleteComment(post.id, post.author_id)} className="flex items-center gap-2 text-red-600">
+                    <Trash2 className="w-4 h-4" /> Delete Post
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuItem onClick={handleReportPost} className="flex items-center gap-2 text-red-600">
                 <Flag className="w-4 h-4" /> Report Post
               </DropdownMenuItem>
@@ -321,24 +379,45 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
         <div className="space-y-3">
           <h3 className="text-lg font-bold text-gray-900">Comments ({comments.length})</h3>
           {comments.length > 0 ? (
-            comments.map(comment => (
-              <div key={comment.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-                <div className="flex items-start gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                    {comment.author_avatar_url ? (
-                      <img src={comment.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      comment.author_name?.[0] || '?'
+            comments.map(comment => {
+              const isCommentAuthor = userProfile?.id === comment.author_id;
+              return (
+                <div key={comment.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-start gap-2 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                      {comment.author_avatar_url ? (
+                        <img src={comment.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        comment.author_name?.[0] || '?'
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{comment.author_name}</p>
+                      <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
+                    </div>
+                    {isCommentAuthor && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100">
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {/* For now, editing comments is not implemented, only deletion */}
+                          {/* <DropdownMenuItem className="flex items-center gap-2">
+                            <Edit className="w-4 h-4" /> Edit Comment
+                          </DropdownMenuItem> */}
+                          <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, comment.author_id)} className="flex items-center gap-2 text-red-600">
+                            <Trash2 className="w-4 h-4" /> Delete Comment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{comment.author_name}</p>
-                    <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
-                  </div>
+                  <p className="text-sm text-gray-700 ml-10">{comment.content}</p>
                 </div>
-                <p className="text-sm text-gray-700 ml-10">{comment.content}</p>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p className="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
           )}
