@@ -7,7 +7,7 @@ import {
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-import BottomNav from '@/components/BottomNav'; // Using absolute path
+import BottomNav from '@/components/BottomNav'; // Corrected absolute path for BottomNav
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
