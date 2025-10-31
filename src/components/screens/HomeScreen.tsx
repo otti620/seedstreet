@@ -3,7 +3,7 @@
 import React from 'react';
 import InvestorFeed from './home/InvestorFeed';
 import FounderDashboard from './home/FounderDashboard';
-import BottomNav from '../BottomNav';
+import BottomNav from '../BottomNav'; // Corrected path
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {

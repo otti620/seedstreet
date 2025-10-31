@@ -3,7 +3,7 @@
 import React from 'react';
 import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag, ShieldCheck } from 'lucide-react'; // Import ShieldCheck
 import { toast } from 'sonner';
-import BottomNav from '../BottomNav';
+import BottomNav from '../BottomNav'; // Corrected path
 import MenuItem from '../MenuItem';
 import { supabase } from '@/integrations/supabase/client';
 

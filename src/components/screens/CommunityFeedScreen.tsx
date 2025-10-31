@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Bell, Heart, MessageCircle, MoreVertical, Edit, Trash2 } from 'lucide-react'; // Import Edit, Trash2
-import BottomNav from '../../BottomNav';
+import BottomNav from '../BottomNav'; // Corrected path
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';

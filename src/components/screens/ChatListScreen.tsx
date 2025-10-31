@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Bell, MessageCircle } from 'lucide-react';
-import BottomNav from '../../BottomNav';
+import BottomNav from '../BottomNav'; // Corrected path
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -179,9 +179,9 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                     <h3 className="font-bold text-gray-900 truncate">{chat.startup_name}</h3>
                     <p className="text-sm text-gray-600 truncate">{chat.last_message_text}</p>
                   </div>
-                  {chat.unread_count > 0 && (
+                  {chat.unread_counts?.[currentUserId || ''] > 0 && (
                     <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {chat.unread_count}
+                      {chat.unread_counts?.[currentUserId || '']}
                     </span>
                   )}
                 </button>
