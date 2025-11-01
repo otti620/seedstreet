@@ -165,7 +165,10 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
               return (
                 <button
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => {
+                    setSelectedChat(chat); // Set the selected chat
+                    setCurrentScreen('chat'); // Navigate to the chat conversation screen
+                  }}
                   className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md hover:-translate-y-1 transition-all dark:bg-gray-800 dark:border-gray-700"
                   aria-label={`Open chat with ${chat.startup_name}`}
                 >

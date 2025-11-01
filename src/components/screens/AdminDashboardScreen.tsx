@@ -34,6 +34,7 @@ interface Startup {
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   created_at: string;
+  founder_id: string; // Added founder_id to Startup interface
 }
 
 interface AdminDashboardScreenProps {
@@ -119,6 +120,19 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   };
 
   const handleUpdateStartupStatus = async (startupId: string, newStatus: 'Approved' | 'Rejected') => {
+    // First, get the startup details to send a notification
+    const { data: startupToUpdate, error: fetchError } = await supabase
+      .from('startups')
+      .select('name, founder_id')
+      .eq('id', startupId)
+      .single();
+
+    if (fetchError || !startupToUpdate) {
+      toast.error("Failed to fetch startup details for notification: " + (fetchError?.message || "Unknown error"));
+      console.error("Error fetching startup for notification:", fetchError);
+      return;
+    }
+
     const { error } = await supabase
       .from('startups')
       .update({ status: newStatus })
@@ -130,6 +144,15 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     } else {
       toast.success(`Startup ${newStatus.toLowerCase()}!`);
       fetchAdminData(); // Re-fetch to update UI
+
+      // Send notification to the founder
+      await supabase.from('notifications').insert({
+        user_id: startupToUpdate.founder_id,
+        type: `startup_${newStatus.toLowerCase()}`,
+        message: `Your startup "${startupToUpdate.name}" has been ${newStatus.toLowerCase()}!`,
+        link: `/startup/${startupId}`,
+        related_entity_id: startupId,
+      });
     }
   };
 

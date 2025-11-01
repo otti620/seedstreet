@@ -53,29 +53,42 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
 
+  const fetchFounderStartup = async () => {
+    setStartupLoading(true);
+    const { data, error } = await supabase
+      .from('startups')
+      .select('*')
+      .eq('founder_id', userProfileId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error("Error fetching founder's startup:", error);
+      toast.error("Failed to load your startup data.");
+      setFounderStartup(null);
+    } else if (data) {
+      setFounderStartup(data as Startup);
+    } else {
+      setFounderStartup(null);
+    }
+    setStartupLoading(false);
+  };
+
   useEffect(() => {
-    const fetchFounderStartup = async () => {
-      setStartupLoading(true);
-      const { data, error } = await supabase
-        .from('startups')
-        .select('*')
-        .eq('founder_id', userProfileId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-        console.error("Error fetching founder's startup:", error);
-        toast.error("Failed to load your startup data.");
-        setFounderStartup(null);
-      } else if (data) {
-        setFounderStartup(data as Startup);
-      } else {
-        setFounderStartup(null);
-      }
-      setStartupLoading(false);
-    };
-
     if (userProfileId) {
       fetchFounderStartup();
+
+      // Real-time subscription for the founder's specific startup
+      const channel = supabase
+        .channel(`founder_startup:${userProfileId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'startups', filter: `founder_id=eq.${userProfileId}` }, payload => {
+          // When a change occurs, re-fetch the specific startup data
+          fetchFounderStartup();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userProfileId]);
 

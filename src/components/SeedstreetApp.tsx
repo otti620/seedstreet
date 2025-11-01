@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Rocket, Users, MessageCircle, User, Search, TrendingUp,
   Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
@@ -61,7 +61,7 @@ interface Startup {
   category: string;
   room_members: number;
   active_chats: number;
-  interests: number;
+  interests: number; // This needs to be updated
   founder_name: string;
   location: string;
   founder_id: string;
@@ -564,38 +564,65 @@ const SeedstreetApp = () => {
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
-      ? currentInterests.filter(id => id !== startupId)
-      : [...currentInterests, startupId]; // Corrected typo: currentInterrests -> currentInterests
+      ? currentInterests.filter(id => id !== userProfile.id) // Filter by userProfile.id, not startupId
+      : [...currentInterests, userProfile.id]; // Add userProfile.id, not startupId
 
-    const { error } = await supabase
+    // Optimistic UI update for interested startups in user profile
+    setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
+
+    // Update user's profile
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ interested_startups: newInterests })
       .eq('id', userProfile.id);
 
-    if (error) {
-      toast.error("Failed to update interest: " + error.message);
-      console.error("Error updating interest:", error);
+    if (profileError) {
+      toast.error("Failed to update interest in profile: " + profileError.message);
+      console.error("Error updating interest in profile:", profileError);
+      // Revert optimistic update on error
+      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
+      return;
+    }
+
+    // Now, update the 'interests' count in the 'startups' table
+    const { data: startupData, error: fetchStartupError } = await supabase
+      .from('startups')
+      .select('interests, founder_id, name')
+      .eq('id', startupId)
+      .single();
+
+    if (fetchStartupError || !startupData) {
+      console.error("Error fetching startup for interest update:", fetchStartupError);
+      toast.error("Failed to fetch startup details for interest update.");
+      // Revert profile update if startup update fails
+      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
+      return;
+    }
+
+    const newInterestsCount = isInterested ? startupData.interests - 1 : startupData.interests + 1;
+
+    const { error: startupUpdateError } = await supabase
+      .from('startups')
+      .update({ interests: newInterestsCount })
+      .eq('id', startupId);
+
+    if (startupUpdateError) {
+      toast.error("Failed to update startup interest count: " + startupUpdateError.message);
+      console.error("Error updating startup interest count:", startupUpdateError);
+      // Revert profile update if startup update fails
+      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
     } else {
-      setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
       toast.success(isInterested ? "Interest removed!" : "Interest signaled!");
       logActivity(isInterested ? 'interest_removed' : 'interest_added', `${isInterested ? 'Removed' : 'Signaled'} interest in a startup`, startupId, 'Eye');
 
-      if (!isInterested) {
-        const { data: startupData, error: startupError } = await supabase
-          .from('startups')
-          .select('founder_id, name')
-          .eq('id', startupId)
-          .single();
-
-        if (startupData && !startupError) {
-          await supabase.from('notifications').insert({
-            user_id: startupData.founder_id,
-            type: 'new_interest',
-            message: `${userProfile.name || userProfile.email} is interested in your startup ${startupData.name}!`,
-            link: `/startup/${startupId}`,
-            related_entity_id: startupId,
-          });
-        }
+      if (!isInterested) { // Only send notification if interest was newly signaled
+        await supabase.from('notifications').insert({
+          user_id: startupData.founder_id,
+          type: 'new_interest',
+          message: `${userProfile.name || userProfile.email} is interested in your startup ${startupData.name}!`,
+          link: `/startup/${startupId}`,
+          related_entity_id: startupId,
+        });
       }
     }
   };
@@ -612,15 +639,16 @@ const SeedstreetApp = () => {
 
     setLoadingData(true);
 
+    // Refined check for existing chat: investor_id, founder_id, AND startup_id
     const { data: existingChats, error: fetchChatError } = await supabase
       .from('chats')
       .select('*')
       .eq('investor_id', userProfile.id)
       .eq('founder_id', startup.founder_id)
-      .eq('startup_id', startup.id)
+      .eq('startup_id', startup.id) // Crucial for unique chat per startup
       .single();
 
-    if (fetchChatError && fetchChatError.code !== 'PGRST116') {
+    if (fetchChatError && fetchChatError.code !== 'PGRST116') { // PGRST116 means no rows found
       toast.error("Failed to check for existing chat: " + fetchChatError.message);
       console.error("Error checking existing chat:", fetchChatError);
       setLoadingData(false);
