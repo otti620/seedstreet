@@ -220,8 +220,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
           </p>
           <button 
             onClick={() => {
-              setIsSignUp(!isSignUp);
-              console.log("Toggle button clicked. isSignUp will be:", !isSignUp);
+              setIsSignUp(prev => {
+                const newState = !prev;
+                console.log("Toggle button clicked. isSignUp will be:", newState);
+                form.reset({ // Reset form fields on toggle
+                  name: "",
+                  email: "",
+                  password: "",
+                });
+                return newState;
+              });
             }} 
             className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
             aria-label={isSignUp ? 'Log In' : 'Sign Up'}
