@@ -143,7 +143,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
             <p className="text-sm text-gray-500">Join 650+ investors and founders</p>
           </div>
 
-          <Form {...form}>
+          <Form {...form} key={isSignUp ? 'signup-form' : 'login-form'}> {/* Added key prop here */}
             <form onSubmit={form.handleSubmit(handleAuth)} className="space-y-4">
               {isSignUp && (
                 <FormField
