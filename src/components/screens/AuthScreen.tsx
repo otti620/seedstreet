@@ -47,10 +47,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
   });
 
   const handleAuth = async (values: z.infer<typeof authSchema>) => {
+    console.log("handleAuth called. isSignUp:", isSignUp, "values:", values);
     setLoading(true);
-    let error = null;
+    let authError = null;
 
     if (isSignUp) {
+      console.log("Attempting Sign Up with email:", values.email);
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -61,36 +63,45 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
           },
         },
       });
-      error = signUpError;
-      if (!error && data?.user) {
+      authError = signUpError;
+      if (!authError && data?.user) {
+        console.log("Sign Up successful, user:", data.user);
         toast.success("Account created! Please check your email to verify.");
-        // For now, we'll directly move to role selection for demo purposes
-        // In a real app, you'd wait for email verification
         setIsLoggedIn(true);
         setCurrentScreen('roleSelector');
       }
-    } else {
+    } else { // Log In path
+      console.log("Attempting Log In with email:", values.email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
-      error = signInError;
-      if (!error && data?.user) {
+      authError = signInError;
+      if (!authError && data?.user) {
+        console.log("Log In successful, user:", data.user);
         toast.success("Logged in successfully!");
         setIsLoggedIn(true);
         // Fetch user role and navigate
-        const { data: profileData } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-        if (profileData?.role) {
+        const { data: profileData, error: profileError } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        if (profileError) {
+          console.error("Error fetching profile after login:", profileError);
+          toast.error("Failed to fetch user role after login: " + profileError.message);
+          setCurrentScreen('roleSelector'); // Still go to role selector if profile fetch fails
+        } else if (profileData?.role) {
+          console.log("User role found:", profileData.role);
           setUserRole(profileData.role);
           setCurrentScreen('home');
         } else {
+          console.log("No role found for user, redirecting to role selector.");
           setCurrentScreen('roleSelector');
         }
+      } else {
+        console.log("Log In failed or no user data. Error:", authError);
       }
     }
 
-    if (error) {
-      toast.error(error.message);
+    if (authError) {
+      toast.error(authError.message);
     }
     setLoading(false);
   };
@@ -206,7 +217,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
-            <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent" aria-label={isSignUp ? 'Log In' : 'Sign Up'}>
+            <button 
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                console.log("Toggle button clicked. isSignUp will be:", !isSignUp);
+              }} 
+              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 dark:text-purple-400" 
+              aria-label={isSignUp ? 'Log In' : 'Sign Up'}
+            >
               {isSignUp ? 'Log In' : 'Sign Up'}
             </button>
           </p>
