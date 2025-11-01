@@ -84,7 +84,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
   // Fetch other participant's profile and subscribe to presence
   useEffect(() => {
-    if (otherParticipantId) {
+    if (otherParticipantId) { // Ensure otherParticipantId exists before fetching
       const fetchOtherUserProfile = async () => {
         const { data, error } = await supabase
           .from('profiles')
@@ -93,7 +93,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
           .single();
 
         if (error) {
-          console.error("Error fetching other user profile:", error);
+          console.error("Error fetching other user profile:", error.message || error); // Log error message or full error object
         } else if (data) {
           setOtherUserProfile(data as Profile);
           // Initial check for online status
