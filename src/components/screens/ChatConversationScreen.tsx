@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -35,6 +36,7 @@ interface Message {
   text: string;
   created_at: string;
   read: boolean;
+  status?: 'pending' | 'sent' | 'failed'; // Added for optimistic UI
 }
 
 interface Profile {
@@ -55,7 +57,7 @@ interface ChatConversationScreenProps {
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   selectedChat,
-  messages,
+  messages: initialMessages, // Renamed to avoid conflict with local state
   setCurrentScreen,
   setActiveTab,
   userProfile,
@@ -67,9 +69,15 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false); // Real-time online status
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false); // Placeholder for typing indicator
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [localMessages, setLocalMessages] = useState<Message[]>(initialMessages); // Local state for optimistic updates
 
   const userProfileId = userProfile?.id || null;
   const userProfileName = userProfile?.name || userProfile?.email || null;
+
+  // Update local messages when initialMessages prop changes (e.g., from real-time subscription)
+  useEffect(() => {
+    setLocalMessages(initialMessages);
+  }, [initialMessages]);
 
   // Determine the ID of the other participant
   const otherParticipantId = selectedChat.user_ids.find(id => id !== userProfileId);
@@ -129,7 +137,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [localMessages]); // Use localMessages for scrolling
 
   // Mark messages as read and update unread count when chat is opened
   useEffect(() => {
@@ -159,6 +167,21 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   const handleSendMessage = async () => {
     if (messageInput.trim() && userProfileId && userProfileName) {
       setSending(true);
+      const messageText = messageInput.trim();
+      setMessageInput(''); // Clear input immediately
+
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`, // Temporary ID for optimistic update
+        chat_id: selectedChat.id,
+        sender_id: userProfileId,
+        sender_name: userProfileName,
+        text: messageText,
+        created_at: new Date().toISOString(),
+        read: false,
+        status: 'pending', // Optimistic status
+      };
+
+      setLocalMessages(prevMessages => [...prevMessages, tempMessage]);
 
       const otherUserIds = selectedChat.user_ids.filter(id => id !== userProfileId);
       const newUnreadCounts = { ...selectedChat.unread_counts };
@@ -167,20 +190,29 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       });
       newUnreadCounts[userProfileId] = 0;
 
-      const { error } = await supabase.from('messages').insert({
+      const { data, error } = await supabase.from('messages').insert({
         chat_id: selectedChat.id,
         sender_id: userProfileId,
         sender_name: userProfileName,
-        text: messageInput.trim(),
-      });
+        text: messageText,
+      }).select().single();
 
       if (error) {
         toast.error("Failed to send message: " + error.message);
         console.error("Error sending message:", error);
-      } else {
-        setMessageInput('');
+        setLocalMessages(prevMessages =>
+          prevMessages.map(msg =>
+            msg.id === tempMessage.id ? { ...msg, status: 'failed' } : msg
+          )
+        );
+      } else if (data) {
+        setLocalMessages(prevMessages =>
+          prevMessages.map(msg =>
+            msg.id === tempMessage.id ? { ...data, status: 'sent' } : msg
+          )
+        );
         await supabase.from('chats').update({
-          last_message_text: messageInput.trim(),
+          last_message_text: messageText,
           last_message_timestamp: new Date().toISOString(),
           unread_counts: newUnreadCounts,
         }).eq('id', selectedChat.id);
@@ -228,15 +260,15 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <button onClick={() => {
             setCurrentScreen('home');
             setActiveTab('chats');
-          }} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          }} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to chats">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <div className="flex items-center gap-3 flex-1">
             <div className="relative">
@@ -248,50 +280,65 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 truncate">{selectedChat.startup_name}</h2>
+              <h2 className="font-semibold text-gray-900 truncate dark:text-gray-50">{selectedChat.startup_name}</h2>
               <p className={`text-xs ${isOtherUserOnline ? 'text-green-600' : 'text-gray-500'}`}>
                 {isOtherUserOnline ? 'Online' : 'Offline'}
               </p>
             </div>
           </div>
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <MoreVertical className="w-5 h-5 text-gray-700" />
+          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Chat options">
+            <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] ${msg.sender_id === userProfileId ? 'order-2' : 'order-1'}`}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className={`rounded-2xl p-3 cursor-pointer ${
-                    msg.sender_id === userProfileId
-                      ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md'
-                      : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                  }`}>
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleReportMessage(msg)} className="flex items-center gap-2 text-red-600">
-                    <Flag className="w-4 h-4" /> Report Message
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
-                <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                {msg.sender_id === userProfileId && <Check className="w-3 h-3 text-teal-500" />}
+        <AnimatePresence initial={false}> {/* Disable initial animation to prevent all messages from animating on load */}
+          {localMessages.map((msg) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className={`flex ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`max-w-[75%] ${msg.sender_id === userProfileId ? 'order-2' : 'order-1'}`}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className={`rounded-2xl p-3 cursor-pointer ${
+                      msg.sender_id === userProfileId
+                        ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md'
+                        : 'bg-gray-100 text-gray-900 rounded-bl-md dark:bg-gray-700 dark:text-gray-50'
+                    }`}>
+                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleReportMessage(msg)} className="flex items-center gap-2 text-red-600">
+                      <Flag className="w-4 h-4" /> Report Message
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
+                  <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  {msg.sender_id === userProfileId && msg.status === 'pending' && (
+                    <span className="text-xs text-gray-400">Sending...</span>
+                  )}
+                  {msg.sender_id === userProfileId && msg.status === 'failed' && (
+                    <span className="text-xs text-red-500">Failed</span>
+                  )}
+                  {msg.sender_id === userProfileId && msg.status === 'sent' && <Check className="w-3 h-3 text-teal-500" />}
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
         {/* Typing Indicator Placeholder */}
         {isOtherUserTyping && (
           <div className="flex justify-start">
-            <div className="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md p-3">
+            <div className="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md p-3 dark:bg-gray-700 dark:text-gray-50">
               <div className="flex items-center space-x-1">
                 <span className="text-sm">Typing</span>
                 <span className="animate-pulse">...</span>
@@ -317,22 +364,23 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       </div>
 
       {/* Input Bar */}
-      <div className="bg-white border-t border-gray-100 p-4">
+      <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-end gap-2">
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-gray-600">
+          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300" aria-label="Add attachment">
             <Plus className="w-5 h-5" />
           </button>
-          <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center">
+          <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center dark:bg-gray-800">
             <input
               type="text"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="flex-1 bg-transparent outline-none text-sm dark:text-gray-50"
               disabled={sending}
+              aria-label="Message input"
             />
           </div>
-          <button onClick={handleSendMessage} disabled={sending || !messageInput.trim()} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={handleSendMessage} disabled={sending || !messageInput.trim()} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message">
             {sending ? (
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -144,19 +144,19 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
+        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-6 w-48" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 mb-3"><Skeleton className="h-6 w-40" /></h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 dark:text-gray-50"><Skeleton className="h-6 w-40" /></h3>
           {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={`startup-skel-${i}`} className="h-24 w-full rounded-xl" />
           ))}
-          <h3 className="text-lg font-bold text-gray-900 mb-3 mt-6"><Skeleton className="h-6 w-40" /></h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 mt-6 dark:text-gray-50"><Skeleton className="h-6 w-40" /></h3>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={`flagged-skel-${i}`} className="h-32 w-full rounded-xl" />
           ))}
@@ -166,14 +166,14 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Admin Dashboard</h2>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Admin Dashboard</h2>
         </div>
       </div>
 
@@ -181,18 +181,18 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Pending Startups Section */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Pending Startups ({pendingStartups.length})</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 dark:text-gray-50">Pending Startups ({pendingStartups.length})</h3>
           {pendingStartups.length > 0 ? (
             pendingStartups.map((startup) => (
-              <div key={startup.id} className="flex flex-col gap-2 p-4 rounded-xl shadow-sm border bg-white border-gray-100 mb-3">
+              <div key={startup.id} className="flex flex-col gap-2 p-4 rounded-xl shadow-sm border bg-white border-gray-100 mb-3 dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Rocket className="w-5 h-5 text-purple-600" />
-                    <span className="font-semibold text-gray-900">{startup.name}</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-50">{startup.name}</span>
                   </div>
                   <Badge className="bg-amber-500 text-white">Pending</Badge>
                 </div>
-                <p className="text-sm text-gray-700 line-clamp-2">{startup.tagline}</p>
+                <p className="text-sm text-gray-700 line-clamp-2 dark:text-gray-200">{startup.tagline}</p>
                 <p className="text-xs text-gray-500">
                   By {startup.founder_name} from {startup.location} ({startup.category})
                 </p>
@@ -201,7 +201,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateStartupStatus(startup.id, 'Approved')}
-                    className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50"
+                    className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-900"
+                    aria-label={`Approve startup ${startup.name}`}
                   >
                     <CheckCircle className="w-4 h-4 mr-1" /> Approve
                   </Button>
@@ -209,7 +210,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateStartupStatus(startup.id, 'Rejected')}
-                    className="h-8 text-xs text-red-700 border-red-200 hover:bg-red-50"
+                    className="h-8 text-xs text-red-700 border-red-200 hover:bg-red-50 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-900"
+                    aria-label={`Reject startup ${startup.name}`}
                   >
                     <XCircle className="w-4 h-4 mr-1" /> Reject
                   </Button>
@@ -217,30 +219,30 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
               </div>
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center h-32 p-4 text-center bg-white rounded-xl border border-gray-100">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 text-2xl">
+            <div className="flex flex-col items-center justify-center h-32 p-4 text-center bg-white rounded-xl border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 text-2xl dark:bg-gray-700">
                 🚀
               </div>
-              <h3 className="text-md font-bold text-gray-900">No pending startups</h3>
+              <h3 className="text-md font-bold text-gray-900 dark:text-gray-50">No pending startups</h3>
             </div>
           )}
         </div>
 
         {/* Flagged Items Section */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Flagged Content ({flaggedItems.length})</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 dark:text-gray-50">Flagged Content ({flaggedItems.length})</h3>
           {flaggedItems.length > 0 ? (
             flaggedItems.map((item) => (
               <div
                 key={item.id}
                 className={`flex flex-col gap-2 p-4 rounded-xl shadow-sm border ${
-                  item.status === 'Pending' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'
+                  item.status === 'Pending' ? 'bg-red-50 border-red-100 dark:bg-red-950 dark:border-red-900' : 'bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700'
                 } mb-3`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getItemIcon(item.chat_type)}
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 dark:text-gray-50">
                       {item.chat_type === 'DM' ? 'Message' : 'Post'} from {item.sender}
                     </span>
                   </div>
@@ -253,7 +255,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                     {item.status}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-200">
                   <span className="font-medium">Reason:</span> {item.reason}
                 </p>
                 <p className="text-xs text-gray-500">
@@ -266,7 +268,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                         variant="outline"
                         size="sm"
                         onClick={() => handleUpdateFlaggedStatus(item.id, 'Resolved')}
-                        className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50"
+                        className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-900"
+                        aria-label={`Resolve flagged item from ${item.sender}`}
                       >
                         <CheckCircle className="w-4 h-4 mr-1" /> Resolve
                       </Button>
@@ -274,7 +277,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                         variant="outline"
                         size="sm"
                         onClick={() => handleUpdateFlaggedStatus(item.id, 'Dismissed')}
-                        className="h-8 text-xs text-gray-700 border-gray-200 hover:bg-gray-50"
+                        className="h-8 text-xs text-gray-700 border-gray-200 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-900"
+                        aria-label={`Dismiss flagged item from ${item.sender}`}
                       >
                         <XCircle className="w-4 h-4 mr-1" /> Dismiss
                       </Button>
@@ -284,11 +288,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
               </div>
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center h-32 p-4 text-center bg-white rounded-xl border border-gray-100">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 text-2xl">
+            <div className="flex flex-col items-center justify-center h-32 p-4 text-center bg-white rounded-xl border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 text-2xl dark:bg-gray-700">
                 ✅
               </div>
-              <h3 className="text-md font-bold text-gray-900">No flagged items</h3>
+              <h3 className="text-md font-bold text-gray-900 dark:text-gray-50">No flagged items</h3>
             </div>
           )}
         </div>

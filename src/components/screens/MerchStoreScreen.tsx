@@ -10,14 +10,14 @@ interface MerchStoreScreenProps {
 
 const MerchStoreScreen: React.FC<MerchStoreScreenProps> = ({ setCurrentScreen }) => {
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Merch Store</h2>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Merch Store</h2>
         </div>
       </div>
 
@@ -31,31 +31,31 @@ const MerchStoreScreen: React.FC<MerchStoreScreenProps> = ({ setCurrentScreen })
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h4 className="text-xl font-bold text-gray-900 mb-4">Featured Items</h4>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h4 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Featured Items</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Merch Item 1 */}
-            <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center text-center">
+            <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center text-center dark:bg-gray-700">
               <Shirt className="w-16 h-16 text-purple-600 mb-2" />
-              <p className="font-semibold text-gray-900">Seedstreet T-Shirt</p>
-              <p className="text-sm text-gray-600">Premium cotton, unisex fit.</p>
-              <span className="text-lg font-bold text-purple-700 mt-2">$25.00</span>
-              <Button size="sm" className="mt-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white">
+              <p className="font-semibold text-gray-900 dark:text-gray-50">Seedstreet T-Shirt</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Premium cotton, unisex fit.</p>
+              <span className="text-lg font-bold text-purple-700 mt-2 dark:text-purple-400">$25.00</span>
+              <Button size="sm" className="mt-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white" aria-label="Add Seedstreet T-Shirt to cart">
                 Add to Cart
               </Button>
             </div>
             {/* Merch Item 2 */}
-            <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center text-center">
+            <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center text-center dark:bg-gray-700">
               <Star className="w-16 h-16 text-yellow-500 mb-2" />
-              <p className="font-semibold text-gray-900">Founder's Mug</p>
-              <p className="text-sm text-gray-600">For those late-night coding sessions.</p>
-              <span className="text-lg font-bold text-purple-700 mt-2">$18.00</span>
-              <Button size="sm" className="mt-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white">
+              <p className="font-semibold text-gray-900 dark:text-gray-50">Founder's Mug</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">For those late-night coding sessions.</p>
+              <span className="text-lg font-bold text-purple-700 mt-2 dark:text-purple-400">$18.00</span>
+              <Button size="sm" className="mt-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white" aria-label="Add Founder's Mug to cart">
                 Add to Cart
               </Button>
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-6">
+          <p className="text-sm text-gray-500 mt-6 dark:text-gray-400">
             More awesome merch coming soon! Stay tuned.
           </p>
         </div>

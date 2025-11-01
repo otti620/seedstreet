@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import BottomNav from '../BottomNav'; // Corrected path
 import MenuItem from '../MenuItem';
 import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from '@/components/ThemeToggle'; // Import ThemeToggle
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -52,11 +53,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const isAdmin = userProfile?.role === 'admin';
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950"> {/* Added dark mode background */}
       {/* Header */}
       <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-12 pb-20">
         <div className="flex justify-end mb-4">
-          <button className="text-white">
+          <ThemeToggle /> {/* Add ThemeToggle here */}
+          <button className="text-white" aria-label="Settings">
             <Settings className="w-6 h-6" />
           </button>
         </div>
@@ -79,26 +81,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Content */}
       <div className="flex-1 -mt-12 overflow-y-auto px-6 pb-24">
         {/* Stats Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-4">Your Activity</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Your Activity</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{bookmarkedStartups.length}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">{bookmarkedStartups.length}</div>
               <div className="text-xs text-gray-500 mt-1">Bookmarks</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{interestedStartups.length}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">{interestedStartups.length}</div>
               <div className="text-xs text-gray-500 mt-1">Interested</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">0</div> {/* Placeholder for committed */}
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">0</div> {/* Placeholder for committed */}
               <div className="text-xs text-gray-500 mt-1">Committed</div>
             </div>
           </div>
         </div>
 
         {/* Menu Items */}
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6 dark:bg-gray-800 dark:border-gray-700">
           <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
           <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} />
           <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
@@ -123,7 +125,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               setCurrentScreen('auth'); // Redirect to auth screen after logout
             }
           }}
-          className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800"
         >
           <LogOut className="w-5 h-5" />
           Log Out

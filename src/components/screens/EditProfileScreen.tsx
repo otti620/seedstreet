@@ -153,15 +153,15 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to profile">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Edit Profile</h2>
-          <Button type="submit" form="profile-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white">
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Edit Profile</h2>
+          <Button type="submit" form="profile-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white" aria-label="Save changes">
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
@@ -173,8 +173,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Avatar Upload */}
             <FormItem className="flex flex-col items-center gap-3">
-              <Label htmlFor="avatar-upload" className="cursor-pointer">
-                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 hover:border-purple-700 transition-all">
+              <FormLabel htmlFor="avatar-upload" className="cursor-pointer" aria-label="Upload new avatar">
+                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 hover:border-purple-700 transition-all dark:bg-gray-800 dark:border-gray-700 dark:hover:border-purple-500">
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
                   ) : (
@@ -184,7 +184,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                     <Upload className="w-8 h-8 text-white" />
                   </div>
                 </div>
-              </Label>
+              </FormLabel>
               <Input
                 id="avatar-upload"
                 type="file"
@@ -193,7 +193,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 className="hidden"
                 disabled={loading}
               />
-              <p className="text-sm text-gray-500">Click to upload new avatar</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Click to upload new avatar</p>
             </FormItem>
 
             <FormField
@@ -201,15 +201,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <Label>First Name</Label>
+                  <FormLabel className="dark:text-gray-50">First Name</FormLabel>
                   <div className="relative">
                     <Input
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="First name"
                     />
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -221,15 +222,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Last Name</Label>
+                  <FormLabel className="dark:text-gray-50">Last Name</FormLabel>
                   <div className="relative">
                     <Input
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Last name"
                     />
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -241,16 +243,17 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Email</Label>
+                  <FormLabel className="dark:text-gray-50">Email</FormLabel>
                   <div className="relative">
                     <Input
                       {...field}
                       type="email"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       disabled // Email is usually not editable directly here
+                      aria-label="Email address"
                     />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -262,11 +265,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Bio</Label>
+                  <FormLabel className="dark:text-gray-50">Bio</FormLabel>
                   <Textarea
                     {...field}
                     placeholder="Tell us about yourself..."
-                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                    aria-label="Biography"
                   />
                   <FormMessage />
                 </FormItem>
@@ -278,15 +282,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Location</Label>
+                  <FormLabel className="dark:text-gray-50">Location</FormLabel>
                   <div className="relative">
                     <Input
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Location"
                     />
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -298,15 +303,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Phone Number</Label>
+                  <FormLabel className="dark:text-gray-50">Phone Number</FormLabel>
                   <div className="relative">
                     <Input
                       {...field}
                       type="tel"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Phone number"
                     />
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                   </div>
                   <FormMessage />
                 </FormItem>

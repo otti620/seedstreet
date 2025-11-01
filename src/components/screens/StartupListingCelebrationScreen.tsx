@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion'; // Import motion
 
 interface StartupListingCelebrationScreenProps {
   startupName: string;
@@ -39,13 +40,24 @@ const StartupListingCelebrationScreen: React.FC<StartupListingCelebrationScreenP
         {!showCelebration ? (
           <div className="space-y-4">
             <p className="text-xl font-medium">Get ready!</p>
-            <h1 className="text-7xl font-extrabold animate-bounce">
+            <motion.h1
+              key="countdown"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10 }}
+              className="text-7xl font-extrabold animate-bounce"
+            >
               {countdown > 0 ? countdown : 'GO!'}
-            </h1>
+            </motion.h1>
             <p className="text-lg font-semibold">Your startup is about to go live!</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 10, delay: 0.3 }}
+            className="space-y-6"
+          >
             <div className="relative w-32 h-32 mx-auto bg-white rounded-full flex items-center justify-center shadow-2xl animate-logoEntry">
               <Sparkles className="w-20 h-20 text-yellow-400 animate-pulse-dot" />
               <CheckCircle className="absolute bottom-0 right-0 w-10 h-10 text-green-500 bg-white rounded-full" />
@@ -59,10 +71,11 @@ const StartupListingCelebrationScreen: React.FC<StartupListingCelebrationScreenP
             <Button
               onClick={() => setCurrentScreen('home')}
               className="mt-8 px-8 py-4 bg-white text-purple-700 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all"
+              aria-label="View dashboard"
             >
               View Dashboard
             </Button>
-          </div>
+          </motion.div>
         )}
       </div>
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion'; // Import motion
 
 interface RoleSelectorScreenProps {
   setCurrentScreen: (screen: string) => void;
@@ -37,25 +38,28 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center p-6 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center p-6 overflow-hidden dark:from-gray-900 dark:to-gray-800">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-200 rounded-full filter blur-3xl opacity-30 animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-teal-200 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-200 rounded-full filter blur-3xl opacity-30 animate-float dark:bg-purple-800" />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-teal-200 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s dark:bg-teal-800" />
       </div>
 
       <div className="relative z-10 w-full max-w-2xl">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-gray-50">
             Welcome to Seedstreet, <span className="bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent">User</span>!
           </h1>
-          <p className="text-gray-600">Choose your path</p>
+          <p className="text-gray-600 dark:text-gray-300">Choose your path</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Investor Card */}
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.02, translateY: -5 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => handleRoleSelection('investor')}
-            className="group relative bg-gradient-to-br from-purple-700 to-purple-900 rounded-3xl p-8 text-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 active:scale-95"
+            className="group relative bg-gradient-to-br from-purple-700 to-purple-900 rounded-3xl p-8 text-white hover:shadow-2xl transition-all duration-300 active:scale-95"
+            aria-label="Select role: Investor"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
             
@@ -73,12 +77,15 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
                 Join 650+ investors
               </div>
             </div>
-          </button>
+          </motion.button>
 
           {/* Founder Card */}
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.02, translateY: -5 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => handleRoleSelection('founder')}
-            className="group relative bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-8 text-white hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 active:scale-95"
+            className="group relative bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-8 text-white hover:shadow-2xl transition-all duration-300 active:scale-95"
+            aria-label="Select role: Founder"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-teal-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
             
@@ -96,7 +103,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
                 Join 89 founders
               </div>
             </div>
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>

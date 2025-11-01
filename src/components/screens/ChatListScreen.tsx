@@ -112,7 +112,7 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   }, [chats, currentUserId]);
 
   const renderChatCardSkeleton = () => (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse">
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center gap-3">
         <Skeleton className="w-12 h-12 rounded-xl" />
         <div className="flex-1 space-y-2">
@@ -125,28 +125,29 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4">
+      <div className="bg-white border-b border-gray-100 px-6 py-4 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Chats</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Chats</h1>
             <p className="text-sm text-gray-500">Your conversations</p>
           </div>
-          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-purple-700" />
+          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="View notifications">
+            <Bell className="w-5 h-5 text-purple-700 dark:text-purple-300" />
           </button>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white px-6 py-4 border-b border-gray-100">
+      <div className="bg-white px-6 py-4 border-b border-gray-100 dark:bg-gray-900 dark:border-gray-800">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search chats..."
-            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+            aria-label="Search chats"
           />
         </div>
       </div>
@@ -165,7 +166,8 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 <button
                   key={chat.id}
                   onClick={() => setSelectedChat(chat)}
-                  className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md hover:-translate-y-1 transition-all"
+                  className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md hover:-translate-y-1 transition-all dark:bg-gray-800 dark:border-gray-700"
+                  aria-label={`Open chat with ${chat.startup_name}`}
                 >
                   <div className="relative">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl shadow-lg">
@@ -176,8 +178,8 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{chat.startup_name}</h3>
-                    <p className="text-sm text-gray-600 truncate">{chat.last_message_text}</p>
+                    <h3 className="font-bold text-gray-900 truncate dark:text-gray-50">{chat.startup_name}</h3>
+                    <p className="text-sm text-gray-600 truncate dark:text-gray-400">{chat.last_message_text}</p>
                   </div>
                   {chat.unread_counts?.[currentUserId || ''] > 0 && (
                     <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -190,8 +192,8 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
           ) : (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No active chats</h3>
-              <p className="text-gray-600 mb-6">Start a conversation with a founder or investor!</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No active chats</h3>
+              <p className="text-gray-600 mb-6 dark:text-gray-400">Start a conversation with a founder or investor!</p>
             </div>
           )
         )}

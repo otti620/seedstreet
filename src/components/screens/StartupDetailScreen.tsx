@@ -55,15 +55,15 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
   const isInterested = interestedStartups.includes(selectedStartup.id);
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Startup Details</h2>
-          <button onClick={() => toggleBookmark(selectedStartup.id)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isBookmarked ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Startup Details</h2>
+          <button onClick={() => toggleBookmark(selectedStartup.id)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isBookmarked ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
             <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
           </button>
         </div>
@@ -72,26 +72,26 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Startup Header */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center text-center dark:bg-gray-800 dark:border-gray-700">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-4xl shadow-lg mb-4">
             {selectedStartup.logo}
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">{selectedStartup.name}</h1>
-          <p className="text-md text-gray-600 mb-3">{selectedStartup.tagline}</p>
-          <Badge variant="secondary" className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1 dark:text-gray-50">{selectedStartup.name}</h1>
+          <p className="text-md text-gray-600 mb-3 dark:text-gray-300">{selectedStartup.tagline}</p>
+          <Badge variant="secondary" className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold dark:bg-purple-900 dark:text-purple-300">
             {selectedStartup.category}
           </Badge>
         </div>
 
         {/* Funding Details */}
         {(selectedStartup.amount_sought || selectedStartup.funding_stage) && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-900 mb-3">Funding Details</h3>
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="font-bold text-gray-900 mb-3 dark:text-gray-50">Funding Details</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {selectedStartup.amount_sought && (
                 <div>
                   <p className="text-gray-500">Amount Sought</p>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 dark:text-gray-50">
                     {selectedStartup.currency || '$'}{selectedStartup.amount_sought.toLocaleString()}
                   </p>
                 </div>
@@ -99,7 +99,7 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
               {selectedStartup.funding_stage && (
                 <div>
                   <p className="text-gray-500">Funding Stage</p>
-                  <p className="font-semibold text-gray-900">{selectedStartup.funding_stage}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.funding_stage}</p>
                 </div>
               )}
             </div>
@@ -107,40 +107,40 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
         )}
 
         {/* Description */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-3">About {selectedStartup.name}</h3>
-          <p className="text-sm text-gray-700 leading-relaxed">{selectedStartup.description}</p>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-3 dark:text-gray-50">About {selectedStartup.name}</h3>
+          <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{selectedStartup.description}</p>
         </div>
 
         {/* Key Metrics */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-3">Key Metrics</h3>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-3 dark:text-gray-50">Key Metrics</h3>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-xl font-bold text-gray-900">{selectedStartup.room_members}</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.room_members}</div>
               <div className="text-xs text-gray-500">Members</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-gray-900">{selectedStartup.active_chats}</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.active_chats}</div>
               <div className="text-xs text-gray-500">Active Chats</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-gray-900">{selectedStartup.interests}</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.interests}</div>
               <div className="text-xs text-gray-500">Interested</div>
             </div>
           </div>
         </div>
 
         {/* Founder Info */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-3">Founder</h3>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-3 dark:text-gray-50">Founder</h3>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl font-semibold text-gray-700">
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-50">
               {selectedStartup.founder_name?.[0] || 'F'}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">{selectedStartup.founder_name}</p>
-              <p className="text-sm text-gray-600">{selectedStartup.location}</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.founder_name}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{selectedStartup.location}</p>
             </div>
           </div>
         </div>
@@ -148,14 +148,15 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
 
       {/* Action Buttons */}
       {userRole === 'investor' && (
-        <div className="bg-white border-t border-gray-100 p-4 flex gap-3">
+        <div className="bg-white border-t border-gray-100 p-4 flex gap-3 dark:bg-gray-900 dark:border-gray-800">
           <Button
             onClick={() => toggleInterest(selectedStartup.id)}
             className={`flex-1 h-12 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
               isInterested
-                ? 'bg-purple-100 text-purple-700 border-2 border-purple-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-purple-100 text-purple-700 border-2 border-purple-700 dark:bg-purple-900 dark:text-purple-400 dark:border-purple-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
             }`}
+            aria-label={isInterested ? "Remove interest" : "Signal interest"}
           >
             <Eye className="w-4 h-4" fill={isInterested ? 'currentColor' : 'none'} />
             {isInterested ? 'Interest Signaled' : 'Signal Interest'}
@@ -163,6 +164,7 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
           <Button
             onClick={() => handleStartChat(selectedStartup)}
             className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+            aria-label={`Start chat with ${selectedStartup.founder_name}`}
           >
             <MessageCircle className="w-4 h-4" />
             Start Chat

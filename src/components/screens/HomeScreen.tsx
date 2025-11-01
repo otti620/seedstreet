@@ -83,7 +83,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   recentActivities, // Destructure recentActivities
 }) => {
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {userRole === 'investor' ? (
         <InvestorFeed
           startups={startups}

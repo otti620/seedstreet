@@ -195,8 +195,8 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
 
   if (initialLoading) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
+        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-6 w-48" />
@@ -212,17 +212,17 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to community feed">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">
             {postId ? 'Edit Post' : 'Create New Post'}
           </h2>
-          <Button type="submit" form="community-post-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white">
+          <Button type="submit" form="community-post-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white" aria-label={postId ? 'Save changes' : 'Post'}>
             {loading ? 'Saving...' : (postId ? 'Save Changes' : 'Post')}
           </Button>
         </div>
@@ -237,11 +237,12 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <Label>What's on your mind?</Label>
+                  <FormLabel className="dark:text-gray-50">What's on your mind?</FormLabel>
                   <Textarea
                     {...field}
                     placeholder="Share an update, ask a question, or start a discussion..."
-                    className="min-h-[150px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                    className="min-h-[150px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                    aria-label="Post content"
                   />
                   <FormMessage />
                 </FormItem>
@@ -250,8 +251,8 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
 
             {/* Image Upload */}
             <FormItem>
-              <Label>Add Image (Optional)</Label>
-              <div className="relative w-full h-48 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden">
+              <FormLabel className="dark:text-gray-50">Add Image (Optional)</FormLabel>
+              <div className="relative w-full h-48 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden dark:border-gray-700">
                 {imagePreview ? (
                   <>
                     <img src={imagePreview} alt="Image Preview" className="w-full h-full object-cover" />
@@ -259,6 +260,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
                       type="button"
                       onClick={handleRemoveImage}
                       className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                      aria-label="Remove image"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -274,6 +276,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
                       onChange={handleImageChange}
                       className="hidden"
                       disabled={loading}
+                      aria-label="Upload image"
                     />
                   </label>
                 )}

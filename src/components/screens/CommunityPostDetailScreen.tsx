@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -138,9 +139,13 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     }
 
     const isLiked = post.likes.includes(userProfile.id);
+    const originalLikes = post.likes;
     const newLikes = isLiked
       ? post.likes.filter(id => id !== userProfile.id)
       : [...post.likes, userProfile.id];
+
+    // Optimistic UI update
+    setPost(prev => prev ? { ...prev, likes: newLikes } : null);
 
     const { error } = await supabase
       .from('community_posts')
@@ -150,8 +155,9 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (error) {
       toast.error("Failed to update like: " + error.message);
       console.error("Error updating like:", error);
+      // Revert optimistic update on error
+      setPost(prev => prev ? { ...prev, likes: originalLikes } : null);
     } else {
-      setPost(prev => prev ? { ...prev, likes: newLikes } : null);
       // Notify post author of new like
       if (!isLiked && post.author_id !== userProfile.id) {
         await supabase.from('notifications').insert({
@@ -172,21 +178,40 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     }
 
     setSubmittingComment(true);
+    const commentContent = values.content;
+    form.reset(); // Clear input immediately
+
+    const tempComment: CommunityComment = {
+      id: `temp-${Date.now()}`,
+      post_id: post.id,
+      author_id: userProfile.id,
+      author_name: userProfile.name,
+      author_avatar_url: userProfile.avatar_url,
+      content: commentContent,
+      created_at: new Date().toISOString(),
+    };
+
+    setComments(prevComments => [...prevComments, tempComment]);
+    setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
+
+
     const { error } = await supabase.from('community_comments').insert({
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
       author_avatar_url: userProfile.avatar_url,
-      content: values.content,
+      content: commentContent,
     });
 
     if (error) {
       toast.error("Failed to add comment: " + error.message);
       console.error("Error adding comment:", error);
+      // Revert optimistic update on error
+      setComments(prevComments => prevComments.filter(c => c.id !== tempComment.id));
+      setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
     } else {
       toast.success("Comment added!");
-      form.reset();
-      fetchPostAndComments();
+      // Real-time subscription will handle updating the comments list
       // Notify post author of new comment
       if (post.author_id !== userProfile.id) {
         await supabase.from('notifications').insert({
@@ -250,6 +275,12 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       return;
     }
 
+    // Optimistic UI update: remove comment immediately
+    const originalComments = comments;
+    setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
+    setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
+
+
     const { error } = await supabase
       .from('community_comments')
       .delete()
@@ -259,16 +290,19 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (error) {
       toast.error("Failed to delete comment: " + error.message);
       console.error("Error deleting comment:", error);
+      // Revert optimistic update on error
+      setComments(originalComments);
+      setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
     } else {
       toast.success("Comment deleted!");
-      fetchPostAndComments();
+      // fetchPostAndComments(); // Real-time subscription will handle updating the comments list
     }
   };
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col">
-        <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
+        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-6 w-48" />
@@ -289,9 +323,9 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
   if (!post) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Post Not Found</h2>
-        <p className="text-gray-600 mb-6">The community post you are looking for does not exist or has been removed.</p>
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6 text-center dark:bg-gray-950">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Post Not Found</h2>
+        <p className="text-gray-600 mb-6 dark:text-gray-400">The community post you are looking for does not exist or has been removed.</p>
         <Button onClick={() => setCurrentScreen('home')} className="bg-gradient-to-r from-purple-700 to-teal-600 text-white">
           Go to Home
         </Button>
@@ -303,18 +337,18 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
   const isPostAuthor = userProfile?.id === post.author_id;
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to community feed">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Post Details</h2>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Post Details</h2>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="w-5 h-5 text-gray-700" />
+              <Button variant="ghost" size="icon" aria-label="Post options">
+                <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -338,7 +372,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
       {/* Post Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex items-start gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
               {post.author_avatar_url ? (
@@ -348,27 +382,28 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-900">
+              <p className="text-sm text-gray-900 dark:text-gray-50">
                 <span className="font-semibold">{post.author_name}</span> posted:
               </p>
               <p className="text-xs text-gray-500 mt-1">{new Date(post.created_at).toLocaleString()}</p>
             </div>
           </div>
-          <p className="text-sm text-gray-700 mb-3">{post.content}</p>
+          <p className="text-sm text-gray-700 mb-3 dark:text-gray-200">{post.content}</p>
           {post.image_url && (
             <img src={post.image_url} alt="Post Image" className="mt-3 rounded-lg max-h-60 object-cover w-full" />
           )}
-          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={handleLikeToggle}
               className={`flex items-center gap-1 text-sm font-medium ${
-                isLikedByUser ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                isLikedByUser ? 'text-red-500' : 'text-gray-500 hover:text-red-500 dark:text-gray-400'
               }`}
+              aria-label={isLikedByUser ? "Unlike post" : "Like post"}
             >
               <Heart className={`w-4 h-4 ${isLikedByUser ? 'fill-current' : ''}`} />
               {post.likes.length > 0 && <span>{post.likes.length}</span>}
             </button>
-            <div className="flex items-center gap-1 text-sm font-medium text-gray-500">
+            <div className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
               <MessageCircle className="w-4 h-4" />
               {post.comments_count > 0 && <span>{post.comments_count}</span>}
             </div>
@@ -377,55 +412,60 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
         {/* Comments Section */}
         <div className="space-y-3">
-          <h3 className="text-lg font-bold text-gray-900">Comments ({comments.length})</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">Comments ({comments.length})</h3>
           {comments.length > 0 ? (
-            comments.map(comment => {
-              const isCommentAuthor = userProfile?.id === comment.author_id;
-              return (
-                <div key={comment.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-                  <div className="flex items-start gap-2 mb-1">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                      {comment.author_avatar_url ? (
-                        <img src={comment.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        comment.author_name?.[0] || '?'
+            <AnimatePresence initial={false}>
+              {comments.map(comment => {
+                const isCommentAuthor = userProfile?.id === comment.author_id;
+                return (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <div className="flex items-start gap-2 mb-1">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 dark:bg-gray-700 dark:text-gray-50">
+                        {comment.author_avatar_url ? (
+                          <img src={comment.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          comment.author_name?.[0] || '?'
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{comment.author_name}</p>
+                        <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
+                      </div>
+                      {isCommentAuthor && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" aria-label="Comment options">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, comment.author_id)} className="flex items-center gap-2 text-red-600">
+                              <Trash2 className="w-4 h-4" /> Delete Comment
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{comment.author_name}</p>
-                      <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
-                    </div>
-                    {isCommentAuthor && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {/* For now, editing comments is not implemented, only deletion */}
-                          {/* <DropdownMenuItem className="flex items-center gap-2">
-                            <Edit className="w-4 h-4" /> Edit Comment
-                          </DropdownMenuItem> */}
-                          <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, comment.author_id)} className="flex items-center gap-2 text-red-600">
-                            <Trash2 className="w-4 h-4" /> Delete Comment
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-700 ml-10">{comment.content}</p>
-                </div>
-              );
-            })
+                    <p className="text-sm text-gray-700 ml-10 dark:text-gray-200">{comment.content}</p>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           ) : (
-            <p className="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
+            <p className="text-center text-gray-500 py-4 dark:text-gray-400">No comments yet. Be the first to comment!</p>
           )}
         </div>
       </div>
 
       {/* Comment Input */}
-      <div className="bg-white border-t border-gray-100 p-4">
+      <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleAddComment)} className="flex items-end gap-2">
             <FormField
@@ -437,15 +477,16 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                     <Textarea
                       {...field}
                       placeholder="Add a comment..."
-                      className="min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 resize-none outline-none focus:ring-2 focus:ring-purple-100 border-2 border-transparent focus:border-purple-700 transition-all"
+                      className="min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 resize-none outline-none focus:ring-2 focus:ring-purple-100 border-2 border-transparent focus:border-purple-700 transition-all dark:bg-gray-800 dark:text-gray-50 dark:focus:border-purple-500"
                       disabled={submittingComment}
+                      aria-label="Comment input"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={submittingComment || !form.formState.isValid} size="icon" className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 text-white hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            <Button type="submit" disabled={submittingComment || !form.formState.isValid} size="icon" className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 text-white hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send comment">
               {submittingComment ? (
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

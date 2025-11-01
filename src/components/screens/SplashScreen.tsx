@@ -3,6 +3,7 @@
 import React from 'react';
 import { MadeWithDyad } from '../made-with-dyad';
 import { cn } from '@/lib/utils'; // Import cn utility
+import { motion } from 'framer-motion'; // Import motion
 
 interface SplashScreenProps {
   isFadingOut?: boolean; // New prop
@@ -26,7 +27,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isFadingOut = false }) => {
       <div className="relative z-10 flex flex-col items-center animate-logoEntry">
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-teal-400 blur-2xl opacity-50 animate-pulse" />
-          <div className="relative w-32 h-32 bg-white rounded-3xl shadow-2xl flex items-center justify-center">
+          <motion.div
+            initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
+            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="relative w-32 h-32 bg-white rounded-3xl shadow-2xl flex items-center justify-center"
+          >
             <svg viewBox="0 0 100 120" className="w-24 h-24">
               <defs>
                 <linearGradient id="sGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -38,7 +44,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isFadingOut = false }) => {
               <line x1="50" y1="95" x2="50" y2="110" stroke="url(#sGradient)" strokeWidth="3" strokeLinecap="round" opacity="0.4" />
               <path d="M 70 35 C 70 25, 60 20, 50 20 C 40 20, 30 25, 30 35 C 30 45, 40 50, 50 55 C 60 60, 70 65, 70 75 C 70 85, 60 90, 50 90 C 40 90, 30 85, 30 75" fill="none" stroke="url(#sGradient)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          </div>
+          </motion.div>
         </div>
         <div className="text-white text-center space-y-2">
           <h1 className="text-3xl font-bold">Seedstreet</h1>

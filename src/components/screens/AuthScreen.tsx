@@ -206,11 +206,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
-            <button 
-              onClick={() => setIsSignUp(!isSignUp)} 
-              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 dark:text-purple-400" 
-              aria-label={isSignUp ? 'Log In' : 'Sign Up'}
-            >
+            <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent" aria-label={isSignUp ? 'Log In' : 'Sign Up'}>
               {isSignUp ? 'Log In' : 'Sign Up'}
             </button>
           </p>

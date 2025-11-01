@@ -60,14 +60,14 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <h2 className="text-lg font-bold text-gray-900 flex-1">Notifications</h2>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Notifications</h2>
         </div>
       </div>
 
@@ -78,19 +78,17 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
             <div
               key={notification.id}
               className={`flex items-start gap-3 p-4 rounded-xl shadow-sm border ${
-                notification.read ? 'bg-white border-gray-100' : 'bg-purple-50 border-purple-100'
+                notification.read ? 'bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700' : 'bg-purple-50 border-purple-100 dark:bg-purple-950 dark:border-purple-900'
               } hover:shadow-md transition-shadow`}
             >
               <div className="flex-shrink-0 mt-1">
                 {getNotificationIcon(notification.type)}
               </div>
               <div className="flex-1">
-                <p className={`text-sm ${notification.read ? 'text-gray-700' : 'text-gray-900 font-semibold'}`}>
+                <p className={`text-sm ${notification.read ? 'text-gray-700 dark:text-gray-200' : 'text-gray-900 font-semibold dark:text-gray-50'}`}>
                   {notification.message}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(notification.created_at).toLocaleString()}
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{new Date(notification.created_at).toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {notification.link && (
                     <Button
@@ -101,7 +99,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                         toast.info(`Navigating to: ${notification.link}`);
                         // Example: setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
                       }}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                      aria-label={`View details for notification: ${notification.message}`}
                     >
                       View Details
                     </Button>
@@ -111,7 +110,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleMarkAsRead(notification.id)}
-                      className="h-8 text-xs text-purple-700 hover:bg-purple-100"
+                      className="h-8 text-xs text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:bg-purple-900"
+                      aria-label={`Mark notification as read: ${notification.message}`}
                     >
                       Mark as Read
                     </Button>
@@ -122,11 +122,11 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">
               🔔
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No new notifications</h3>
-            <p className="text-gray-600 mb-6">You're all caught up!</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No new notifications</h3>
+            <p className="text-gray-600 mb-6 dark:text-gray-400">You're all caught up!</p>
           </div>
         )}
       </div>

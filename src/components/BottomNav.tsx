@@ -19,7 +19,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-50 dark:bg-gray-900 dark:border-gray-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex justify-around items-center max-w-lg mx-auto">
         {navItems.map(item => {
           const Icon = item.icon;
@@ -32,13 +32,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole
               className={`relative flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all ${
                 isActive ? 'scale-105' : 'scale-100'
               }`}
+              aria-label={item.label}
             >
               <div className="relative">
                 <Icon 
                   className={`w-6 h-6 transition-all ${
                     isActive 
-                      ? 'text-purple-700 scale-110' 
-                      : 'text-gray-400'
+                      ? 'text-purple-700 scale-110 dark:text-purple-400' 
+                      : 'text-gray-400 dark:text-gray-500'
                   }`}
                 />
                 {item.badge && (
@@ -49,8 +50,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole
               </div>
               <span className={`text-xs font-medium transition-all ${
                 isActive 
-                  ? 'text-purple-700 font-semibold' 
-                  : 'text-gray-500'
+                  ? 'text-purple-700 font-semibold dark:text-purple-400' 
+                  : 'text-gray-500 dark:text-gray-400'
               }`}>
                 {item.label}
               </span>
