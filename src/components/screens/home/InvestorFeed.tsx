@@ -23,7 +23,7 @@ interface Startup {
   active_chats: number;
   interests: number;
   founder_name: string;
-  location: string;
+  location: string | null; // Updated to reflect potential nullability
   founder_id: string;
   amount_sought: number | null;
   currency: string | null;
@@ -65,7 +65,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
       startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       startup.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
       startup.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      startup.location.toLowerCase().includes(searchTerm.toLowerCase());
+      (startup.location ?? '').toLowerCase().includes(searchTerm.toLowerCase()); // Handle null location
 
     const matchesCategory = selectedCategory ? startup.category === selectedCategory : true;
 
