@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Rocket, Users, MessageCircle, User, Search, TrendingUp,
   Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion'; // Import motion and AnimatePresence
+import { AnimatePresence, motion } from 'framer-motion';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
@@ -31,6 +31,7 @@ import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import localforage from 'localforage'; // Import localforage
 
 // Define TypeScript interfaces for data structures
 interface Profile {
@@ -127,9 +128,39 @@ interface ActivityLog {
   icon: string | null;
 }
 
+// Custom hook for swipe-back gesture
+const useSwipeBack = (onSwipeBack: () => void) => {
+  const startX = useRef(0);
+  const threshold = 80; // Pixels to swipe to trigger back action
+
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    const endX = e.changedTouches[0].clientX;
+    const deltaX = endX - startX.current;
+
+    if (deltaX > threshold) {
+      onSwipeBack();
+    }
+  }, [onSwipeBack]);
+
+  useEffect(() => {
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchEnd]);
+};
+
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreenState] = useState('splash');
+  const [screenHistory, setScreenHistory] = useState<string[]>(['splash']); // To manage navigation history
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
@@ -152,8 +183,16 @@ const SeedstreetApp = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [isSplashFadingOut, setIsSplashFadingOut] = useState(false);
 
-  const setCurrentScreen = (screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
+  const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
     setCurrentScreenState(screen);
+    setScreenHistory(prev => {
+      // Only add to history if it's a new screen or not the immediate previous screen
+      if (prev[prev.length - 1] !== screen) {
+        return [...prev, screen];
+      }
+      return prev;
+    });
+
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
     } else {
@@ -169,7 +208,20 @@ const SeedstreetApp = () => {
     } else {
       setSelectedCommunityPostId(undefined);
     }
-  };
+  }, []);
+
+  const goBack = useCallback(() => {
+    setScreenHistory(prev => {
+      if (prev.length > 1) {
+        const newHistory = prev.slice(0, -1);
+        setCurrentScreenState(newHistory[newHistory.length - 1]);
+        return newHistory;
+      }
+      return prev; // Cannot go back further
+    });
+  }, []);
+
+  useSwipeBack(goBack); // Integrate swipe-back gesture
 
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
@@ -203,7 +255,7 @@ const SeedstreetApp = () => {
         clearTimeout(transitionTimer);
       };
     }
-  }, [currentScreen]);
+  }, [currentScreen, setCurrentScreen]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -236,7 +288,7 @@ const SeedstreetApp = () => {
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [setCurrentScreen]);
 
   const fetchUserProfile = async (userId: string) => {
     setLoadingData(true);
@@ -270,6 +322,13 @@ const SeedstreetApp = () => {
     if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups')) {
       const fetchStartups = async () => {
         setLoadingData(true);
+        // Try to load from cache first
+        const cachedStartups = await localforage.getItem<Startup[]>('startups');
+        if (cachedStartups) {
+          setStartups(cachedStartups);
+          toast.info("Showing cached startups. Updating in background...");
+        }
+
         const { data, error } = await supabase
           .from('startups')
           .select('*')
@@ -278,9 +337,10 @@ const SeedstreetApp = () => {
         if (error) {
           console.error("Error fetching startups:", error);
           toast.error("Failed to load startups.");
-          setStartups([]);
+          setStartups([]); // Clear if no cached data and fetch failed
         } else if (data) {
           setStartups(data as Startup[]);
+          await localforage.setItem('startups', data); // Cache fresh data
         }
         setLoadingData(false);
       };
