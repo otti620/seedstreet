@@ -61,7 +61,7 @@ interface Startup {
   category: string;
   room_members: number;
   active_chats: number;
-  interests: number; // This needs to be updated
+  interests: number;
   founder_name: string;
   location: string;
   founder_id: string;
@@ -258,271 +258,60 @@ const SeedstreetApp = () => {
   }, [currentScreen, setCurrentScreen]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const handleAuthAndProfile = async (session: any | null) => {
       if (session) {
         setIsLoggedIn(true);
-        await fetchUserProfile(session.user.id);
+        const userId = session.user.id;
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (profileError || !profileData) {
+          console.error("Error fetching user profile:", profileError);
+          toast.error("Failed to load user profile. Please complete onboarding.");
+          setUserProfile(null);
+          setUserRole(null);
+          setCurrentScreen('roleSelector'); // User logged in but no profile or onboarding incomplete
+        } else {
+          setUserProfile(profileData as Profile);
+          setUserRole(profileData.role);
+          if (!profileData.onboarding_complete) {
+            setCurrentScreen('roleSelector');
+          } else {
+            setCurrentScreen('home');
+          }
+        }
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        setCurrentScreen('auth');
+        // If no session, the app should naturally flow from splash -> onboarding -> auth
+        // No need to explicitly set screen to 'auth' here, as onboarding handles it.
+        // If currentScreen is already 'auth' (e.g., after logout), keep it.
+        if (currentScreen !== 'auth' && currentScreen !== 'onboarding') {
+             setCurrentScreen('onboarding'); // Ensure new users see onboarding
+        }
       }
       setLoadingSession(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      handleAuthAndProfile(session);
     });
 
     const getInitialSession = async () => {
       const { data: { session } = { session: null } } = await supabase.auth.getSession();
-      if (session) {
-        setIsLoggedIn(true);
-        await fetchUserProfile(session.user.id);
-      } else {
-        setIsLoggedIn(false);
-        setUserRole(null);
-        setUserProfile(null);
-        setCurrentScreen('auth');
-      }
-      setLoadingSession(false);
+      console.log("Initial session:", session);
+      handleAuthAndProfile(session);
     };
 
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, [setCurrentScreen]);
-
-  const fetchUserProfile = async (userId: string) => {
-    setLoadingData(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      console.error("Error fetching user profile:", error);
-      toast.error("Failed to load user profile.");
-      setUserProfile(null);
-      setUserRole(null);
-      setCurrentScreen('roleSelector');
-    } else if (data) {
-      setUserProfile(data as Profile);
-      setUserRole(data.role);
-      if (!data.onboarding_complete) {
-        setCurrentScreen('roleSelector');
-      } else {
-        setCurrentScreen('home');
-      }
-    } else {
-      setCurrentScreen('roleSelector');
-    }
-    setLoadingData(false);
-  };
-
-  useEffect(() => {
-    if (isLoggedIn && userRole === 'investor' && currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups')) {
-      const fetchStartups = async () => {
-        setLoadingData(true);
-        // Try to load from cache first
-        const cachedStartups = await localforage.getItem<Startup[]>('startups');
-        if (cachedStartups) {
-          setStartups(cachedStartups);
-          toast.info("Showing cached startups. Updating in background...");
-        }
-
-        const { data, error } = await supabase
-          .from('startups')
-          .select('*')
-          .eq('status', 'Approved');
-
-        if (error) {
-          console.error("Error fetching startups:", error);
-          toast.error("Failed to load startups.");
-          setStartups([]); // Clear if no cached data and fetch failed
-        } else if (data) {
-          setStartups(data as Startup[]);
-          await localforage.setItem('startups', data); // Cache fresh data
-        }
-        setLoadingData(false);
-      };
-      fetchStartups();
-    }
-  }, [isLoggedIn, userRole, currentScreen, activeTab]);
-
-  useEffect(() => {
-    if (isLoggedIn && userProfile?.id && currentScreen === 'home' && activeTab === 'chats') {
-      const fetchChats = async () => {
-        setLoadingData(true);
-        const { data, error } = await supabase
-          .from('chats')
-          .select('*, unread_counts');
-
-        if (error) {
-          console.error("Error fetching chats:", error);
-          toast.error("Failed to load chats.");
-          setChats([]);
-        } else if (data) {
-          const chatsWithUnreadCount = data.map(chat => ({
-            ...chat,
-            unread_count: chat.unread_counts?.[userProfile.id] || 0,
-          }));
-          setChats(chatsWithUnreadCount as Chat[]);
-        }
-        setLoadingData(false);
-      };
-      fetchChats();
-
-      const channel = supabase
-        .channel('public:chats')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, payload => {
-          fetchChats();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isLoggedIn, userProfile?.id, currentScreen, activeTab]);
-
-  useEffect(() => {
-    if (isLoggedIn && selectedChat?.id && currentScreen === 'chat') {
-      const fetchMessages = async () => {
-        setLoadingData(true);
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('chat_id', selectedChat.id)
-          .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error("Error fetching messages:", error);
-          toast.error("Failed to load messages.");
-          setMessages([]);
-        } else if (data) {
-          setMessages(data as Message[]);
-        }
-        setLoadingData(false);
-      };
-      fetchMessages();
-
-      const channel = supabase
-        .channel(`chat:${selectedChat.id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
-          fetchMessages();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isLoggedIn, selectedChat?.id, currentScreen]);
-
-  const fetchCommunityPosts = async () => {
-    setLoadingData(true);
-    const { data, error } = await supabase
-      .from('community_posts')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Error fetching community posts:", error);
-      toast.error("Failed to load community posts.");
-      setCommunityPosts([]);
-    } else if (data) {
-      setCommunityPosts(data as CommunityPost[]);
-    }
-    setLoadingData(false);
-  };
-
-  useEffect(() => {
-    if (isLoggedIn && currentScreen === 'home' && (activeTab === 'community' || currentScreen === 'communityPostDetail')) {
-      fetchCommunityPosts();
-
-      const channel = supabase
-        .channel('public:community_posts')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
-          fetchCommunityPosts();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isLoggedIn, currentScreen, activeTab]);
-
-  const fetchNotifications = async () => {
-    if (!userProfile?.id) return;
-    setLoadingData(true);
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userProfile.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Error fetching notifications:", error);
-      toast.error("Failed to load notifications.");
-      setNotifications([]);
-    } else if (data) {
-      setNotifications(data as Notification[]);
-    }
-    setLoadingData(false);
-  };
-
-  useEffect(() => {
-    if (isLoggedIn && userProfile?.id && currentScreen === 'notifications') {
-      fetchNotifications();
-
-      const channel = supabase
-        .channel(`user_notifications:${userProfile.id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` }, payload => {
-          fetchNotifications();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isLoggedIn, userProfile?.id, currentScreen]);
-
-  const fetchRecentActivities = async () => {
-    if (!userProfile?.id) return;
-    setLoadingData(true);
-    const { data, error } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', userProfile.id)
-      .order('timestamp', { ascending: false })
-      .limit(5);
-
-    if (error) {
-      console.error("Error fetching recent activities:", error);
-      setRecentActivities([]);
-    } else if (data) {
-      setRecentActivities(data as ActivityLog[]);
-    }
-    setLoadingData(false);
-  };
-
-  useEffect(() => {
-    if (isLoggedIn && userProfile?.id && currentScreen === 'home' && userRole === 'founder') {
-      fetchRecentActivities();
-
-      const channel = supabase
-        .channel(`user_activity:${userProfile.id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userProfile.id}` }, payload => {
-          fetchRecentActivities();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isLoggedIn, userProfile?.id, currentScreen, userRole]);
+  }, [setCurrentScreen, currentScreen]);
 
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
@@ -742,7 +531,9 @@ const SeedstreetApp = () => {
     return <SplashScreen />;
   }
 
-  if (currentScreen === 'splash') {
+  // The splash screen handles its own fade-out and transition to 'onboarding'
+  // So, if currentScreen is 'splash' and not fading out, render it.
+  if (currentScreen === 'splash' && !isSplashFadingOut) {
     return <SplashScreen isFadingOut={isSplashFadingOut} />;
   }
 
