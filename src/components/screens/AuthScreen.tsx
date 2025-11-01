@@ -27,18 +27,27 @@ interface AuthScreenProps {
   setUserRole: (role: string | null) => void;
 }
 
-const authSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }).optional(),
+// Define separate schemas for login and signup
+const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
+
+const signUpSchema = loginSchema.extend({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+});
+
+// Infer types for form data
+type LoginFormInputs = z.infer<typeof loginSchema>;
+type SignUpFormInputs = z.infer<typeof signUpSchema>;
+type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>; // Combined type for useForm
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn, setUserRole }) => {
   const [isSignUp, setIsSignUp] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof authSchema>>({
-    resolver: zodResolver(authSchema),
+  const form = useForm<AuthFormInputs>({
+    resolver: zodResolver(isSignUp ? signUpSchema : loginSchema), // Dynamically choose schema
     defaultValues: {
       name: "",
       email: "",
@@ -46,7 +55,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
     },
   });
 
-  const handleAuth = async (values: z.infer<typeof authSchema>) => {
+  const handleAuth = async (values: AuthFormInputs) => {
     console.log("handleAuth called. isSignUp:", isSignUp, "values:", values);
     console.log("Current form errors (before submission logic):", form.formState.errors); // Log form errors
     setLoading(true);
