@@ -47,10 +47,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
   });
 
   const handleAuth = async (values: z.infer<typeof authSchema>) => {
+    console.log("handleAuth called. isSignUp:", isSignUp, "values:", values);
+    console.log("Current form errors (before submission logic):", form.formState.errors); // Log form errors
     setLoading(true);
     let authError = null;
 
     if (isSignUp) {
+      console.log("Attempting Sign Up with email:", values.email);
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -63,30 +66,38 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
       });
       authError = signUpError;
       if (!authError && data?.user) {
+        console.log("Sign Up successful, user:", data.user);
         toast.success("Account created! Please check your email to verify.");
         setIsLoggedIn(true);
         setCurrentScreen('roleSelector');
       }
     } else { // Log In path
+      console.log("Attempting Log In with email:", values.email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
       authError = signInError;
       if (!authError && data?.user) {
+        console.log("Log In successful, user:", data.user);
         toast.success("Logged in successfully!");
         setIsLoggedIn(true);
         // Fetch user role and navigate
         const { data: profileData, error: profileError } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
         if (profileError) {
+          console.error("Error fetching profile after login:", profileError);
           toast.error("Failed to fetch user role after login: " + profileError.message);
           setCurrentScreen('roleSelector'); // Still go to role selector if profile fetch fails
         } else if (profileData?.role) {
+          console.log("User role found:", profileData.role);
           setUserRole(profileData.role);
           setCurrentScreen('home');
         } else {
+          console.log("No role found for user, redirecting to role selector.");
           setCurrentScreen('roleSelector');
         }
+      } else {
+        console.log("Log In failed or no user data. Error:", authError);
       }
     }
 
@@ -207,16 +218,25 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
-            <button 
-              onClick={() => {
-                setIsSignUp(prev => !prev); // Reverted form.reset()
-              }} 
-              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" // Reverted styling
-              aria-label={isSignUp ? 'Log In' : 'Sign Up'}
-            >
-              {isSignUp ? 'Log In' : 'Sign Up'}
-            </button>
           </p>
+          <button 
+            onClick={() => {
+              setIsSignUp(prev => {
+                const newState = !prev;
+                console.log("Toggle button clicked. isSignUp will be:", newState);
+                form.reset({ // Reset form fields on toggle
+                  name: "",
+                  email: "",
+                  password: "",
+                });
+                return newState;
+              });
+            }} 
+            className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
+            aria-label={isSignUp ? 'Log In' : 'Sign Up'}
+          >
+            {isSignUp ? 'Log In' : 'Sign Up'}
+          </button>
 
           {isSignUp && (
             <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
