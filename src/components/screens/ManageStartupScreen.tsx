@@ -41,6 +41,8 @@ interface Startup {
   amount_sought: number | null;
   currency: string | null;
   funding_stage: string | null;
+  ai_risk_score: number | null; // Added for AI analysis
+  market_trend_analysis: string | null; // Added for AI analysis
 }
 
 interface ManageStartupScreenProps {
@@ -186,6 +188,54 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       console.error(`Error ${startupId ? 'updating' : 'listing'} startup:`, error);
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
+
+      // --- AI Analysis Integration ---
+      if (newStartupId) {
+        try {
+          const { data: aiAnalysis, error: aiError } = await supabase.functions.invoke('analyze-startup', {
+            body: {
+              startupData: {
+                id: newStartupId,
+                name: values.name,
+                tagline: values.tagline,
+                pitch: values.pitch,
+                category: values.category,
+                description: values.description,
+                funding_stage: values.funding_stage,
+                amount_sought: values.amount_sought,
+                // Add any other relevant fields for AI analysis
+              },
+            },
+          });
+
+          if (aiError) {
+            console.error("Error invoking AI analysis function:", aiError);
+            toast.error("AI analysis failed: " + aiError.message);
+          } else if (aiAnalysis) {
+            console.log("AI Analysis Result:", aiAnalysis);
+            // Update the startup with AI analysis results
+            const { error: updateAiError } = await supabase
+              .from('startups')
+              .update({
+                ai_risk_score: aiAnalysis.aiRiskScore,
+                market_trend_analysis: aiAnalysis.marketTrendAnalysis,
+              })
+              .eq('id', newStartupId);
+
+            if (updateAiError) {
+              console.error("Error updating startup with AI analysis:", updateAiError);
+              toast.error("Failed to save AI analysis results.");
+            } else {
+              toast.success("AI analysis complete and saved!");
+            }
+          }
+        } catch (aiInvokeError) {
+          console.error("Unexpected error during AI analysis invocation:", aiInvokeError);
+          toast.error("An unexpected error occurred during AI analysis.");
+        }
+      }
+      // --- End AI Analysis Integration ---
+
       if (!startupId) {
         logActivity('startup_listed', `Listed new startup: ${values.name}`, newStartupId, 'Rocket');
         setCurrentScreen('startupListingCelebration', { startupName: values.name });
