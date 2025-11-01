@@ -48,6 +48,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
   const handleAuth = async (values: z.infer<typeof authSchema>) => {
     console.log("handleAuth called. isSignUp:", isSignUp, "values:", values);
+    console.log("Current form errors:", form.formState.errors); // Log form errors
     setLoading(true);
     let authError = null;
 
