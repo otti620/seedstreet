@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
 import {
   Rocket, Users, MessageCircle, User, Search, TrendingUp,
   Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
