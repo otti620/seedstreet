@@ -96,7 +96,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col">
+    <div className="fixed inset-0 flex flex-col dark:bg-gray-950">
       {/* Hero Section */}
       <div className="h-2/5 bg-gradient-to-br from-purple-700 to-teal-500 relative overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0">
@@ -122,7 +122,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-10 p-6 overflow-y-auto">
+      <div className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-10 p-6 overflow-y-auto dark:bg-gray-900">
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent mb-2">
@@ -144,10 +144,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                           {...field}
                           type="text"
                           placeholder=" "
-                          className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                          className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                          aria-label="Full name"
                         />
-                        <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Full name</Label>
-                        <UserIcon className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                        <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Full name</Label>
+                        <UserIcon className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -165,10 +166,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                         {...field}
                         type="email"
                         placeholder=" "
-                        className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                        className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Email"
                       />
-                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Email</Label>
-                      <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Email</Label>
+                      <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -185,31 +187,36 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                         {...field}
                         type="password"
                         placeholder=" "
-                        className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                        className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Password"
                       />
-                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all">Password</Label>
-                      <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700" />
+                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Password</Label>
+                      <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all">
+              <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all" aria-label={isSignUp ? 'Create Account' : 'Log In'}>
                 {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Log In')}
               </Button>
             </form>
           </Form>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
-            <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent">
+            <button 
+              onClick={() => setIsSignUp(!isSignUp)} 
+              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 dark:text-purple-400" 
+              aria-label={isSignUp ? 'Log In' : 'Sign Up'}
+            >
               {isSignUp ? 'Log In' : 'Sign Up'}
             </button>
           </p>
 
           {isSignUp && (
-            <p className="text-xs text-center text-gray-500">
+            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
               By signing up, you agree to our <span className="underline">Terms & Privacy Policy</span>
             </p>
           )}
