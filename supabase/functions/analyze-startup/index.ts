@@ -36,8 +36,8 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    // Retrieve the Gemini API key from environment variables
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
+    // Retrieve the Gemini API key directly (hardcoded for now as requested)
+    const geminiApiKey = 'AIzaSyA1sBEnueJ6xeiy0DkU3pw4Z5OphB2cVjQ'; // Hardcoded Gemini API Key
 
     if (!geminiApiKey) {
       return new Response('Gemini API Key not configured', { status: 500, headers: corsHeaders })
