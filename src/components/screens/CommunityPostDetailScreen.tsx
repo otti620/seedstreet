@@ -122,6 +122,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       const channel = supabase
         .channel(`post_comments:${selectedCommunityPostId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments', filter: `post_id=eq.${selectedCommunityPostId}` }, payload => {
+          // When a change occurs, re-fetch to get the latest state, including real IDs
           fetchPostAndComments();
         })
         .subscribe();
@@ -182,7 +183,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     form.reset(); // Clear input immediately
 
     const tempComment: CommunityComment = {
-      id: `temp-${Date.now()}`,
+      id: `temp-${Date.now()}`, // Temporary ID for optimistic update
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
@@ -195,13 +196,13 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
 
 
-    const { error } = await supabase.from('community_comments').insert({
+    const { data: newCommentData, error } = await supabase.from('community_comments').insert({
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
       author_avatar_url: userProfile.avatar_url,
       content: commentContent,
-    });
+    }).select().single(); // Select the new row to get its actual ID
 
     if (error) {
       toast.error("Failed to add comment: " + error.message);
@@ -209,9 +210,12 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       // Revert optimistic update on error
       setComments(prevComments => prevComments.filter(c => c.id !== tempComment.id));
       setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
-    } else {
+    } else if (newCommentData) {
       toast.success("Comment added!");
-      // Real-time subscription will handle updating the comments list
+      // Replace the temporary comment with the real one from the database
+      setComments(prevComments =>
+        prevComments.map(c => (c.id === tempComment.id ? (newCommentData as CommunityComment) : c))
+      );
       // Notify post author of new comment
       if (post.author_id !== userProfile.id) {
         await supabase.from('notifications').insert({
@@ -270,6 +274,11 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       toast.error("You can only delete your own comments.");
       return;
     }
+    // Prevent deletion of temporary comments that haven't been synced
+    if (commentId.startsWith('temp-')) {
+      toast.error("This comment is still being processed. Please wait a moment or refresh.");
+      return;
+    }
 
     if (!window.confirm("Are you sure you want to delete this comment?")) {
       return;
@@ -295,7 +304,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
     } else {
       toast.success("Comment deleted!");
-      // fetchPostAndComments(); // Real-time subscription will handle updating the comments list
+      // Real-time subscription will handle updating the comments list
     }
   };
 
