@@ -108,9 +108,15 @@ const SeedstreetApp = () => {
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
 
   // Use the new custom hook for data management
-  const {
-    userProfile, // Now directly use userProfile from the hook
-    setUserProfile, // Use setUserProfile from the hook
+  const appData = useAppData({ // Assign to an intermediate variable
+    userId: supabase.auth.currentUser?.id || null, // Pass current user ID from Supabase directly
+    isLoggedIn,
+    selectedChatId: selectedChat?.id || null,
+  });
+
+  const { // Destructure from the intermediate variable
+    userProfile,
+    setUserProfile,
     startups,
     chats,
     communityPosts,
@@ -122,11 +128,7 @@ const SeedstreetApp = () => {
     fetchAppSettings,
     fetchCommunityPosts,
     fetchNotifications,
-  } = useAppData({
-    userId: supabase.auth.currentUser?.id || null, // Pass current user ID from Supabase directly
-    isLoggedIn,
-    selectedChatId: selectedChat?.id || null,
-  });
+  } = appData;
 
   // Derive userRole from userProfile returned by the hook
   const userRole = userProfile?.role || null;
@@ -357,7 +359,7 @@ const SeedstreetApp = () => {
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
-      ? currentInterents.filter(id => id !== startupId)
+      ? currentInterests.filter(id => id !== startupId)
       : [...currentInterests, startupId];
 
     // Fetch startup data to get current interests count and founder_id
