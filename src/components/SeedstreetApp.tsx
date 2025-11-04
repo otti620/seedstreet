@@ -735,13 +735,39 @@ const SeedstreetApp = () => {
     return <SplashScreen />;
   }
 
-  // 2. Once session and profile are loaded, check maintenance mode
-  //    If maintenance is ON AND user is NOT admin, show maintenance screen
+  // 2. Once session is loaded, if not logged in, always show AuthScreen/Onboarding
+  if (!isLoggedIn) {
+    // If currentScreen is already auth or onboarding, stay there. Otherwise, navigate.
+    if (currentScreen === 'auth' || currentScreen === 'onboarding') {
+      return (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentScreen}
+            variants={screenVariants}
+            initial="initial"
+            animate="in"
+            exit="out"
+            transition={{ type: "tween", duration: 0.2 }}
+            className="fixed inset-0"
+          >
+            {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={setCurrentScreen} />}
+            {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />}
+          </motion.div>
+        </AnimatePresence>
+      );
+    } else {
+      // If not logged in and not on auth/onboarding, force navigation to auth
+      setCurrentScreen('auth');
+      return <SplashScreen />; // Show splash while redirecting
+    }
+  }
+
+  // 3. If logged in, check maintenance mode
   if (maintenanceMode.enabled && userRole !== 'admin') {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
   }
 
-  // 3. Otherwise, render the main application content based on currentScreen
+  // 4. Otherwise (logged in, not in maintenance OR logged in as admin), render the main application content
   return (
     <AnimatePresence mode="wait">
       <motion.div
