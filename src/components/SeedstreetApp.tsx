@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -31,7 +32,7 @@ import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Corrected import path
+import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
