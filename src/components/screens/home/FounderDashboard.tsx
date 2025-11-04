@@ -6,7 +6,7 @@ import BottomNav from '../../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion'; // Import motion
+import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -53,6 +53,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(0); // State for rotating activities
 
   const fetchFounderStartup = async () => {
     setStartupLoading(true);
@@ -93,6 +94,18 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
   }, [userProfileId]);
 
+  // Effect for rotating recent activities
+  useEffect(() => {
+    if (recentActivities.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentActivityIndex(prevIndex =>
+          (prevIndex + 1) % recentActivities.length
+        );
+      }, 5000); // Change activity every 5 seconds
+      return () => clearInterval(timer);
+    }
+  }, [recentActivities]);
+
   const renderFounderStatsSkeleton = () => (
     <div className="bg-gradient-to-br from-purple-700 to-teal-600 rounded-2xl p-6 text-white animate-pulse">
       <Skeleton className="h-6 w-3/4 mb-4 bg-white/20" />
@@ -131,7 +144,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
       <Skeleton className="h-5 w-1/2 mb-4" />
       <div className="space-y-3">
-        {Array.from({ length: 2 }).map((_, i) => (
+        {Array.from({ length: 1 }).map((_, i) => ( // Only one skeleton for rotating display
           <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl dark:bg-gray-700">
             <Skeleton className="w-8 h-8 rounded-lg" />
             <div className="flex-1 space-y-1">
@@ -155,6 +168,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
       default: return <Bell className="w-5 h-5 text-white" />;
     }
   };
+
+  const currentActivity = recentActivities[currentActivityIndex];
 
   return (
     <>
@@ -292,23 +307,26 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
               <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Recent Activity</h3>
               <div className="space-y-3">
                 {recentActivities.length > 0 ? (
-                  recentActivities.map(activity => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl dark:bg-gray-700"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-700 to-teal-600 rounded-lg flex items-center justify-center text-white text-xs">
-                        {getActivityIcon(activity.icon)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{activity.description}</p>
-                        <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
-                      </div>
-                    </motion.div>
-                  ))
+                  <AnimatePresence mode="wait">
+                    {currentActivity && (
+                      <motion.div
+                        key={currentActivity.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl dark:bg-gray-700"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-700 to-teal-600 rounded-lg flex items-center justify-center text-white text-xs">
+                          {getActivityIcon(currentActivity.icon)}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{currentActivity.description}</p>
+                          <p className="text-xs text-gray-500">{new Date(currentActivity.timestamp).toLocaleString()}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 ) : (
                   <div className="text-center text-gray-500 py-4 dark:text-gray-400">No recent activity.</div>
                 )}
