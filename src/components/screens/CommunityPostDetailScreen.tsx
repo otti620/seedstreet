@@ -23,7 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
+import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -73,6 +74,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<CommunityComment | null>(null);
 
   const form = useForm<z.infer<typeof commentSchema>>({
     resolver: zodResolver(commentSchema),
@@ -265,27 +268,35 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     setSubmittingComment(false);
   };
 
-  const handleDeleteComment = async (commentId: string, commentAuthorId: string) => {
+  const confirmDeleteComment = (comment: CommunityComment) => {
     if (!userProfile?.id) {
       toast.error("You must be logged in to delete comments.");
       return;
     }
-    if (userProfile.id !== commentAuthorId) {
+    if (userProfile.id !== comment.author_id) {
       toast.error("You can only delete your own comments.");
       return;
     }
     // Prevent deletion of temporary comments that haven't been synced
-    if (commentId.startsWith('temp-')) {
+    if (comment.id.startsWith('temp-')) {
       toast.error("This comment is still being processed. Please wait a moment or refresh.");
       return;
     }
+    setCommentToDelete(comment);
+    setShowDeleteCommentConfirm(true);
+  };
 
-    if (!window.confirm("Are you sure you want to delete this comment?")) {
+  const handleDeleteComment = async () => {
+    if (!userProfile?.id || !commentToDelete) {
+      toast.error("User profile or comment information is missing. Cannot delete comment.");
       return;
     }
 
-    // Optimistic UI update: remove comment immediately
+    setShowDeleteCommentConfirm(false); // Close dialog
+    const commentId = commentToDelete.id;
     const originalComments = comments;
+
+    // Optimistic UI update: remove comment immediately
     setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
     setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
 
@@ -303,9 +314,27 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       setComments(originalComments);
       setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
     } else {
-      toast.success("Comment deleted!");
+      toast.success("Comment deleted!", {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const { error: undoError } = await supabase
+              .from('community_comments')
+              .insert(commentToDelete); // Re-insert the original comment data
+            if (undoError) {
+              toast.error("Failed to undo deletion: " + undoError.message);
+              console.error("Error undoing deletion:", undoError);
+            } else {
+              toast.success("Deletion undone!");
+              fetchPostAndComments(); // Re-fetch to ensure state is consistent
+            }
+          },
+        },
+        duration: 5000, // Allow 5 seconds to undo
+      });
       // Real-time subscription will handle updating the comments list
     }
+    setCommentToDelete(null);
   };
 
   if (loading) {
@@ -366,7 +395,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                   <DropdownMenuItem onClick={() => setCurrentScreen('createCommunityPost', { postId: post.id })} className="flex items-center gap-2">
                     <Edit className="w-4 h-4" /> Edit Post
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeleteComment(post.id, post.author_id)} className="flex items-center gap-2 text-red-600">
+                  <DropdownMenuItem onClick={() => confirmDeleteComment(post as unknown as CommunityComment)} className="flex items-center gap-2 text-red-600">
                     <Trash2 className="w-4 h-4" /> Delete Post
                   </DropdownMenuItem>
                 </>
@@ -455,7 +484,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, comment.author_id)} className="flex items-center gap-2 text-red-600">
+                            <DropdownMenuItem onClick={() => confirmDeleteComment(comment)} className="flex items-center gap-2 text-red-600">
                               <Trash2 className="w-4 h-4" /> Delete Comment
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -508,6 +537,16 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
           </form>
         </Form>
       </div>
+
+      <ConfirmationDialog
+        isOpen={showDeleteCommentConfirm}
+        onClose={() => setShowDeleteCommentConfirm(false)}
+        onConfirm={handleDeleteComment}
+        title="Delete Comment"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };

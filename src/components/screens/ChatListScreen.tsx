@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Bell, MessageCircle } from 'lucide-react';
-import BottomNav from '../BottomNav'; // Corrected path
+import { ArrowLeft, Search, Bell, MessageCircle, Rocket } from 'lucide-react'; // Import Rocket for CTA
+import BottomNav from '../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button'; // Import Button
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -196,7 +197,16 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No active chats</h3>
-              <p className="text-gray-600 mb-6 dark:text-gray-400">Start a conversation with a founder or investor!</p>
+              <p className="text-gray-600 mb-6 dark:text-gray-400">
+                Start a conversation with a founder or investor!
+              </p>
+              <Button
+                onClick={() => setCurrentScreen('home')} // Navigate to home to browse startups
+                className="mt-4 bg-gradient-to-r from-purple-700 to-teal-600 text-white"
+                aria-label="Discover startups to chat with"
+              >
+                <Rocket className="w-4 h-4 mr-2" /> Discover Startups
+              </Button>
             </div>
           )
         )}

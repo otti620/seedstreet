@@ -29,11 +29,11 @@ import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
 import MerchStoreScreen from './screens/MerchStoreScreen';
 import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
-import SavedStartupsScreen from './screens/SavedStartupsScreen'; // New import
-import SettingsScreen from './screens/SettingsScreen'; // New import
+import SavedStartupsScreen from './screens/SavedStartupsScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import localforage from 'localforage'; // Import localforage
+import localforage from 'localforage';
 
 // Define TypeScript interfaces for data structures
 interface Profile {
@@ -386,8 +386,8 @@ const SeedstreetApp = () => {
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
-      ? currentInterests.filter(id => id !== userProfile.id) // Filter by userProfile.id, not startupId
-      : [...currentInterests, userProfile.id]; // Add userProfile.id, not startupId
+      ? currentInterests.filter(id => id !== startupId) // Corrected: Filter by startupId, not userProfile.id
+      : [...currentInterests, startupId]; // Corrected: Add startupId, not userProfile.id
 
     // Optimistic UI update for interested startups in user profile
     setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);

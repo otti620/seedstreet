@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button'; // Import Button
 
 interface Startup {
   id: string;
@@ -175,7 +176,16 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <Bookmark className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No saved startups</h3>
-              <p className="text-gray-600 mb-6 dark:text-gray-400">Bookmark startups from the feed to see them here!</p>
+              <p className="text-gray-600 mb-6 dark:text-gray-400">
+                Bookmark startups from the feed to see them here!
+              </p>
+              <Button
+                onClick={() => setCurrentScreen('home')} // Navigate to home to browse startups
+                className="mt-4 bg-gradient-to-r from-purple-700 to-teal-600 text-white"
+                aria-label="Discover startups to bookmark"
+              >
+                <Rocket className="w-4 h-4 mr-2" /> Discover Startups
+              </Button>
             </div>
           )
         )}

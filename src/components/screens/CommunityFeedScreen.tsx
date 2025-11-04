@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Bell, Heart, MessageCircle, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react'; // Import Edit, Trash2
-import BottomNav from '../BottomNav'; // Corrected path
+import { ArrowLeft, Plus, Bell, Heart, MessageCircle, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react';
+import BottomNav from '../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,7 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { motion } from 'framer-motion'; // Import motion
+import { motion } from 'framer-motion';
+import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -33,12 +34,12 @@ interface CommunityFeedScreenProps {
   setActiveTab: (tab: string) => void;
   activeTab: string;
   userRole: string | null;
-  userProfileId: string | null; // Pass userProfileId
-  fetchCommunityPosts: () => Promise<void>; // Pass fetch function
+  userProfileId: string | null;
+  fetchCommunityPosts: () => Promise<void>;
 }
 
 const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
-  communityPosts: initialCommunityPosts, // Renamed to avoid conflict with local state
+  communityPosts: initialCommunityPosts,
   setCurrentScreen,
   setActiveTab,
   activeTab,
@@ -46,15 +47,16 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
   userProfileId,
   fetchCommunityPosts,
 }) => {
-  const [loading, setLoading] = useState(true); // Assume loading initially
+  const [loading, setLoading] = useState(true);
   const [localCommunityPosts, setLocalCommunityPosts] = useState<CommunityPost[]>(initialCommunityPosts);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
 
   useEffect(() => {
     setLocalCommunityPosts(initialCommunityPosts);
   }, [initialCommunityPosts]);
 
   useEffect(() => {
-    // Since communityPosts are passed as a prop, we can assume loading is done once they are available
     if (initialCommunityPosts) {
       setLoading(false);
     }
@@ -92,24 +94,25 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
           post.id === postId ? { ...post, likes: currentLikes } : post
         )
       );
-    } else {
-      // No need to re-fetch all posts if optimistic update was successful and real-time updates handle it
-      // fetchCommunityPosts(); // Re-fetch to update the list
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!userProfileId) {
+  const confirmDeletePost = (post: CommunityPost) => {
+    setPostToDelete(post);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeletePost = async () => {
+    if (!userProfileId || !postToDelete) {
       toast.error("You must be logged in to delete posts.");
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
-      return;
-    }
+    setShowDeleteConfirm(false); // Close dialog
+    const postId = postToDelete.id;
+    const originalPosts = localCommunityPosts;
 
     // Optimistic UI update: remove post immediately
-    const originalPosts = localCommunityPosts;
     setLocalCommunityPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
 
     const { error } = await supabase
@@ -124,9 +127,27 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
       // Revert optimistic update on error
       setLocalCommunityPosts(originalPosts);
     } else {
-      toast.success("Post deleted successfully!");
+      toast.success("Post deleted successfully!", {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const { error: undoError } = await supabase
+              .from('community_posts')
+              .insert(postToDelete); // Re-insert the original post data
+            if (undoError) {
+              toast.error("Failed to undo deletion: " + undoError.message);
+              console.error("Error undoing deletion:", undoError);
+            } else {
+              toast.success("Deletion undone!");
+              fetchCommunityPosts(); // Re-fetch to ensure state is consistent
+            }
+          },
+        },
+        duration: 5000, // Allow 5 seconds to undo
+      });
       // fetchCommunityPosts(); // Re-fetch to update the list
     }
+    setPostToDelete(null);
   };
 
   const renderPostSkeleton = () => (
@@ -213,10 +234,10 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setCurrentScreen('communityPostDetail', { postId: post.id })} className="flex items-center gap-2">
-                            <Edit className="w-4 h-4" /> Edit Post (View Detail)
+                          <DropdownMenuItem onClick={() => setCurrentScreen('createCommunityPost', { postId: post.id })} className="flex items-center gap-2">
+                            <Edit className="w-4 h-4" /> Edit Post
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeletePost(post.id)} className="flex items-center gap-2 text-red-600">
+                          <DropdownMenuItem onClick={() => confirmDeletePost(post)} className="flex items-center gap-2 text-red-600">
                             <Trash2 className="w-4 h-4" /> Delete Post
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -261,6 +282,16 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
       </div>
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
+
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeletePost}
+        title="Delete Post"
+        description="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };
