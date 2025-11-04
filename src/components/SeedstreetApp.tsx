@@ -291,22 +291,38 @@ const SeedstreetApp = () => {
           toast.error("Failed to load user profile. Please complete onboarding.");
           setUserProfile(null);
           setUserRole(null);
-          setCurrentScreen('roleSelector'); // User logged in but no profile or onboarding incomplete
+          // Only set screen if not already on roleSelector, adminDashboard, or home
+          if (!['roleSelector', 'adminDashboard', 'home'].includes(currentScreen)) {
+            setCurrentScreen('roleSelector');
+          }
         } else {
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
+          
+          // Prevent overriding user navigation: only set screen if coming from initial states
+          // or if the user's role dictates a specific dashboard and they are not already there.
           if (profileData.role === 'admin') {
-            setCurrentScreen('adminDashboard');
+            if (currentScreen !== 'adminDashboard') {
+              setCurrentScreen('adminDashboard');
+            }
           } else if (!profileData.onboarding_complete) {
-            setCurrentScreen('roleSelector');
+            if (currentScreen !== 'roleSelector') {
+              setCurrentScreen('roleSelector');
+            }
           } else {
-            setCurrentScreen('home');
+            // If user is logged in and onboarding complete, and they are on an initial screen,
+            // or if they are on auth/onboarding, navigate to home.
+            // Otherwise, let them stay on their current screen.
+            if (['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen)) {
+              setCurrentScreen('home');
+            }
           }
         }
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
+        // Only navigate to onboarding if not already there or on auth
         if (currentScreen !== 'auth' && currentScreen !== 'onboarding') {
              setCurrentScreen('onboarding');
         }
