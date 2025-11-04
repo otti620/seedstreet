@@ -35,7 +35,7 @@ interface Startup {
   founder_name: string;
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  created_at: string;
+  date_created: string; // Corrected to date_created
   founder_id: string; // Added founder_id to Startup interface
 }
 
@@ -103,7 +103,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       .from('startups')
       .select('*')
       .eq('status', 'Pending')
-      .order('created_at', { ascending: false });
+      .order('date_created', { ascending: false }); // Corrected column name here
 
     if (startupError) {
       toast.error("Failed to load pending startups: " + startupError.message);
