@@ -31,7 +31,7 @@ import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import MaintenanceModeScreen from './screens/screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
+import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
@@ -569,7 +569,6 @@ const SeedstreetApp = () => {
             setActiveTab={setActiveTab}
             activeTab={activeTab}
             setIsLoggedIn={setIsLoggedIn}
-            setUserRole={setUserRole}
             setUserProfile={setUserProfile}
           />
         )}
@@ -658,7 +657,6 @@ const SeedstreetApp = () => {
             maintenanceMode={maintenanceMode} // Pass maintenance mode state
             fetchAppSettings={fetchAppSettings} // Pass function to update settings
             setIsLoggedIn={setIsLoggedIn} // Pass for logout
-            setUserRole={setUserRole} // Pass for logout
           />
         )}
         {currentScreen === 'savedStartups' && userProfile && (

@@ -44,10 +44,9 @@ interface AdminDashboardScreenProps {
   maintenanceMode: { enabled: boolean; message: string }; // Receive maintenance mode state
   fetchAppSettings: () => void; // Receive function to re-fetch app settings
   setIsLoggedIn: (loggedIn: boolean) => void; // New prop for logout
-  setUserRole: (role: string | null) => void; // New prop for logout
 }
 
-const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings, setIsLoggedIn, setUserRole }) => {
+const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings, setIsLoggedIn }) => {
   const [flaggedItems, setFlaggedItems] = useState<FlaggedMessage[]>([]);
   const [pendingStartups, setPendingStartups] = useState<Startup[]>([]);
   const [analytics, setAnalytics] = useState({
@@ -246,7 +245,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     } else {
       toast.success("Logged out successfully!");
       setIsLoggedIn(false);
-      setUserRole(null); // This will be handled by SeedstreetApp's useEffect
       setCurrentScreen('auth'); // Redirect to auth screen after logout
     }
   };

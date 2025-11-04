@@ -35,7 +35,6 @@ interface ProfileScreenProps {
   setActiveTab: (tab: string) => void;
   activeTab: string;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  setUserRole: (role: string | null) => void; // Added to update profile after edit
   setUserProfile: (profile: Profile | null) => void; // Added to update profile after edit
 }
 
@@ -48,7 +47,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   setActiveTab,
   activeTab,
   setIsLoggedIn,
-  setUserRole,
   setUserProfile,
 }) => {
   const isAdmin = userProfile?.role === 'admin';
