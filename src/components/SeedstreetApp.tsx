@@ -281,8 +281,7 @@ const SeedstreetApp = () => {
           toast.error("Failed to load user profile. Please complete onboarding.");
           setUserProfile(null);
           setUserRole(null);
-          // If profile not found, user needs to go through role selection
-          setCurrentScreen('roleSelector');
+          setCurrentScreen('roleSelector'); // If profile missing, go to role selector
         } else {
           // Check if role is set but onboarding_complete is false
           if (profileData.role && !profileData.onboarding_complete) {
@@ -302,20 +301,30 @@ const SeedstreetApp = () => {
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
           
-          // Navigate based on role and onboarding status
+          // After loading session and profile, decide where to go.
+          // If already on splash/onboarding/auth/roleSelector, navigate to appropriate screen.
+          // Otherwise, stay on current screen (e.g., if user was on profile screen and refreshed).
           if (profileData.role === 'admin') {
-            setCurrentScreen('adminDashboard');
+            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth' || currentScreen === 'roleSelector') {
+              setCurrentScreen('adminDashboard');
+            }
           } else if (!profileData.onboarding_complete) {
-            setCurrentScreen('roleSelector');
+            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth') {
+              setCurrentScreen('roleSelector');
+            }
           } else {
-            setCurrentScreen('home');
+            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth' || currentScreen === 'roleSelector') {
+              setCurrentScreen('home');
+            }
           }
         }
       } else {
+        // User is logged out
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        setCurrentScreen('onboarding'); // For logged out users, start onboarding/auth flow
+        // Always go to auth screen if logged out, regardless of currentScreen state
+        setCurrentScreen('auth');
       }
       setLoadingSession(false); // Set loading to false only after all checks are done
     };
@@ -332,7 +341,7 @@ const SeedstreetApp = () => {
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, [setCurrentScreen]);
+  }, [setCurrentScreen, currentScreen]);
 
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
