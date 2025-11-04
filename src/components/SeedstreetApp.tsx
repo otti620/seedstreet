@@ -296,6 +296,23 @@ const SeedstreetApp = () => {
             setCurrentScreen('roleSelector');
           }
         } else {
+          // Check if role is set but onboarding_complete is false
+          if (profileData.role && !profileData.onboarding_complete) {
+            // Update onboarding_complete to true in the database
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ onboarding_complete: true })
+              .eq('id', userId);
+
+            if (updateError) {
+              console.error("Error updating onboarding_complete:", updateError);
+              // Proceed anyway, but log the error
+            } else {
+              // Update local state to reflect the change
+              profileData.onboarding_complete = true;
+            }
+          }
+
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
           
