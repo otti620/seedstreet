@@ -927,6 +927,8 @@ const SeedstreetApp = () => {
             setCurrentScreen={setCurrentScreen}
             maintenanceMode={maintenanceMode} // Pass maintenance mode state
             fetchAppSettings={fetchAppSettings} // Pass function to update settings
+            setIsLoggedIn={setIsLoggedIn} // Pass for logout
+            setUserRole={setUserRole} // Pass for logout
           />
         )}
         {currentScreen === 'savedStartups' && userProfile && (

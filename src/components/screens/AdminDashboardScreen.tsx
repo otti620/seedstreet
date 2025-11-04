@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings } from 'lucide-react'; // Import new icons
+import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings, LogOut } from 'lucide-react'; // Import LogOut icon
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ interface Startup {
   founder_name: string;
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  date_created: string; // Corrected to date_created
+  date_created: string;
   founder_id: string; // Added founder_id to Startup interface
 }
 
@@ -43,9 +43,11 @@ interface AdminDashboardScreenProps {
   setCurrentScreen: (screen: string) => void;
   maintenanceMode: { enabled: boolean; message: string }; // Receive maintenance mode state
   fetchAppSettings: () => void; // Receive function to re-fetch app settings
+  setIsLoggedIn: (loggedIn: boolean) => void; // New prop for logout
+  setUserRole: (role: string | null) => void; // New prop for logout
 }
 
-const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings }) => {
+const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings, setIsLoggedIn, setUserRole }) => {
   const [flaggedItems, setFlaggedItems] = useState<FlaggedMessage[]>([]);
   const [pendingStartups, setPendingStartups] = useState<Startup[]>([]);
   const [analytics, setAnalytics] = useState({
@@ -103,7 +105,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       .from('startups')
       .select('*')
       .eq('status', 'Pending')
-      .order('date_created', { ascending: false }); // Corrected column name here
+      .order('date_created', { ascending: false });
 
     if (startupError) {
       toast.error("Failed to load pending startups: " + startupError.message);
@@ -237,6 +239,18 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     setUpdatingMaintenance(false);
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Failed to log out: " + error.message);
+    } else {
+      toast.success("Logged out successfully!");
+      setIsLoggedIn(false);
+      setUserRole(null);
+      setCurrentScreen('auth'); // Redirect to auth screen after logout
+    }
+  };
+
   const getItemIcon = (chatType: 'DM' | 'Community') => {
     if (chatType === 'DM') {
       return <MessageCircle className="w-5 h-5 text-blue-600" />;
@@ -284,6 +298,13 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Admin Dashboard</h2>
+          <button 
+            onClick={handleLogout} 
+            className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 text-red-600 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-200" 
+            aria-label="Log Out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
