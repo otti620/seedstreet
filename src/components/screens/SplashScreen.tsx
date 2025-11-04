@@ -6,15 +6,14 @@ import { cn } from '@/lib/utils'; // Import cn utility
 import { motion } from 'framer-motion'; // Import motion
 
 interface SplashScreenProps {
-  isFadingOut?: boolean; // New prop
+  // isFadingOut?: boolean; // Removed as it's no longer used
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ isFadingOut = false }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ /* isFadingOut = false */ }) => {
   return (
     <div className={cn(
-      "fixed inset-0 bg-gradient-to-br from-purple-700 via-purple-600 to-teal-500 flex items-center justify-center overflow-hidden",
-      "transition-opacity duration-500 ease-out", // Add transition for opacity
-      isFadingOut && "opacity-0 pointer-events-none" // Fade out and disable pointer events
+      "fixed inset-0 bg-gradient-to-br from-purple-700 via-purple-600 to-teal-500 flex items-center justify-center overflow-hidden"
+      // Removed isFadingOut class logic
     )}>
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden">

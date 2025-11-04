@@ -305,17 +305,11 @@ const SeedstreetApp = () => {
           // If already on splash/onboarding/auth/roleSelector, navigate to appropriate screen.
           // Otherwise, stay on current screen (e.g., if user was on profile screen and refreshed).
           if (profileData.role === 'admin') {
-            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth' || currentScreen === 'roleSelector') {
-              setCurrentScreen('adminDashboard');
-            }
+            setCurrentScreen('adminDashboard');
           } else if (!profileData.onboarding_complete) {
-            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth') {
-              setCurrentScreen('roleSelector');
-            }
+            setCurrentScreen('roleSelector');
           } else {
-            if (currentScreen === 'splash' || currentScreen === 'onboarding' || currentScreen === 'auth' || currentScreen === 'roleSelector') {
-              setCurrentScreen('home');
-            }
+            setCurrentScreen('home');
           }
         }
       } else {
@@ -323,8 +317,7 @@ const SeedstreetApp = () => {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        // Always go to auth screen if logged out, regardless of currentScreen state
-        setCurrentScreen('auth');
+        setCurrentScreen('auth'); // Always go to auth screen if logged out
       }
       setLoadingSession(false); // Set loading to false only after all checks are done
     };
@@ -341,7 +334,7 @@ const SeedstreetApp = () => {
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, [setCurrentScreen, currentScreen]);
+  }, [setCurrentScreen]);
 
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
