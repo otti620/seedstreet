@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["framer-motion"], // Add framer-motion here
   webpack: (config) => {
     if (process.env.NODE_ENV === "development") {
       config.module.rules.push({
