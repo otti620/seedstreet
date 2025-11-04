@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Bell, Heart, MessageCircle, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react';
+import Image from 'next/image'; // Import Image from next/image
+import { Plus, Heart, MessageCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import BottomNav from '../BottomNav';
-import { Skeleton } from '@/components/ui/skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { motion } from 'framer-motion';
 import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
 
 // Define TypeScript interfaces for data structures
@@ -35,11 +36,11 @@ interface CommunityFeedScreenProps {
   activeTab: string;
   userRole: string | null;
   userProfileId: string | null;
-  fetchCommunityPosts: () => Promise<void>;
+  fetchCommunityPosts: () => Promise<void>; // Function to re-fetch posts
 }
 
 const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
-  communityPosts: initialCommunityPosts,
+  communityPosts,
   setCurrentScreen,
   setActiveTab,
   activeTab,
@@ -48,104 +49,85 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
   fetchCommunityPosts,
 }) => {
   const [loading, setLoading] = useState(true);
-  const [localCommunityPosts, setLocalCommunityPosts] = useState<CommunityPost[]>(initialCommunityPosts);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
 
   useEffect(() => {
-    setLocalCommunityPosts(initialCommunityPosts);
-  }, [initialCommunityPosts]);
+    // Simulate loading for initial render, then set to false
+    // Actual data loading is handled by useAppData, so this is more for visual effect
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  useEffect(() => {
-    if (initialCommunityPosts) {
-      setLoading(false);
-    }
-  }, [initialCommunityPosts]);
-
-  const handleLikeToggle = async (postId: string, currentLikes: string[]) => {
+  const handleLikeToggle = async (post: CommunityPost) => {
     if (!userProfileId) {
       toast.error("Please log in to like posts.");
       return;
     }
 
-    const isLiked = currentLikes.includes(userProfileId);
+    const isLiked = post.likes.includes(userProfileId);
     const newLikes = isLiked
-      ? currentLikes.filter(id => id !== userProfileId)
-      : [...currentLikes, userProfileId];
+      ? post.likes.filter(id => id !== userProfileId)
+      : [...post.likes, userProfileId];
 
-    // Optimistic UI update
-    setLocalCommunityPosts(prevPosts =>
-      prevPosts.map(post =>
-        post.id === postId ? { ...post, likes: newLikes } : post
-      )
-    );
+    // Optimistic UI update (handled by real-time subscription in useAppData)
+    // For now, we'll let the subscription trigger a re-fetch.
 
     const { error } = await supabase
       .from('community_posts')
       .update({ likes: newLikes })
-      .eq('id', postId);
+      .eq('id', post.id);
 
     if (error) {
       toast.error("Failed to update like: " + error.message);
       console.error("Error updating like:", error);
-      // Revert optimistic update on error
-      setLocalCommunityPosts(prevPosts =>
-        prevPosts.map(post =>
-          post.id === postId ? { ...post, likes: currentLikes } : post
-        )
-      );
+    } else {
+      // Notify post author of new like
+      if (!isLiked && post.author_id !== userProfileId) {
+        await supabase.from('notifications').insert({
+          user_id: post.author_id,
+          type: 'post_liked',
+          message: `${userProfileId} liked your post!`, // Use actual user name if available
+          link: `/communityPostDetail/${post.id}`,
+          related_entity_id: post.id,
+        });
+      }
     }
   };
 
   const confirmDeletePost = (post: CommunityPost) => {
+    if (!userProfileId) {
+      toast.error("You must be logged in to delete posts.");
+      return;
+    }
+    if (userProfileId !== post.author_id) {
+      toast.error("You can only delete your own posts.");
+      return;
+    }
     setPostToDelete(post);
     setShowDeleteConfirm(true);
   };
 
   const handleDeletePost = async () => {
-    if (!userProfileId || !postToDelete) {
-      toast.error("You must be logged in to delete posts.");
+    if (!postToDelete || !userProfileId) {
+      toast.error("Post information is missing. Cannot delete.");
       return;
     }
 
     setShowDeleteConfirm(false); // Close dialog
-    const postId = postToDelete.id;
-    const originalPosts = localCommunityPosts;
-
-    // Optimistic UI update: remove post immediately
-    setLocalCommunityPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
 
     const { error } = await supabase
       .from('community_posts')
       .delete()
-      .eq('id', postId)
+      .eq('id', postToDelete.id)
       .eq('author_id', userProfileId); // Ensure only author can delete
 
     if (error) {
       toast.error("Failed to delete post: " + error.message);
       console.error("Error deleting post:", error);
-      // Revert optimistic update on error
-      setLocalCommunityPosts(originalPosts);
     } else {
-      toast.success("Post deleted successfully!", {
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            const { error: undoError } = await supabase
-              .from('community_posts')
-              .insert(postToDelete); // Re-insert the original post data
-            if (undoError) {
-              toast.error("Failed to undo deletion: " + undoError.message);
-              console.error("Error undoing deletion:", undoError);
-            } else {
-              toast.success("Deletion undone!");
-              fetchCommunityPosts(); // Re-fetch to ensure state is consistent
-            }
-          },
-        },
-        duration: 5000, // Allow 5 seconds to undo
-      });
-      // fetchCommunityPosts(); // Re-fetch to update the list
+      toast.success("Post deleted successfully!");
+      fetchCommunityPosts(); // Re-fetch posts to update the list
     }
     setPostToDelete(null);
   };
@@ -154,14 +136,15 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-start gap-3 mb-3">
         <Skeleton className="w-10 h-10 rounded-xl" />
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-1">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />
         </div>
       </div>
       <Skeleton className="h-4 w-full mb-2" />
-      <Skeleton className="h-4 w-5/6 mb-3" />
-      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <Skeleton className="h-4 w-5/6 mb-4" />
+      <Skeleton className="h-48 w-full rounded-lg mb-4" />
+      <div className="flex items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
         <Skeleton className="h-5 w-16" />
         <Skeleton className="h-5 w-16" />
       </div>
@@ -175,32 +158,21 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Community Feed</h1>
-            <p className="text-sm text-gray-500">Share and connect with others</p>
+            <p className="text-sm text-gray-500">Share updates, ask questions</p>
           </div>
-          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="View notifications">
-            <Bell className="w-5 h-5 text-purple-700 dark:text-purple-300" />
+          <button onClick={() => setCurrentScreen('createCommunityPost')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="Create new post">
+            <Plus className="w-5 h-5 text-purple-700 dark:text-purple-300" />
           </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-        {/* Create Post Button */}
-        <button
-          onClick={() => setCurrentScreen('createCommunityPost')}
-          className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold text-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
-          aria-label="Create new post"
-        >
-          <Plus className="w-6 h-6" />
-          Create New Post
-        </button>
-
-        {/* Community Posts */}
+      {/* Posts */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <React.Fragment key={i}>{renderPostSkeleton()}</React.Fragment>)
-        ) : (
-          localCommunityPosts.length > 0 ? (
-            localCommunityPosts.map(post => {
+        ) : communityPosts.length > 0 ? (
+          <AnimatePresence>
+            {communityPosts.map(post => {
               const isLikedByUser = userProfileId && post.likes.includes(userProfileId);
               const isAuthor = userProfileId === post.author_id;
 
@@ -209,13 +181,14 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                   className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
                 >
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0 relative overflow-hidden">
                       {post.author_avatar_url ? (
-                        <img src={post.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-xl object-cover" />
+                        <Image src={post.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
                       ) : (
                         post.author_name?.[0] || '?'
                       )}
@@ -246,11 +219,11 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                   </div>
                   <p className="text-sm text-gray-700 mb-3 dark:text-gray-200">{post.content}</p>
                   {post.image_url && (
-                    <img src={post.image_url} alt="Post Image" className="mt-3 rounded-lg max-h-60 object-cover w-full" />
+                    <Image src={post.image_url} alt="Post Image" width={500} height={300} objectFit="cover" className="mt-3 rounded-lg w-full" />
                   )}
                   <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <button
-                      onClick={() => handleLikeToggle(post.id, post.likes)}
+                      onClick={() => handleLikeToggle(post)}
                       className={`flex items-center gap-1 text-sm font-medium ${
                         isLikedByUser ? 'text-red-500' : 'text-gray-500 hover:text-red-500 dark:text-gray-400'
                       }`}
@@ -261,8 +234,8 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                     </button>
                     <button
                       onClick={() => setCurrentScreen('communityPostDetail', { postId: post.id })}
-                      className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-blue-500 dark:text-gray-400"
-                      aria-label="View comments"
+                      className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-400"
+                      aria-label={`View comments for post by ${post.author_name}`}
                     >
                       <MessageCircle className="w-4 h-4" />
                       {post.comments_count > 0 && <span>{post.comments_count}</span>}
@@ -270,14 +243,19 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                   </div>
                 </motion.div>
               );
-            })
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No community posts yet</h3>
-              <p className="text-gray-600 mb-6 dark:text-gray-400">Be the first to share an update!</p>
+            })}
+          </AnimatePresence>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">
+              ✨
             </div>
-          )
+            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No posts yet</h3>
+            <p className="text-gray-600 mb-6 dark:text-gray-400">Be the first to share an update!</p>
+            <button onClick={() => setCurrentScreen('createCommunityPost')} className="bg-gradient-to-r from-purple-700 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all">
+              Create Post
+            </button>
+          </div>
         )}
       </div>
 
@@ -288,7 +266,7 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeletePost}
         title="Delete Post"
-        description="Are you sure you want to delete this post? This action cannot be undone."
+        description="Are you sure you want to delete this community post? This action cannot be undone."
         confirmText="Delete"
         confirmVariant="destructive"
       />

@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Check, MoreVertical, Plus, Send, Flag } from 'lucide-react';
+import Image from 'next/image'; // Import Image from next/image
+import { ArrowLeft, Send, Paperclip, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -22,10 +20,10 @@ interface Chat {
   last_message_timestamp: string;
   unread_count: number;
   isOnline: boolean;
-  unread_counts: { [key: string]: number };
   investor_id: string;
   founder_id: string;
   user_ids: string[];
+  unread_counts: { [key: string]: number };
 }
 
 interface Message {
@@ -36,227 +34,121 @@ interface Message {
   text: string;
   created_at: string;
   read: boolean;
-  status?: 'pending' | 'sent' | 'failed'; // Added for optimistic UI
 }
 
 interface Profile {
   id: string;
   name: string | null;
+  avatar_url: string | null;
   email: string | null;
-  last_seen: string | null; // Added for presence
 }
 
 interface ChatConversationScreenProps {
   selectedChat: Chat;
   messages: Message[];
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { chatId?: string }) => void;
   setActiveTab: (tab: string) => void;
   userProfile: Profile | null;
-  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   selectedChat,
-  messages: initialMessages, // Renamed to avoid conflict with local state
+  messages,
   setCurrentScreen,
   setActiveTab,
   userProfile,
   logActivity,
 }) => {
-  const [messageInput, setMessageInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null); // State for the other chat participant
-  const [isOtherUserOnline, setIsOtherUserOnline] = useState(false); // Real-time online status
-  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false); // Placeholder for typing indicator
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [localMessages, setLocalMessages] = useState<Message[]>(initialMessages); // Local state for optimistic updates
 
-  const userProfileId = userProfile?.id || null;
-  const userProfileName = userProfile?.name || userProfile?.email || null;
-
-  // Update local messages when initialMessages prop changes (e.g., from real-time subscription)
-  useEffect(() => {
-    setLocalMessages(initialMessages);
-  }, [initialMessages]);
-
-  // Determine the ID of the other participant
-  const otherParticipantId = selectedChat.user_ids.find(id => id !== userProfileId);
-
-  // Fetch other participant's profile and subscribe to presence
-  useEffect(() => {
-    if (otherParticipantId) { // Ensure otherParticipantId exists before fetching
-      const fetchOtherUserProfile = async () => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, name, email, last_seen')
-          .eq('id', otherParticipantId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching other user profile:", error.message || error); // Log error message or full error object
-        } else if (data) {
-          setOtherUserProfile(data as Profile);
-          // Initial check for online status
-          const lastSeen = new Date(data.last_seen || 0).getTime();
-          setIsOtherUserOnline(Date.now() - lastSeen < 30000); // Online if seen in last 30 seconds
-        }
-      };
-      fetchOtherUserProfile();
-
-      // Subscribe to changes in the other user's profile for presence updates
-      const channel = supabase
-        .channel(`profile_presence:${otherParticipantId}`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${otherParticipantId}` }, payload => {
-          const updatedProfile = payload.new as Profile;
-          setOtherUserProfile(updatedProfile);
-          const lastSeen = new Date(updatedProfile.last_seen || 0).getTime();
-          setIsOtherUserOnline(Date.now() - lastSeen < 30000); // Update online status
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [otherParticipantId]);
-
-  // Update current user's last_seen timestamp periodically
-  useEffect(() => {
-    const updateLastSeen = async () => {
-      if (userProfileId) {
-        await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', userProfileId);
-      }
-    };
-
-    const interval = setInterval(updateLastSeen, 15000); // Update every 15 seconds
-    updateLastSeen(); // Initial update
-
-    return () => clearInterval(interval);
-  }, [userProfileId]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [localMessages]); // Use localMessages for scrolling
+  };
 
-  // Mark messages as read and update unread count when chat is opened
   useEffect(() => {
-    const markChatAsRead = async () => {
-      if (userProfileId && selectedChat.id) {
-        const currentUnreadCounts = selectedChat.unread_counts || {};
-        const newUnreadCounts = {
-          ...currentUnreadCounts,
-          [userProfileId]: 0,
-        };
-
-        const { error: updateChatError } = await supabase
-          .from('chats')
-          .update({ unread_counts: newUnreadCounts })
-          .eq('id', selectedChat.id);
-
-        if (updateChatError) {
-          console.error("Error updating chat unread counts:", updateChatError);
-        }
-      }
-    };
-
-    markChatAsRead();
-  }, [selectedChat.id, userProfileId, selectedChat.unread_counts]);
-
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (messageInput.trim() && userProfileId && userProfileName) {
-      setSending(true);
-      const messageText = messageInput.trim();
-      setMessageInput(''); // Clear input immediately
+    if (!newMessage.trim() || !userProfile?.id || !userProfile?.name) return;
 
-      const tempMessage: Message = {
-        id: `temp-${Date.now()}`, // Temporary ID for optimistic update
-        chat_id: selectedChat.id,
-        sender_id: userProfileId,
-        sender_name: userProfileName,
-        text: messageText,
-        created_at: new Date().toISOString(),
-        read: false,
-        status: 'pending', // Optimistic status
-      };
+    setSendingMessage(true);
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear input immediately
 
-      setLocalMessages(prevMessages => [...prevMessages, tempMessage]);
+    // Optimistic UI update (optional, but good for chat)
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      chat_id: selectedChat.id,
+      sender_id: userProfile.id,
+      sender_name: userProfile.name,
+      text: messageText,
+      created_at: new Date().toISOString(),
+      read: true, // Assume sender has read their own message
+    };
+    // This would typically be handled by the real-time subscription in useAppData
+    // For now, we'll let the subscription re-fetch the full list.
 
-      const otherUserIds = selectedChat.user_ids.filter(id => id !== userProfileId);
+    const { data, error } = await supabase.from('messages').insert({
+      chat_id: selectedChat.id,
+      sender_id: userProfile.id,
+      sender_name: userProfile.name,
+      text: messageText,
+    }).select().single();
+
+    if (error) {
+      toast.error("Failed to send message: " + error.message);
+      console.error("Error sending message:", error);
+      // Revert optimistic update if implemented
+    } else {
+      // Update chat's last message and unread counts
+      const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
       const newUnreadCounts = { ...selectedChat.unread_counts };
-      otherUserIds.forEach(id => {
-        newUnreadCounts[id] = (newUnreadCounts[id] || 0) + 1;
-      });
-      newUnreadCounts[userProfileId] = 0;
-
-      const { data, error } = await supabase.from('messages').insert({
-        chat_id: selectedChat.id,
-        sender_id: userProfileId,
-        sender_name: userProfileName,
-        text: messageText,
-      }).select().single();
-
-      if (error) {
-        toast.error("Failed to send message: " + error.message);
-        console.error("Error sending message:", error);
-        setLocalMessages(prevMessages =>
-          prevMessages.map(msg =>
-            msg.id === tempMessage.id ? { ...msg, status: 'failed' } : msg
-          )
-        );
-      } else if (data) {
-        setLocalMessages(prevMessages =>
-          prevMessages.map(msg =>
-            msg.id === tempMessage.id ? { ...data, status: 'sent' } : msg
-          )
-        );
-        await supabase.from('chats').update({
-          last_message_text: messageText,
-          last_message_timestamp: new Date().toISOString(),
-          unread_counts: newUnreadCounts,
-        }).eq('id', selectedChat.id);
-        logActivity('message_sent', `Sent a message in chat with ${selectedChat.startup_name}`, selectedChat.id, 'Send');
+      if (otherUserId) {
+        newUnreadCounts[otherUserId] = (newUnreadCounts[otherUserId] || 0) + 1;
       }
-      setSending(false);
-    } else if (!userProfileId || !userProfileName) {
-      toast.error("User information missing. Cannot send message.");
+
+      await supabase.from('chats').update({
+        last_message_text: messageText,
+        last_message_timestamp: new Date().toISOString(),
+        unread_counts: newUnreadCounts,
+      }).eq('id', selectedChat.id);
+
+      // Send notification to the other user
+      if (otherUserId && selectedChat.startup_name) {
+        await supabase.from('notifications').insert({
+          user_id: otherUserId,
+          type: 'new_message',
+          message: `${userProfile.name} sent a message in ${selectedChat.startup_name} chat.`,
+          link: `/chat/${selectedChat.id}`,
+          related_entity_id: selectedChat.id,
+        });
+      }
+      logActivity('message_sent', `Sent a message in chat with ${selectedChat.startup_name}`, selectedChat.id, 'Send');
+    }
+    setSendingMessage(false);
+  };
+
+  const getSenderAvatar = (senderId: string) => {
+    // In a real app, you'd fetch the other user's avatar.
+    // For now, we'll use the startup logo for the "other" party in a startup chat,
+    // and the userProfile avatar for the current user.
+    if (senderId === userProfile?.id) {
+      return userProfile.avatar_url;
+    } else {
+      return selectedChat.startup_logo; // Assuming the other party is the startup/founder
     }
   };
 
-  const handleReportMessage = async (message: Message) => {
-    if (!userProfileId) {
-      toast.error("You must be logged in to report a message.");
-      return;
-    }
-
-    const reason = prompt("Please provide a reason for reporting this message:");
-    if (!reason || reason.trim() === "") {
-      toast.info("Message not reported. A reason is required.");
-      return;
-    }
-
-    setSending(true);
-    const { error } = await supabase.from('flagged_messages').insert({
-      message_id: message.id,
-      chat_id: message.chat_id,
-      sender: message.sender_name,
-      sender_id: message.sender_id,
-      chat_type: 'DM',
-      startup_name: selectedChat.startup_name,
-      reason: reason.trim(),
-      reported_by: userProfileId,
-      status: 'Pending',
-    });
-
-    if (error) {
-      toast.error("Failed to report message: " + error.message);
-      console.error("Error reporting message:", error);
+  const getSenderInitials = (senderId: string) => {
+    if (senderId === userProfile?.id) {
+      return userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U';
     } else {
-      toast.success("Message reported successfully. We will review it shortly.");
-      logActivity('message_reported', `Reported a message in chat with ${selectedChat.startup_name}`, message.id, 'Flag');
+      return selectedChat.startup_name?.[0] || 'S';
     }
-    setSending(false);
   };
 
   return (
@@ -264,27 +156,21 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => {
-            setCurrentScreen('home');
-            setActiveTab('chats');
-          }} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to chats">
+          <button onClick={() => { setCurrentScreen('home'); setActiveTab('chats'); }} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to chats">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <div className="flex items-center gap-3 flex-1">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl">
-                {selectedChat.startup_logo}
-              </div>
-              {isOtherUserOnline && (
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-gray-700 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+              {selectedChat.startup_logo.startsWith('http') ? (
+                <Image src={selectedChat.startup_logo} alt={`${selectedChat.startup_name} logo`} layout="fill" objectFit="cover" className="rounded-full" />
+              ) : (
+                selectedChat.startup_name?.[0] || 'S'
+              )}
+              {selectedChat.isOnline && (
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 truncate dark:text-gray-50">{selectedChat.startup_name}</h2>
-              <p className={`text-xs ${isOtherUserOnline ? 'text-green-600' : 'text-gray-500'}`}>
-                {isOtherUserOnline ? 'Online' : 'Offline'}
-              </p>
-            </div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">{selectedChat.startup_name}</h2>
           </div>
           <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Chat options">
             <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -294,87 +180,93 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <AnimatePresence initial={false}> {/* Disable initial animation to prevent all messages from animating on load */}
-          {localMessages.map((msg) => (
+        {messages.map((message, index) => {
+          const isMyMessage = message.sender_id === userProfile?.id;
+          const senderAvatar = getSenderAvatar(message.sender_id);
+          const senderInitials = getSenderInitials(message.sender_id);
+
+          return (
             <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 20 }}
+              key={message.id}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
-              className={`flex ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}
+              className={`flex items-end gap-3 ${isMyMessage ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[75%] ${msg.sender_id === userProfileId ? 'order-2' : 'order-1'}`}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className={`rounded-2xl p-3 cursor-pointer ${
-                      msg.sender_id === userProfileId
-                        ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-br-md'
-                        : 'bg-gray-100 text-gray-900 rounded-bl-md dark:bg-gray-700 dark:text-gray-50'
-                    }`}>
-                      <p className="text-sm leading-relaxed">{msg.text}</p>
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleReportMessage(msg)} className="flex items-center gap-2 text-red-600">
-                      <Flag className="w-4 h-4" /> Report Message
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender_id === userProfileId ? 'justify-end' : 'justify-start'}`}>
-                  <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  {msg.sender_id === userProfileId && msg.status === 'pending' && (
-                    <span className="text-xs text-gray-400">Sending...</span>
+              {!isMyMessage && (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+                  {senderAvatar ? (
+                    <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                  ) : (
+                    senderInitials
                   )}
-                  {msg.sender_id === userProfileId && msg.status === 'failed' && (
-                    <span className="text-xs text-red-500">Failed</span>
-                  )}
-                  {msg.sender_id === userProfileId && msg.status === 'sent' && <Check className="w-3 h-3 text-teal-500" />}
                 </div>
+              )}
+              <div className={`flex flex-col max-w-[70%] ${isMyMessage ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`px-4 py-2 rounded-2xl ${
+                    isMyMessage
+                      ? 'bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-br-none'
+                      : 'bg-gray-200 text-gray-800 rounded-bl-none dark:bg-gray-700 dark:text-gray-50'
+                  }`}
+                >
+                  <p className="text-sm">{message.text}</p>
+                </div>
+                <span className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                  {format(new Date(message.created_at), 'p')}
+                </span>
               </div>
+              {isMyMessage && (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+                  {senderAvatar ? (
+                    <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                  ) : (
+                    senderInitials
+                  )}
+                </div>
+              )}
             </motion.div>
-          ))}
-        </AnimatePresence>
-        {/* Typing Indicator Placeholder */}
-        {isOtherUserTyping && (
-          <div className="flex justify-start">
-            <div className="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md p-3 dark:bg-gray-700 dark:text-gray-50">
-              <div className="flex items-center space-x-1">
-                <span className="text-sm">Typing</span>
-                <span className="animate-pulse">...</span>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Scroll anchor */}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
+      {/* Message Input */}
       <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-end gap-2">
-          {/* Removed "Add attachment" button */}
-          <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center dark:bg-gray-800">
-            <input
-              type="text"
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 bg-transparent outline-none text-sm dark:text-gray-50"
-              disabled={sending}
-              aria-label="Message input"
-            />
-          </div>
-          <button onClick={handleSendMessage} disabled={sending || !messageInput.trim()} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message">
-            {sending ? (
+          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" aria-label="Attach file">
+            <Paperclip className="w-5 h-5" />
+          </button>
+          <Textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 resize-none outline-none focus:ring-2 focus:ring-purple-100 border-2 border-transparent focus:border-purple-700 transition-all dark:bg-gray-800 dark:text-gray-50 dark:focus:border-purple-500"
+            disabled={sendingMessage}
+            aria-label="Message input"
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim() || sendingMessage}
+            size="icon"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-teal-600 text-white hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Send message"
+          >
+            {sendingMessage ? (
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              <Send className="w-5 h-5 text-white" />
+              <Send className="w-5 h-5" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -36,6 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useAppData } from '@/hooks/use-app-data'; // Import the new hook
+import { useSupabaseMutation } from '@/hooks/use-supabase-mutation'; // Import the new mutation hook
 
 // Define TypeScript interfaces for data structures (moved to use-app-data.tsx, but kept here for clarity if needed)
 interface Profile {
@@ -108,8 +109,8 @@ const SeedstreetApp = () => {
 
   // Use the new custom hook for data management
   const {
-    userProfile,
-    setUserProfile,
+    userProfile, // Now directly use userProfile from the hook
+    setUserProfile, // Use setUserProfile from the hook
     startups,
     chats,
     communityPosts,
@@ -122,12 +123,12 @@ const SeedstreetApp = () => {
     fetchCommunityPosts,
     fetchNotifications,
   } = useAppData({
-    userId: userProfile?.id || null, // Pass current user ID to the hook
+    userId: supabase.auth.currentUser?.id || null, // Pass current user ID from Supabase directly
     isLoggedIn,
     selectedChatId: selectedChat?.id || null,
   });
 
-  // Derive userRole from userProfile
+  // Derive userRole from userProfile returned by the hook
   const userRole = userProfile?.role || null;
 
   const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
@@ -214,13 +215,9 @@ const SeedstreetApp = () => {
         if (profileError || !profileData) {
           console.error("Error fetching user profile for initial role check:", profileError);
           toast.error("Failed to load user profile. Please complete onboarding.");
-          setUserProfile(null); // Clear profile in main state
           // Force to role selector if profile is missing
           setCurrentScreen('roleSelector');
         } else {
-          // Update local userProfile state with fetched data (useAppData will also update its own)
-          setUserProfile(prev => ({ ...prev, ...profileData, id: userId } as Profile));
-
           // Navigate based on role and onboarding status
           if (profileData.role === 'admin') {
             setCurrentScreen('adminDashboard');
@@ -232,7 +229,6 @@ const SeedstreetApp = () => {
         }
       } else {
         setIsLoggedIn(false);
-        setUserProfile(null); // Clear profile in main state
         setCurrentScreen('auth'); // Always go to auth screen if logged out
       }
       setLoadingSession(false);
@@ -255,6 +251,30 @@ const SeedstreetApp = () => {
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
 
+  // Mutation for toggling bookmark
+  const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
+    async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
+      return supabase
+        .from('profiles')
+        .update({ bookmarked_startups: newBookmarks })
+        .eq('id', userId)
+        .select()
+        .single();
+    },
+    {
+      onSuccess: (data) => {
+        setUserProfile(prev => prev ? { ...prev, bookmarked_startups: data.bookmarked_startups } : null);
+        const isBookmarked = data.bookmarked_startups.includes(selectedStartupId || ''); // Check against current selected startup
+        toast.success(isBookmarked ? "Startup bookmarked!" : "Bookmark removed!");
+        logActivity(isBookmarked ? 'bookmark_added' : 'bookmark_removed', `${isBookmarked ? 'Added' : 'Removed'} a startup to bookmarks`, selectedStartupId, 'Bookmark');
+      },
+      onError: (error) => {
+        console.error("Error updating bookmarks:", error);
+      },
+      errorMessage: "Failed to update bookmarks.",
+    }
+  );
+
   const toggleBookmark = async (startupId: string) => {
     if (!userProfile) {
       toast.error("Please log in to bookmark startups.");
@@ -267,20 +287,66 @@ const SeedstreetApp = () => {
       ? currentBookmarks.filter(id => id !== startupId)
       : [...currentBookmarks, startupId];
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ bookmarked_startups: newBookmarks })
-      .eq('id', userProfile.id);
-
-    if (error) {
-      toast.error("Failed to update bookmarks: " + error.message);
-      console.error("Error updating bookmarks:", error);
-    } else {
-      setUserProfile(prev => prev ? { ...prev, bookmarked_startups: newBookmarks } : null);
-      toast.success(isBookmarked ? "Bookmark removed!" : "Startup bookmarked!");
-      logActivity(isBookmarked ? 'bookmark_removed' : 'bookmark_added', `${isBookmarked ? 'Removed' : 'Added'} a startup to bookmarks`, startupId, 'Bookmark');
-    }
+    await toggleBookmarkMutation({ userId: userProfile.id, newBookmarks });
   };
+
+  // Mutation for toggling interest
+  const { mutate: toggleInterestMutation, loading: interestLoading } = useSupabaseMutation(
+    async ({ userId, newInterests, startupId, newInterestsCount, founderId, startupName, isInterested }: {
+      userId: string;
+      newInterests: string[];
+      startupId: string;
+      newInterestsCount: number;
+      founderId: string;
+      startupName: string;
+      isInterested: boolean;
+    }) => {
+      // Perform profile update
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ interested_startups: newInterests })
+        .eq('id', userId);
+
+      if (profileError) {
+        throw profileError; // Propagate error to be caught by useSupabaseMutation
+      }
+
+      // Perform startup interests count update
+      const { error: startupUpdateError } = await supabase
+        .from('startups')
+        .update({ interests: newInterestsCount })
+        .eq('id', startupId);
+
+      if (startupUpdateError) {
+        throw startupUpdateError; // Propagate error
+      }
+
+      // If interest was added, send notification
+      if (!isInterested) {
+        await supabase.from('notifications').insert({
+          user_id: founderId,
+          type: 'new_interest',
+          message: `${userProfile?.name || userProfile?.email} is interested in your startup ${startupName}!`,
+          link: `/startup/${startupId}`,
+          related_entity_id: startupId,
+        });
+      }
+
+      // Return data that reflects the new state for onSuccess
+      return { data: { newInterests, newInterestsCount }, error: null };
+    },
+    {
+      onSuccess: (data, variables) => {
+        setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
+        toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
+        logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
+      },
+      onError: (error) => {
+        console.error("Error updating interest:", error);
+      },
+      errorMessage: "Failed to update interest.",
+    }
+  );
 
   const toggleInterest = async (startupId: string) => {
     if (!userProfile) {
@@ -291,23 +357,10 @@ const SeedstreetApp = () => {
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
-      ? currentInterests.filter(id => id !== startupId)
+      ? currentInterents.filter(id => id !== startupId)
       : [...currentInterests, startupId];
 
-    setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ interested_startups: newInterests })
-      .eq('id', userProfile.id);
-
-    if (profileError) {
-      toast.error("Failed to update interest in profile: " + profileError.message);
-      console.error("Error updating interest in profile:", profileError);
-      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
-      return;
-    }
-
+    // Fetch startup data to get current interests count and founder_id
     const { data: startupData, error: fetchStartupError } = await supabase
       .from('startups')
       .select('interests, founder_id, name')
@@ -315,37 +368,22 @@ const SeedstreetApp = () => {
       .single();
 
     if (fetchStartupError || !startupData) {
-      console.error("Error fetching startup for interest update:", fetchStartupError);
       toast.error("Failed to fetch startup details for interest update.");
-      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
+      console.error("Error fetching startup for interest update:", fetchStartupError);
       return;
     }
 
     const newInterestsCount = isInterested ? startupData.interests - 1 : startupData.interests + 1;
 
-    const { error: startupUpdateError } = await supabase
-      .from('startups')
-      .update({ interests: newInterestsCount })
-      .eq('id', startupId);
-
-    if (startupUpdateError) {
-      toast.error("Failed to update startup interest count: " + startupUpdateError.message);
-      console.error("Error updating startup interest count:", startupUpdateError);
-      setUserProfile(prev => prev ? { ...prev, interested_startups: currentInterests } : null);
-    } else {
-      toast.success(isInterested ? "Interest removed!" : "Interest signaled!");
-      logActivity(isInterested ? 'interest_removed' : 'interest_added', `${isInterested ? 'Removed' : 'Signaled'} interest in a startup`, startupId, 'Eye');
-
-      if (!isInterested) {
-        await supabase.from('notifications').insert({
-          user_id: startupData.founder_id,
-          type: 'new_interest',
-          message: `${userProfile.name || userProfile.email} is interested in your startup ${startupData.name}!`,
-          link: `/startup/${startupId}`,
-          related_entity_id: startupId,
-        });
-      }
-    }
+    await toggleInterestMutation({
+      userId: userProfile.id,
+      newInterests,
+      startupId,
+      newInterestsCount,
+      founderId: startupData.founder_id,
+      startupName: startupData.name,
+      isInterested,
+    });
   };
 
   const handleStartChat = async (startup: Startup) => {
@@ -358,7 +396,9 @@ const SeedstreetApp = () => {
       return;
     }
 
-    // setLoadingData(true); // Loading state is now managed by useAppData
+    // This is a more complex multi-step operation, so we'll keep the direct Supabase calls for now
+    // but we can wrap the entire sequence in a local loading state if needed.
+    // For now, the global loading indicator from useAppData will cover the data fetches.
 
     const { data: existingChats, error: fetchChatError } = await supabase
       .from('chats')
@@ -371,7 +411,6 @@ const SeedstreetApp = () => {
     if (fetchChatError && fetchChatError.code !== 'PGRST116') {
       toast.error("Failed to check for existing chat: " + fetchChatError.message);
       console.error("Error checking existing chat:", fetchChatError);
-      // setLoadingData(false);
       return;
     }
 
@@ -390,13 +429,11 @@ const SeedstreetApp = () => {
       if (founderError || !founderProfile) {
         toast.error("Failed to get founder details. Cannot start chat.");
         console.error("Error fetching founder profile:", founderError);
-        // setLoadingData(false);
         return;
       }
 
       if (founderProfile.role !== 'founder') {
         toast.error(`Cannot start chat: ${founderProfile.name || founderProfile.email?.split('@')[0] || 'This user'} is not registered as a founder.`);
-        // setLoadingData(false);
         return;
       }
 
@@ -428,7 +465,6 @@ const SeedstreetApp = () => {
       if (createChatError) {
         toast.error("Failed to start new chat: " + createChatError.message);
         console.error("Error creating new chat:", createChatError);
-        // setLoadingData(false);
         return;
       }
       chatToOpen = newChat as Chat;
@@ -449,7 +485,6 @@ const SeedstreetApp = () => {
       setCurrentScreen('chat');
       setActiveTab('chats');
     }
-    // setLoadingData(false);
   };
 
   const screenVariants = {
@@ -497,7 +532,7 @@ const SeedstreetApp = () => {
             setCurrentScreen={setCurrentScreen}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            loading={loadingData}
+            loading={loadingData || bookmarkLoading || interestLoading} {/* Combine loading states */}
             userProfileId={userProfile?.id || null}
             userProfileName={userProfile?.name || userProfile?.first_name || null}
             userProfileEmail={userProfile?.email || null}
@@ -622,10 +657,10 @@ const SeedstreetApp = () => {
         {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
           <AdminDashboardScreen
             setCurrentScreen={setCurrentScreen}
-            maintenanceMode={maintenanceMode}
-            fetchAppSettings={fetchAppSettings}
-            setIsLoggedIn={setIsLoggedIn}
-            setUserRole={setUserRole}
+            maintenanceMode={maintenanceMode} // Pass maintenance mode state
+            fetchAppSettings={fetchAppSettings} // Pass function to update settings
+            setIsLoggedIn={setIsLoggedIn} // Pass for logout
+            setUserRole={setUserRole} // Pass for logout
           />
         )}
         {currentScreen === 'savedStartups' && userProfile && (

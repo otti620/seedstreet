@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Bell, MessageCircle, Rocket } from 'lucide-react'; // Import Rocket for CTA
+import React from 'react';
+import Image from 'next/image'; // Import Image from next/image
+import { ArrowLeft, MessageCircle, Search, Plus } from 'lucide-react';
 import BottomNav from '../BottomNav';
-import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button'; // Import Button
+import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -16,21 +16,16 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean; // This might need to be derived or fetched separately
+  isOnline: boolean;
+  investor_id: string;
+  founder_id: string;
+  user_ids: string[];
   unread_counts: { [key: string]: number };
-  user_ids: string[]; // To determine other participant
-}
-
-interface Profile {
-  id: string;
-  name: string | null;
-  email: string | null;
-  last_seen: string | null; // Added for presence
 }
 
 interface ChatListScreenProps {
   chats: Chat[];
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { chatId?: string }) => void;
   setSelectedChat: (chat: Chat) => void;
   setActiveTab: (tab: string) => void;
   activeTab: string;
@@ -45,85 +40,10 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   activeTab,
   userRole,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [userProfiles, setUserProfiles] = useState<{ [key: string]: Profile }>({}); // Store other user profiles
-  const [onlineStatuses, setOnlineStatuses] = useState<{ [key: string]: boolean }>({}); // Store online status
-
-  const currentUserId = supabase.auth.currentUser?.id;
-
-  useEffect(() => {
-    const fetchAndSubscribeToProfiles = async () => {
-      setLoading(true);
-      const profileMap: { [key: string]: Profile } = {};
-      const onlineMap: { [key: string]: boolean } = {};
-      const userIdsToFetch: string[] = [];
-
-      chats.forEach(chat => {
-        const otherUserId = chat.user_ids.find(id => id !== currentUserId);
-        if (otherUserId && !userIdsToFetch.includes(otherUserId)) {
-          userIdsToFetch.push(otherUserId);
-        }
-      });
-
-      if (userIdsToFetch.length > 0) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, name, email, last_seen')
-          .in('id', userIdsToFetch);
-
-        if (error) {
-          console.error("Error fetching chat participant profiles:", error);
-        } else if (data) {
-          data.forEach(profile => {
-            profileMap[profile.id] = profile as Profile;
-            const lastSeen = new Date(profile.last_seen || 0).getTime();
-            onlineMap[profile.id] = Date.now() - lastSeen < 30000; // Online if seen in last 30 seconds
-          });
-        }
-      }
-      setUserProfiles(profileMap);
-      setOnlineStatuses(onlineMap);
-      setLoading(false);
-
-      // Subscribe to presence updates for all relevant profiles
-      const channels: any[] = [];
-      userIdsToFetch.forEach(id => {
-        const channel = supabase
-          .channel(`profile_presence_list:${id}`)
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${id}` }, payload => {
-            const updatedProfile = payload.new as Profile;
-            setUserProfiles(prev => ({ ...prev, [updatedProfile.id]: updatedProfile }));
-            const lastSeen = new Date(updatedProfile.last_seen || 0).getTime();
-            setOnlineStatuses(prev => ({ ...prev, [updatedProfile.id]: Date.now() - lastSeen < 30000 }));
-          })
-          .subscribe();
-        channels.push(channel);
-      });
-
-      return () => {
-        channels.forEach(channel => supabase.removeChannel(channel));
-      };
-    };
-
-    if (chats.length > 0 && currentUserId) {
-      fetchAndSubscribeToProfiles();
-    } else {
-      setLoading(false);
-    }
-  }, [chats, currentUserId]);
-
-  const renderChatCardSkeleton = () => (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
-      <div className="flex items-center gap-3">
-        <Skeleton className="w-12 h-12 rounded-xl" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
-        </div>
-        <Skeleton className="w-6 h-6 rounded-full" />
-      </div>
-    </div>
-  );
+  const handleChatClick = (chat: Chat) => {
+    setSelectedChat(chat);
+    setCurrentScreen('chat');
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -134,81 +54,73 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Chats</h1>
             <p className="text-sm text-gray-500">Your conversations</p>
           </div>
-          <button onClick={() => setCurrentScreen('notifications')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="View notifications">
-            <Bell className="w-5 h-5 text-purple-700 dark:text-purple-300" />
+          <button onClick={() => console.log('New chat')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="Start new chat">
+            <Plus className="w-5 h-5 text-purple-700 dark:text-purple-300" />
           </button>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white px-6 py-4 border-b border-gray-100 dark:bg-gray-900 dark:border-gray-800">
+      {/* Search (Optional, could add later) */}
+      {/* <div className="bg-white px-6 py-4 border-b border-gray-100">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search chats..."
-            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-            aria-label="Search chats"
+            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <React.Fragment key={i}>{renderChatCardSkeleton()}</React.Fragment>)
-        ) : (
-          chats.length > 0 ? (
-            chats.map((chat) => {
-              const otherUserId = chat.user_ids.find(id => id !== currentUserId);
-              const isOnline = otherUserId ? onlineStatuses[otherUserId] : false;
-
-              return (
-                <button
-                  key={chat.id}
-                  onClick={() => {
-                    setSelectedChat(chat); // Set the selected chat
-                    setCurrentScreen('chat'); // Navigate to the chat conversation screen
-                  }}
-                  className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md hover:-translate-y-1 transition-all dark:bg-gray-800 dark:border-gray-700"
-                  aria-label={`Open chat with ${chat.startup_name}`}
-                >
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl shadow-lg">
-                      {chat.startup_logo}
-                    </div>
-                    {isOnline && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate dark:text-gray-50">{chat.startup_name}</h3>
-                    <p className="text-sm text-gray-600 truncate dark:text-gray-400">{chat.last_message_text}</p>
-                  </div>
-                  {chat.unread_counts?.[currentUserId || ''] > 0 && (
-                    <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {chat.unread_counts?.[currentUserId || '']}
-                    </span>
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-24">
+        {chats.length > 0 ? (
+          chats.map(chat => (
+            <motion.div
+              key={chat.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => handleChatClick(chat)}
+              className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+            >
+              <div className="relative w-14 h-14 flex-shrink-0">
+                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold text-gray-700 relative overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+                  {chat.startup_logo.startsWith('http') ? (
+                    <Image src={chat.startup_logo} alt={`${chat.startup_name} logo`} layout="fill" objectFit="cover" className="rounded-full" />
+                  ) : (
+                    chat.startup_name?.[0] || 'S'
                   )}
-                </button>
-              );
-            })
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No active chats</h3>
-              <p className="text-gray-600 mb-6 dark:text-gray-400">
-                Start a conversation with a founder or investor!
-              </p>
-              <Button
-                onClick={() => setCurrentScreen('home')} // Navigate to home to browse startups
-                className="mt-4 bg-gradient-to-r from-purple-700 to-teal-600 text-white"
-                aria-label="Discover startups to chat with"
-              >
-                <Rocket className="w-4 h-4 mr-2" /> Discover Startups
-              </Button>
+                </div>
+                {chat.isOnline && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-semibold text-gray-900 truncate dark:text-gray-50">{chat.startup_name}</h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(chat.last_message_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p className="text-sm text-gray-600 truncate dark:text-gray-300">{chat.last_message_text}</p>
+              </div>
+              {chat.unread_counts && chat.unread_counts[userRole === 'investor' ? chat.investor_id : chat.founder_id] > 0 && (
+                <Badge className="bg-purple-600 text-white rounded-full px-2 py-0.5 text-xs font-bold flex-shrink-0">
+                  {chat.unread_counts[userRole === 'investor' ? chat.investor_id : chat.founder_id]}
+                </Badge>
+              )}
+            </motion.div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">
+              💬
             </div>
-          )
+            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No chats yet</h3>
+            <p className="text-gray-600 mb-6 dark:text-gray-400">Start a conversation with a startup or founder.</p>
+            <button onClick={() => setActiveTab('home')} className="bg-gradient-to-r from-purple-700 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all">
+              Discover Startups
+            </button>
+          </div>
         )}
       </div>
 
