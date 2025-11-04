@@ -35,7 +35,7 @@ interface ProfileScreenProps {
   setActiveTab: (tab: string) => void;
   activeTab: string;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  setUserRole: (role: string | null) => void;
+  setUserRole: (role: string | null) => void; // Added to update profile after edit
   setUserProfile: (profile: Profile | null) => void; // Added to update profile after edit
 }
 
@@ -122,7 +122,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             } else {
               toast.success("Logged out successfully!");
               setIsLoggedIn(false);
-              setUserRole(null);
+              setUserProfile(null); // Clear user profile on logout
               setCurrentScreen('auth'); // Redirect to auth screen after logout
             }
           }}

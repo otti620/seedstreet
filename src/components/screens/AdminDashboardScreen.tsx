@@ -246,7 +246,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     } else {
       toast.success("Logged out successfully!");
       setIsLoggedIn(false);
-      setUserRole(null);
+      setUserRole(null); // This will be handled by SeedstreetApp's useEffect
       setCurrentScreen('auth'); // Redirect to auth screen after logout
     }
   };
