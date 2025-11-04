@@ -33,11 +33,10 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    // IMPORTANT: Replace 'YOUR_GEMINI_API_KEY_HERE' with your actual Gemini API Key.
-    // This key is hardcoded as per your request for now, but should be moved to Supabase Secrets (Deno.env.get('GEMINI_API_KEY')) for production.
-    const geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE'; 
+    // IMPORTANT: This key is hardcoded as per your request for now, but should be moved to Supabase Secrets (Deno.env.get('GEMINI_API_KEY')) for production.
+    const geminiApiKey = 'AIzaSyA1sBEnueJ6xeiy0DkU3pw4Z5OphB2cVjQ'; 
 
-    if (!geminiApiKey || geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!geminiApiKey || geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') { // Keep this check for future reference if the key is ever reset
       return new Response('Gemini API Key not configured or is placeholder. Please replace "YOUR_GEMINI_API_KEY_HERE" with your actual key.', { status: 500, headers: corsHeaders })
     }
 
