@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket } from 'lucide-react'; // Import Rocket icon
+import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings } from 'lucide-react'; // Import new icons
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch'; // Import Switch component
+import { Label } from '@/components/ui/label'; // Import Label for Switch
 
 interface FlaggedMessage {
   id: string;
@@ -39,15 +41,49 @@ interface Startup {
 
 interface AdminDashboardScreenProps {
   setCurrentScreen: (screen: string) => void;
+  maintenanceMode: { enabled: boolean; message: string }; // Receive maintenance mode state
+  fetchAppSettings: () => void; // Receive function to re-fetch app settings
 }
 
-const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen }) => {
+const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings }) => {
   const [flaggedItems, setFlaggedItems] = useState<FlaggedMessage[]>([]);
   const [pendingStartups, setPendingStartups] = useState<Startup[]>([]);
+  const [analytics, setAnalytics] = useState({
+    totalUsers: 0,
+    totalStartups: 0,
+    approvedStartups: 0,
+    totalCommunityPosts: 0,
+    totalChats: 0,
+    totalFlaggedItems: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [updatingMaintenance, setUpdatingMaintenance] = useState(false);
 
   const fetchAdminData = async () => {
     setLoading(true);
+
+    // Fetch analytics
+    const { count: totalUsersCount, error: usersError } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+    const { count: totalStartupsCount, error: startupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true });
+    const { count: approvedStartupsCount, error: approvedStartupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true }).eq('status', 'Approved');
+    const { count: totalCommunityPostsCount, error: postsError } = await supabase.from('community_posts').select('*', { count: 'exact', head: true });
+    const { count: totalChatsCount, error: chatsError } = await supabase.from('chats').select('*', { count: 'exact', head: true });
+    const { count: totalFlaggedItemsCount, error: flaggedCountError } = await supabase.from('flagged_messages').select('*', { count: 'exact', head: true });
+
+    setAnalytics({
+      totalUsers: totalUsersCount || 0,
+      totalStartups: totalStartupsCount || 0,
+      approvedStartups: approvedStartupsCount || 0,
+      totalCommunityPosts: totalCommunityPostsCount || 0,
+      totalChats: totalChatsCount || 0,
+      totalFlaggedItems: totalFlaggedItemsCount || 0,
+    });
+
+    if (usersError || startupsError || approvedStartupsError || postsError || chatsError || flaggedCountError) {
+      console.error("Error fetching analytics:", usersError || startupsError || approvedStartupsError || postsError || chatsError || flaggedCountError);
+      toast.error("Failed to load analytics data.");
+    }
+
     // Fetch flagged items
     const { data: flaggedData, error: flaggedError } = await supabase
       .from('flagged_messages')
@@ -98,9 +134,37 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       })
       .subscribe();
 
+    // Realtime subscription for profiles (for total users count)
+    const profilesChannel = supabase
+      .channel('public:profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, payload => {
+        fetchAdminData();
+      })
+      .subscribe();
+
+    // Realtime subscription for chats (for total chats count)
+    const chatsChannel = supabase
+      .channel('public:chats_admin') // Use a different channel name to avoid conflicts
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, payload => {
+        fetchAdminData();
+      })
+      .subscribe();
+
+    // Realtime subscription for community_posts (for total posts count)
+    const communityPostsChannel = supabase
+      .channel('public:community_posts_admin') // Use a different channel name
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
+        fetchAdminData();
+      })
+      .subscribe();
+
+
     return () => {
       supabase.removeChannel(flaggedChannel);
       supabase.removeChannel(startupChannel);
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(chatsChannel);
+      supabase.removeChannel(communityPostsChannel);
     };
   }, []);
 
@@ -156,6 +220,23 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     }
   };
 
+  const handleToggleMaintenanceMode = async (checked: boolean) => {
+    setUpdatingMaintenance(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .update({ setting_value: { enabled: checked, message: maintenanceMode.message } })
+      .eq('setting_key', 'maintenance_mode_enabled');
+
+    if (error) {
+      toast.error("Failed to update maintenance mode: " + error.message);
+      console.error("Error updating maintenance mode:", error);
+    } else {
+      toast.success(`Maintenance mode ${checked ? 'enabled' : 'disabled'}!`);
+      fetchAppSettings(); // Re-fetch global app settings to update state
+    }
+    setUpdatingMaintenance(false);
+  };
+
   const getItemIcon = (chatType: 'DM' | 'Community') => {
     if (chatType === 'DM') {
       return <MessageCircle className="w-5 h-5 text-blue-600" />;
@@ -176,6 +257,12 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <h3 className="text-lg font-bold text-gray-900 mb-3 dark:text-gray-50"><Skeleton className="h-6 w-40" /></h3>
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={`metric-skel-${i}`} className="h-24 w-full rounded-xl" />
+            ))}
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 mt-6 dark:text-gray-50"><Skeleton className="h-6 w-40" /></h3>
           {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={`startup-skel-${i}`} className="h-24 w-full rounded-xl" />
           ))}
@@ -202,6 +289,61 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Analytics Overview */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-gray-50">
+            <LayoutDashboard className="w-5 h-5 text-purple-700 dark:text-purple-400" /> Analytics Overview
+          </h3>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.totalUsers}</div>
+              <div className="text-xs text-gray-500">Total Users</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.totalStartups}</div>
+              <div className="text-xs text-gray-500">Total Startups</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.approvedStartups}</div>
+              <div className="text-xs text-gray-500">Approved Startups</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.totalCommunityPosts}</div>
+              <div className="text-xs text-gray-500">Community Posts</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.totalChats}</div>
+              <div className="text-xs text-gray-500">Total Chats</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-50">{analytics.totalFlaggedItems}</div>
+              <div className="text-xs text-gray-500">Flagged Items</div>
+            </div>
+          </div>
+        </div>
+
+        {/* App Settings */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-gray-50">
+            <Settings className="w-5 h-5 text-teal-600 dark:text-teal-400" /> App Settings
+          </h3>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark:bg-gray-700">
+            <Label htmlFor="maintenance-mode" className="text-gray-900 font-medium dark:text-gray-50">Maintenance Mode</Label>
+            <Switch
+              id="maintenance-mode"
+              checked={maintenanceMode.enabled}
+              onCheckedChange={handleToggleMaintenanceMode}
+              disabled={updatingMaintenance}
+              aria-label="Toggle maintenance mode"
+            />
+          </div>
+          {maintenanceMode.enabled && (
+            <p className="text-sm text-amber-600 mt-2 dark:text-amber-400">
+              App is currently in maintenance mode. Only admins can access.
+            </p>
+          )}
+        </div>
+
         {/* Pending Startups Section */}
         <div>
           <h3 className="text-lg font-bold text-gray-900 mb-3 dark:text-gray-50">Pending Startups ({pendingStartups.length})</h3>

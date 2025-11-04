@@ -31,6 +31,7 @@ import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
@@ -132,37 +133,10 @@ interface ActivityLog {
   icon: string | null;
 }
 
-// Custom hook for swipe-back gesture - Temporarily commented out for debugging navigation
-/*
-const useSwipeBack = (onSwipeBack: () => void) => {
-  const startX = useRef(0);
-  const threshold = 80; // Pixels to swipe to trigger back action
-
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    startX.current = e.touches[0].clientX;
-  }, []);
-
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    const endX = e.changedTouches[0].clientX;
-    const deltaX = endX - startX.current;
-
-    if (deltaX > threshold) {
-      onSwipeBack();
-    }
-  }, [onSwipeBack]);
-
-  useEffect(() => {
-    window.addEventListener('touchstart', handleTouchStart);
-    window.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [handleTouchStart, handleTouchEnd]);
-};
-*/
-
+interface AppSettings {
+  enabled: boolean;
+  message: string;
+}
 
 const SeedstreetApp = () => {
   const [currentScreen, setCurrentScreenState] = useState('splash');
@@ -184,6 +158,7 @@ const SeedstreetApp = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
+  const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" }); // New state for maintenance mode
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
@@ -239,8 +214,6 @@ const SeedstreetApp = () => {
     });
   }, []);
 
-  // useSwipeBack(goBack); // Temporarily commented out for debugging navigation
-
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
       console.warn("Attempted to log activity without a user profile.");
@@ -275,6 +248,36 @@ const SeedstreetApp = () => {
     }
   }, [currentScreen, setCurrentScreen]);
 
+  // Fetch app settings (including maintenance mode)
+  const fetchAppSettings = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_key', 'maintenance_mode_enabled')
+      .single();
+
+    if (error) {
+      console.error("Error fetching app settings:", error);
+      setMaintenanceMode({ enabled: false, message: "Failed to load app settings." });
+    } else if (data?.setting_value) {
+      setMaintenanceMode(data.setting_value as AppSettings);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAppSettings();
+
+    const appSettingsChannel = supabase
+      .channel('public:app_settings')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: `setting_key=eq.maintenance_mode_enabled` }, () => fetchAppSettings())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(appSettingsChannel);
+    };
+  }, [fetchAppSettings]);
+
+
   useEffect(() => {
     const handleAuthAndProfile = async (session: any | null) => {
       if (session) {
@@ -296,10 +299,8 @@ const SeedstreetApp = () => {
             setCurrentScreen('roleSelector');
           }
         } else {
-          console.log("Fetched profile data:", profileData); // ADDED LOG
           // Check if role is set but onboarding_complete is false
           if (profileData.role && !profileData.onboarding_complete) {
-            console.log("User has role but onboarding not complete. Updating onboarding_complete."); // ADDED LOG
             // Update onboarding_complete to true in the database
             const { error: updateError } = await supabase
               .from('profiles')
@@ -312,42 +313,28 @@ const SeedstreetApp = () => {
             } else {
               // Update local state to reflect the change
               profileData.onboarding_complete = true;
-              console.log("onboarding_complete updated to true for profile."); // ADDED LOG
             }
           }
 
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
           
-          console.log("Current screen before role-based navigation:", currentScreen); // ADDED LOG
-          console.log("User role from profile:", profileData.role); // ADDED LOG
-          console.log("Onboarding complete status:", profileData.onboarding_complete); // ADDED LOG
-
           // Prevent overriding user navigation: only set screen if coming from initial states
           // or if the user's role dictates a specific dashboard and they are not already there.
           if (profileData.role === 'admin') {
             if (currentScreen !== 'adminDashboard') {
-              console.log("Redirecting to Admin Dashboard."); // ADDED LOG
               setCurrentScreen('adminDashboard');
-            } else {
-              console.log("Already on Admin Dashboard."); // ADDED LOG
             }
           } else if (!profileData.onboarding_complete) {
             if (currentScreen !== 'roleSelector') {
-              console.log("Redirecting to Role Selector."); // ADDED LOG
               setCurrentScreen('roleSelector');
-            } else {
-              console.log("Already on Role Selector."); // ADDED LOG
             }
           } else {
             // If user is logged in and onboarding complete, and they are on an initial screen,
             // or if they are on auth/onboarding, navigate to home.
             // Otherwise, let them stay on their current screen.
             if (['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen)) {
-              console.log("Redirecting to Home Screen."); // ADDED LOG
               setCurrentScreen('home');
-            } else {
-              console.log("Staying on current screen:", currentScreen); // ADDED LOG
             }
           }
         }
@@ -364,13 +351,11 @@ const SeedstreetApp = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
       handleAuthAndProfile(session);
     });
 
     const getInitialSession = async () => {
       const { data: { session } = { session: null } } = await supabase.auth.getSession();
-      console.log("Initial session:", session);
       handleAuthAndProfile(session);
     };
 
@@ -419,8 +404,8 @@ const SeedstreetApp = () => {
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
-      ? currentInterests.filter(id => id !== startupId) // Corrected: Filter by startupId, not userProfile.id
-      : [...currentInterests, startupId]; // Corrected: Add startupId, not userProfile.id
+      ? currentInterests.filter(id => id !== startupId)
+      : [...currentInterests, startupId];
 
     // Optimistic UI update for interested startups in user profile
     setUserProfile(prev => prev ? { ...prev, interested_startups: newInterests } : null);
@@ -783,6 +768,11 @@ const SeedstreetApp = () => {
     return <SplashScreen isFadingOut={isSplashFadingOut} />;
   }
 
+  // If maintenance mode is enabled AND the user is NOT an admin, show maintenance screen
+  if (maintenanceMode.enabled && userRole !== 'admin') {
+    return <MaintenanceModeScreen message={maintenanceMode.message} />;
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -935,6 +925,8 @@ const SeedstreetApp = () => {
         {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
           <AdminDashboardScreen
             setCurrentScreen={setCurrentScreen}
+            maintenanceMode={maintenanceMode} // Pass maintenance mode state
+            fetchAppSettings={fetchAppSettings} // Pass function to update settings
           />
         )}
         {currentScreen === 'savedStartups' && userProfile && (
