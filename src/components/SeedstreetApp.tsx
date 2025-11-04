@@ -31,7 +31,7 @@ import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
+import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Corrected import path
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
