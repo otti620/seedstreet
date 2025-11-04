@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image'; // Import Image from next/image
 import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag, ShieldCheck } from 'lucide-react'; // Import ShieldCheck
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav'; // Corrected path
@@ -63,9 +64,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </button>
         </div>
         <div className="flex flex-col items-center text-white">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl relative overflow-hidden">
             {userProfile?.avatar_url ? (
-              <img src={userProfile.avatar_url} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
+              <Image src={userProfile.avatar_url} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
             ) : (
               userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
             )}

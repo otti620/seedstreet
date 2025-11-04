@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image'; // Import Image from next/image
 import { ArrowLeft, Heart, MessageCircle, Send, Flag, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -414,7 +415,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
           <div className="flex items-start gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
               {post.author_avatar_url ? (
-                <img src={post.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-xl object-cover" />
+                <Image src={post.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
               ) : (
                 post.author_name?.[0] || '?'
               )}
@@ -428,7 +429,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
           </div>
           <p className="text-sm text-gray-700 mb-3 dark:text-gray-200">{post.content}</p>
           {post.image_url && (
-            <img src={post.image_url} alt="Post Image" className="mt-3 rounded-lg max-h-60 object-cover w-full" />
+            <Image src={post.image_url} alt="Post Image" width={500} height={300} objectFit="cover" className="mt-3 rounded-lg w-full" />
           )}
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
@@ -465,9 +466,9 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                     className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
                   >
                     <div className="flex items-start gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 dark:bg-gray-700 dark:text-gray-50">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 relative overflow-hidden dark:bg-gray-700 dark:text-gray-50">
                         {comment.author_avatar_url ? (
-                          <img src={comment.author_avatar_url} alt="Author Avatar" className="w-full h-full rounded-full object-cover" />
+                          <Image src={comment.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-full" />
                         ) : (
                           comment.author_name?.[0] || '?'
                         )}

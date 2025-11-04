@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image'; // Import Image from next/image
 import { MadeWithDyad } from '../made-with-dyad';
 import { cn } from '@/lib/utils'; // Import cn utility
 import { motion } from 'framer-motion'; // Import motion

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image'; // Import Image from next/image
 import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase, Image as ImageIcon, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -183,7 +184,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               <FormLabel htmlFor="avatar-upload" className="cursor-pointer" aria-label="Upload new avatar">
                 <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 hover:border-purple-700 transition-all dark:bg-gray-800 dark:border-gray-700 dark:hover:border-purple-500">
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    <Image src={avatarPreview} alt="Avatar Preview" layout="fill" objectFit="cover" className="rounded-full" />
                   ) : (
                     userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U'
                   )}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image'; // Import Image from next/image
 import { ArrowLeft, Image as ImageIcon, Send, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -262,7 +263,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
               <div className="relative w-full h-48 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden dark:border-gray-700">
                 {imagePreview ? (
                   <>
-                    <img src={imagePreview} alt="Image Preview" className="w-full h-full object-cover" />
+                    <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="cover" />
                     <button
                       type="button"
                       onClick={handleRemoveImage}

@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner"; // Import Toaster
 import { ThemeProvider } from "next-themes"; // Import ThemeProvider
+import { Suspense } from "react"; // Import Suspense for potential future use
+import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +37,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <GlobalLoadingIndicator /> {/* Add GlobalLoadingIndicator here */}
           {children}
           <Toaster richColors position="top-center" /> {/* Add Toaster here */}
         </ThemeProvider>

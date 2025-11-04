@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Import useRef
 import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit } from 'lucide-react'; // Import BrainCircuit
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -61,14 +61,26 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
   handleStartChat,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(''); // New state for debounced term
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Debounce effect for search term
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
 
   const filteredStartups = startups.filter(startup => {
     const matchesSearch =
-      startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      startup.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      startup.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      startup.location.toLowerCase().includes(searchTerm.toLowerCase()); // Reverted to original logic
+      startup.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || // Use debounced term
+      startup.tagline.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      startup.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      startup.location.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
     const matchesCategory = selectedCategory ? startup.category === selectedCategory : true;
 
