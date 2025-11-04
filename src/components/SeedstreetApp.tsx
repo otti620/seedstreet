@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -664,7 +663,7 @@ const SeedstreetApp = () => {
           <SavedStartupsScreen
             setCurrentScreen={setCurrentScreen}
             userProfileId={userProfile.id}
-            bookmarkedStartupIds={bookmarkedStartups}
+            bookmarkedStartups={bookmarkedStartups}
             toggleBookmark={toggleBookmark}
             toggleInterest={toggleInterest}
             setSelectedStartup={setSelectedStartup}
