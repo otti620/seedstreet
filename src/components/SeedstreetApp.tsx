@@ -296,8 +296,10 @@ const SeedstreetApp = () => {
             setCurrentScreen('roleSelector');
           }
         } else {
+          console.log("Fetched profile data:", profileData); // ADDED LOG
           // Check if role is set but onboarding_complete is false
           if (profileData.role && !profileData.onboarding_complete) {
+            console.log("User has role but onboarding not complete. Updating onboarding_complete."); // ADDED LOG
             // Update onboarding_complete to true in the database
             const { error: updateError } = await supabase
               .from('profiles')
@@ -310,28 +312,42 @@ const SeedstreetApp = () => {
             } else {
               // Update local state to reflect the change
               profileData.onboarding_complete = true;
+              console.log("onboarding_complete updated to true for profile."); // ADDED LOG
             }
           }
 
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
           
+          console.log("Current screen before role-based navigation:", currentScreen); // ADDED LOG
+          console.log("User role from profile:", profileData.role); // ADDED LOG
+          console.log("Onboarding complete status:", profileData.onboarding_complete); // ADDED LOG
+
           // Prevent overriding user navigation: only set screen if coming from initial states
           // or if the user's role dictates a specific dashboard and they are not already there.
           if (profileData.role === 'admin') {
             if (currentScreen !== 'adminDashboard') {
+              console.log("Redirecting to Admin Dashboard."); // ADDED LOG
               setCurrentScreen('adminDashboard');
+            } else {
+              console.log("Already on Admin Dashboard."); // ADDED LOG
             }
           } else if (!profileData.onboarding_complete) {
             if (currentScreen !== 'roleSelector') {
+              console.log("Redirecting to Role Selector."); // ADDED LOG
               setCurrentScreen('roleSelector');
+            } else {
+              console.log("Already on Role Selector."); // ADDED LOG
             }
           } else {
             // If user is logged in and onboarding complete, and they are on an initial screen,
             // or if they are on auth/onboarding, navigate to home.
             // Otherwise, let them stay on their current screen.
             if (['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen)) {
+              console.log("Redirecting to Home Screen."); // ADDED LOG
               setCurrentScreen('home');
+            } else {
+              console.log("Staying on current screen:", currentScreen); // ADDED LOG
             }
           }
         }
