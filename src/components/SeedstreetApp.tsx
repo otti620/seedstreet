@@ -160,9 +160,9 @@ const SeedstreetApp = () => {
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" }); // New state for maintenance mode
 
-  const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingSession, setLoadingSession] = useState(true); // True until session and profile are fully loaded
   const [loadingData, setLoadingData] = useState(false);
-  const [isSplashFadingOut, setIsSplashFadingOut] = useState(false);
+  // Removed isSplashFadingOut state and its related useEffect
 
   const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
     setCurrentScreenState(screen);
@@ -231,22 +231,8 @@ const SeedstreetApp = () => {
     }
   };
 
-  useEffect(() => {
-    if (currentScreen === 'splash') {
-      const fadeOutTimer = setTimeout(() => {
-        setIsSplashFadingOut(true);
-      }, 2000);
-
-      const transitionTimer = setTimeout(() => {
-        setCurrentScreen('onboarding');
-      }, 2500);
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(transitionTimer);
-      };
-    }
-  }, [currentScreen, setCurrentScreen]);
+  // Removed the useEffect that handled splash screen fade-out and transition to onboarding
+  // The SplashScreen will now be controlled purely by `loadingSession`
 
   // Fetch app settings (including maintenance mode)
   const fetchAppSettings = useCallback(async () => {
@@ -280,6 +266,7 @@ const SeedstreetApp = () => {
 
   useEffect(() => {
     const handleAuthAndProfile = async (session: any | null) => {
+      setLoadingSession(true); // Ensure loading state is true at the start of auth check
       if (session) {
         setIsLoggedIn(true);
         const userId = session.user.id;
@@ -294,10 +281,8 @@ const SeedstreetApp = () => {
           toast.error("Failed to load user profile. Please complete onboarding.");
           setUserProfile(null);
           setUserRole(null);
-          // Only set screen if not already on roleSelector, adminDashboard, or home
-          if (!['roleSelector', 'adminDashboard', 'home'].includes(currentScreen)) {
-            setCurrentScreen('roleSelector');
-          }
+          // If profile not found, user needs to go through role selection
+          setCurrentScreen('roleSelector');
         } else {
           // Check if role is set but onboarding_complete is false
           if (profileData.role && !profileData.onboarding_complete) {
@@ -309,9 +294,7 @@ const SeedstreetApp = () => {
 
             if (updateError) {
               console.error("Error updating onboarding_complete:", updateError);
-              // Proceed anyway, but log the error
             } else {
-              // Update local state to reflect the change
               profileData.onboarding_complete = true;
             }
           }
@@ -319,35 +302,22 @@ const SeedstreetApp = () => {
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
           
-          // Prevent overriding user navigation: only set screen if coming from initial states
-          // or if the user's role dictates a specific dashboard and they are not already there.
+          // Navigate based on role and onboarding status
           if (profileData.role === 'admin') {
-            if (currentScreen !== 'adminDashboard') {
-              setCurrentScreen('adminDashboard');
-            }
+            setCurrentScreen('adminDashboard');
           } else if (!profileData.onboarding_complete) {
-            if (currentScreen !== 'roleSelector') {
-              setCurrentScreen('roleSelector');
-            }
+            setCurrentScreen('roleSelector');
           } else {
-            // If user is logged in and onboarding complete, and they are on an initial screen,
-            // or if they are on auth/onboarding, navigate to home.
-            // Otherwise, let them stay on their current screen.
-            if (['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen)) {
-              setCurrentScreen('home');
-            }
+            setCurrentScreen('home');
           }
         }
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        // Only navigate to onboarding if not already there or on auth
-        if (currentScreen !== 'auth' && currentScreen !== 'onboarding') {
-             setCurrentScreen('onboarding');
-        }
+        setCurrentScreen('onboarding'); // For logged out users, start onboarding/auth flow
       }
-      setLoadingSession(false);
+      setLoadingSession(false); // Set loading to false only after all checks are done
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -362,7 +332,7 @@ const SeedstreetApp = () => {
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, [setCurrentScreen, currentScreen]);
+  }, [setCurrentScreen]);
 
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
@@ -758,21 +728,18 @@ const SeedstreetApp = () => {
     out: { opacity: 0, x: -100 },
   };
 
+  // 1. Always show splash screen while session and profile are loading
   if (loadingSession) {
     return <SplashScreen />;
   }
 
-  // The splash screen handles its own fade-out and transition to 'onboarding'
-  // So, if currentScreen is 'splash' and not fading out, render it.
-  if (currentScreen === 'splash' && !isSplashFadingOut) {
-    return <SplashScreen isFadingOut={isSplashFadingOut} />;
-  }
-
-  // If maintenance mode is enabled AND the user is NOT an admin, show maintenance screen
+  // 2. Once session and profile are loaded, check maintenance mode
+  //    If maintenance is ON AND user is NOT admin, show maintenance screen
   if (maintenanceMode.enabled && userRole !== 'admin') {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
   }
 
+  // 3. Otherwise, render the main application content based on currentScreen
   return (
     <AnimatePresence mode="wait">
       <motion.div
