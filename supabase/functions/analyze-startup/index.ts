@@ -11,7 +11,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Manual authentication handling (since verify_jwt is false)
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) {
     return new Response('Unauthorized', {
@@ -20,14 +19,12 @@ serve(async (req) => {
     })
   }
 
-  // Initialize Supabase client for RLS if needed
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     { global: { headers: { Authorization: authHeader } } }
   )
 
-  // Verify user session (optional but recommended for secure functions)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders })
@@ -36,42 +33,91 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    // Retrieve the Gemini API key directly (hardcoded for now as requested)
-    const geminiApiKey = 'AIzaSyA1sBEnueJ6xeiy0DkU3pw4Z5OphB2cVjQ'; // Hardcoded Gemini API Key
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY'); // Retrieve from Supabase Secrets
 
     if (!geminiApiKey) {
-      return new Response('Gemini API Key not configured', { status: 500, headers: corsHeaders })
+      return new Response('Gemini API Key not configured in Supabase Secrets.', { status: 500, headers: corsHeaders })
     }
 
-    // --- Conceptual Gemini API Call ---
-    // This is where you would integrate with the Gemini API.
-    // You would typically use a library or make a direct HTTP request.
-    // Example:
-    // const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'x-goog-api-key': geminiApiKey,
-    //   },
-    //   body: JSON.stringify({
-    //     contents: [{
-    //       parts: [{
-    //         text: `Analyze this startup for valuation and market trends: ${JSON.stringify(startupData)}`
-    //       }]
-    //     }]
-    //   })
-    // });
-    // const geminiResult = await geminiResponse.json();
+    const prompt = `Analyze the following startup data for its market trend and potential risks. Provide a market trend analysis (around 2-3 sentences) and an AI risk score (a number between 0 and 100, where 0 is low risk and 100 is high risk). Format the output as a JSON object with 'marketTrendAnalysis' (string) and 'aiRiskScore' (number).
 
-    // For demonstration, a mock response:
-    const aiRiskScore = Math.floor(Math.random() * 100);
-    const marketTrendAnalysis = `Based on current market trends, ${startupData.name} is well-positioned in the ${startupData.category} sector. AI analysis suggests a moderate risk profile.`;
+Startup Name: ${startupData.name}
+Tagline: ${startupData.tagline}
+Pitch: ${startupData.pitch}
+Category: ${startupData.category}
+Description: ${startupData.description || 'N/A'}
+Funding Stage: ${startupData.funding_stage || 'N/A'}
+Amount Sought: ${startupData.amount_sought ? `${startupData.currency || '$'}${startupData.amount_sought}` : 'N/A'}
 
-    // Return the AI analysis results
+Example Output:
+{
+  "marketTrendAnalysis": "This startup is well-positioned...",
+  "aiRiskScore": 45
+}`;
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    });
+
+    const geminiResult = await geminiResponse.json();
+
+    if (geminiResult.error) {
+      console.error("Gemini API Error:", geminiResult.error);
+      return new Response(JSON.stringify({ error: "Gemini API error: " + geminiResult.error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    const textResponse = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!textResponse) {
+      return new Response(JSON.stringify({ error: "No text response from Gemini API." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Attempt to parse the JSON from the text response
+    let parsedAnalysis;
+    try {
+      // Gemini might wrap JSON in markdown, so try to extract it
+      const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch && jsonMatch[1]) {
+        parsedAnalysis = JSON.parse(jsonMatch[1]);
+      } else {
+        parsedAnalysis = JSON.parse(textResponse);
+      }
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON:", parseError, "Raw response:", textResponse);
+      return new Response(JSON.stringify({ error: "Failed to parse AI analysis response." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    const { marketTrendAnalysis, aiRiskScore } = parsedAnalysis;
+
+    if (typeof marketTrendAnalysis !== 'string' || typeof aiRiskScore !== 'number') {
+      return new Response(JSON.stringify({ error: "Invalid format from AI analysis." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
     return new Response(JSON.stringify({
       aiRiskScore,
       marketTrendAnalysis,
-      // ... other Gemini results
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

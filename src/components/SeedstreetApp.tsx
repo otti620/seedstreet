@@ -29,6 +29,8 @@ import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
 import MerchStoreScreen from './screens/MerchStoreScreen';
 import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
+import SavedStartupsScreen from './screens/SavedStartupsScreen'; // New import
+import SettingsScreen from './screens/SettingsScreen'; // New import
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage'; // Import localforage
@@ -68,6 +70,8 @@ interface Startup {
   amount_sought: number | null;
   currency: string | null;
   funding_stage: string | null;
+  ai_risk_score: number | null;
+  market_trend_analysis: string | null;
 }
 
 interface Chat {
@@ -183,7 +187,7 @@ const SeedstreetApp = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [isSplashFadingOut, setIsSplashFadingOut] = useState(false);
 
-  const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string }) => {
+  const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
     setCurrentScreenState(screen);
     setScreenHistory(prev => {
       // Only add to history if it's a new screen or not the immediate previous screen
@@ -208,7 +212,19 @@ const SeedstreetApp = () => {
     } else {
       setSelectedCommunityPostId(undefined);
     }
-  }, []);
+    if (params?.chatId) {
+      // Find and set the selected chat if chatId is provided
+      const chatToSelect = chats.find(chat => chat.id === params.chatId);
+      if (chatToSelect) {
+        setSelectedChat(chatToSelect);
+      } else {
+        console.warn("Chat not found for ID:", params.chatId);
+        setSelectedChat(null);
+      }
+    } else {
+      setSelectedChat(null); // Clear selected chat if not navigating to a specific chat
+    }
+  }, [chats]);
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
@@ -521,6 +537,186 @@ const SeedstreetApp = () => {
     setLoadingData(false);
   };
 
+  // --- Data Fetching Functions ---
+  const fetchStartups = useCallback(async () => {
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('startups')
+      .select('*')
+      .eq('status', 'Approved'); // Only show approved startups to investors
+
+    if (error) {
+      console.error("Error fetching startups:", error);
+      setStartups([]);
+    } else if (data) {
+      setStartups(data as Startup[]);
+    }
+    setLoadingData(false);
+  }, []);
+
+  const fetchChats = useCallback(async () => {
+    if (!userProfile?.id) {
+      setChats([]);
+      return;
+    }
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('chats')
+      .select('*')
+      .contains('user_ids', [userProfile.id])
+      .order('last_message_timestamp', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching chats:", error);
+      setChats([]);
+    } else if (data) {
+      setChats(data as Chat[]);
+    }
+    setLoadingData(false);
+  }, [userProfile?.id]);
+
+  const fetchCommunityPosts = useCallback(async () => {
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching community posts:", error);
+      setCommunityPosts([]);
+    } else if (data) {
+      setCommunityPosts(data as CommunityPost[]);
+    }
+    setLoadingData(false);
+  }, []);
+
+  const fetchMessages = useCallback(async () => {
+    if (!selectedChat?.id) {
+      setMessages([]);
+      return;
+    }
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', selectedChat.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching messages:", error);
+      setMessages([]);
+    } else if (data) {
+      setMessages(data as Message[]);
+    }
+    setLoadingData(false);
+  }, [selectedChat?.id]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!userProfile?.id) {
+      setNotifications([]);
+      return;
+    }
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      setNotifications([]);
+    } else if (data) {
+      setNotifications(data as Notification[]);
+    }
+    setLoadingData(false);
+  }, [userProfile?.id]);
+
+  const fetchRecentActivities = useCallback(async () => {
+    if (!userProfile?.id) {
+      setRecentActivities([]);
+      return;
+    }
+    setLoadingData(true);
+    const { data, error } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('timestamp', { ascending: false })
+      .limit(5); // Fetch last 5 activities
+
+    if (error) {
+      console.error("Error fetching recent activities:", error);
+      setRecentActivities([]);
+    } else if (data) {
+      setRecentActivities(data as ActivityLog[]);
+    }
+    setLoadingData(false);
+  }, [userProfile?.id]);
+
+  // --- Main Data Loading Effect ---
+  useEffect(() => {
+    if (isLoggedIn && userProfile?.id) {
+      fetchStartups();
+      fetchChats();
+      fetchCommunityPosts();
+      fetchNotifications();
+      fetchRecentActivities();
+
+      // Real-time subscriptions
+      const startupChannel = supabase
+        .channel('public:startups')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, () => fetchStartups())
+        .subscribe();
+
+      const chatChannel = supabase
+        .channel('public:chats')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${userProfile.id}}` }, () => fetchChats())
+        .subscribe();
+
+      const communityPostChannel = supabase
+        .channel('public:community_posts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => fetchCommunityPosts())
+        .subscribe();
+
+      const notificationChannel = supabase
+        .channel('public:notifications')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` }, () => fetchNotifications())
+        .subscribe();
+
+      const activityLogChannel = supabase
+        .channel('public:activity_log')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userProfile.id}` }, () => fetchRecentActivities())
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(startupChannel);
+        supabase.removeChannel(chatChannel);
+        supabase.removeChannel(communityPostChannel);
+        supabase.removeChannel(notificationChannel);
+        supabase.removeChannel(activityLogChannel);
+      };
+    }
+  }, [isLoggedIn, userProfile?.id, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
+
+  // Fetch messages when selectedChat changes
+  useEffect(() => {
+    fetchMessages();
+
+    if (selectedChat?.id) {
+      const messageChannel = supabase
+        .channel(`public:messages:${selectedChat.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, () => fetchMessages())
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(messageChannel);
+      };
+    }
+  }, [selectedChat?.id, fetchMessages]);
+
+
   const screenVariants = {
     initial: { opacity: 0, x: 100 },
     in: { opacity: 1, x: 0 },
@@ -688,6 +884,23 @@ const SeedstreetApp = () => {
         )}
         {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
           <AdminDashboardScreen
+            setCurrentScreen={setCurrentScreen}
+          />
+        )}
+        {currentScreen === 'savedStartups' && userProfile && (
+          <SavedStartupsScreen
+            setCurrentScreen={setCurrentScreen}
+            userProfileId={userProfile.id}
+            bookmarkedStartupIds={bookmarkedStartups}
+            toggleBookmark={toggleBookmark}
+            toggleInterest={toggleInterest}
+            setSelectedStartup={setSelectedStartup}
+            handleStartChat={handleStartChat}
+            interestedStartups={interestedStartups}
+          />
+        )}
+        {currentScreen === 'settings' && (
+          <SettingsScreen
             setCurrentScreen={setCurrentScreen}
           />
         )}

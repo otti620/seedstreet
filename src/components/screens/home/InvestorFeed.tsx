@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter } from 'lucide-react';
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit } from 'lucide-react'; // Import BrainCircuit
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 import { motion } from 'framer-motion'; // Import motion
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -28,6 +29,8 @@ interface Startup {
   amount_sought: number | null;
   currency: string | null;
   funding_stage: string | null;
+  ai_risk_score: number | null; // Added for AI analysis
+  market_trend_analysis: string | null; // Added for AI analysis
 }
 
 interface InvestorFeedProps {
@@ -180,6 +183,19 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-gray-900 dark:text-gray-50">{startup.name}</h3>
                       <Check className="w-4 h-4 text-teal-600" />
+                      {startup.ai_risk_score !== null && (
+                        <Badge
+                          variant="secondary"
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            startup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                            startup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                            'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                          }`}
+                        >
+                          <BrainCircuit className="w-3 h-3" />
+                          Risk: {startup.ai_risk_score}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
                   </div>

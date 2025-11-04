@@ -348,27 +348,12 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         )}
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
-
-        {/* Interest Signal Card (always shown for now) */}
-        <div className="mx-auto max-w-md">
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl animate-float">👀</span>
-              <div className="flex-1">
-                <h4 className="font-bold text-sm mb-1">You signaled interest!</h4>
-                <p className="text-xs opacity-90">The founder knows you're serious about this</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Input Bar */}
       <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-end gap-2">
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300" aria-label="Add attachment">
-            <Plus className="w-5 h-5" />
-          </button>
+          {/* Removed "Add attachment" button */}
           <div className="flex-1 min-h-[40px] max-h-[120px] bg-gray-100 rounded-2xl px-4 py-2 flex items-center dark:bg-gray-800">
             <input
               type="text"

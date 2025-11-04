@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Bell, CheckCircle, XCircle, Info, Mail, Rocket, Bookmark } from 'lucide-react';
+import { ArrowLeft, Bell, CheckCircle, XCircle, Info, MessageCircle, Rocket, Bookmark, Sparkles } from 'lucide-react'; // Added Sparkles for community posts
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ interface Notification {
 
 interface NotificationsScreenProps {
   notifications: Notification[];
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { startupId?: string, postId?: string }) => void; // Updated to accept params
   fetchNotifications: () => void; // Function to re-fetch notifications after an action
 }
 
@@ -43,6 +43,42 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     }
   };
 
+  const handleViewDetails = (notification: Notification) => {
+    if (!notification.related_entity_id) {
+      toast.info("No specific details available for this notification.");
+      return;
+    }
+
+    switch (notification.type) {
+      case 'startup_approved':
+      case 'startup_rejected':
+      case 'new_interest':
+      case 'bookmark_update':
+        setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
+        break;
+      case 'new_chat':
+        // For chat, we need to select the chat object, not just the ID.
+        // This will be handled by the parent component (SeedstreetApp) when it fetches chats.
+        // For now, we'll navigate to the chat list and expect the user to find it.
+        // A more robust solution would involve passing the full chat object or fetching it here.
+        toast.info("Navigating to chats. Please find your conversation.");
+        setCurrentScreen('home'); // Go to home, which will render ChatListScreen if activeTab is 'chats'
+        break;
+      case 'new_comment':
+      case 'post_liked':
+        setCurrentScreen('communityPostDetail', { postId: notification.related_entity_id });
+        break;
+      default:
+        toast.info(`Navigating to: ${notification.link || 'home'}`);
+        setCurrentScreen('home');
+        break;
+    }
+    // Optionally mark as read after viewing details
+    if (!notification.read) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'new_chat':
@@ -53,6 +89,11 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'bookmark_update':
         return <Bookmark className="w-5 h-5 text-purple-600" />;
+      case 'new_interest':
+        return <Eye className="w-5 h-5 text-orange-600" />;
+      case 'new_comment':
+      case 'post_liked':
+        return <Sparkles className="w-5 h-5 text-pink-600" />;
       case 'general':
       default:
         return <Info className="w-5 h-5 text-gray-600" />;
@@ -90,15 +131,11 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                 </p>
                 <p className="text-xs text-gray-500 mt-1">{new Date(notification.created_at).toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  {notification.link && (
+                  {notification.related_entity_id && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        // Handle navigation to the link
-                        toast.info(`Navigating to: ${notification.link}`);
-                        // Example: setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
-                      }}
+                      onClick={() => handleViewDetails(notification)}
                       className="h-8 text-xs dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
                       aria-label={`View details for notification: ${notification.message}`}
                     >

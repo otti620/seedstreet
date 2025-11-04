@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import BottomNav from '../BottomNav'; // Corrected path
 import MenuItem from '../MenuItem';
 import { supabase } from '@/integrations/supabase/client';
-import { ThemeToggle } from '@/components/ThemeToggle'; // Import ThemeToggle
+// ThemeToggle is moved to SettingsScreen
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -57,8 +57,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Header */}
       <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-12 pb-20">
         <div className="flex justify-end mb-4">
-          <ThemeToggle /> {/* Add ThemeToggle here */}
-          <button className="text-white" aria-label="Settings">
+          {/* ThemeToggle moved to SettingsScreen */}
+          <button onClick={() => setCurrentScreen('settings')} className="text-white" aria-label="Settings">
             <Settings className="w-6 h-6" />
           </button>
         </div>
@@ -103,9 +103,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-6 dark:bg-gray-800 dark:border-gray-700">
           <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
           <MenuItem icon={<Bell />} label="Notifications" onClick={() => setCurrentScreen('notifications')} />
-          <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => toast.info("Saved Startups list coming soon!")} />
+          <MenuItem icon={<Bookmark />} label="Saved Startups" count={bookmarkedStartups.length} onClick={() => setCurrentScreen('savedStartups')} />
           <MenuItem icon={<ShoppingBag />} label="Merch Store" onClick={() => setCurrentScreen('merchStore')} />
-          <MenuItem icon={<Settings />} label="Settings" onClick={() => toast.info("Settings coming soon!")} />
+          <MenuItem icon={<Settings />} label="Settings" onClick={() => setCurrentScreen('settings')} />
           <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => setCurrentScreen('helpAndSupport')} />
           {isAdmin && ( // Conditionally render Admin Dashboard for admins
             <MenuItem icon={<ShieldCheck />} label="Admin Dashboard" onClick={() => setCurrentScreen('adminDashboard')} />

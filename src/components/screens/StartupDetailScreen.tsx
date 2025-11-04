@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Heart, MessageCircle, Bookmark, Eye, Check } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Bookmark, Eye, Check, BrainCircuit } from 'lucide-react'; // Import BrainCircuit
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -22,6 +22,8 @@ interface Startup {
   amount_sought: number | null; // Added
   currency: string | null; // Added
   funding_stage: string | null; // Added
+  ai_risk_score: number | null; // Added for AI analysis
+  market_trend_analysis: string | null; // Added for AI analysis
 }
 
 interface StartupDetailScreenProps {
@@ -100,6 +102,41 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
                 <div>
                   <p className="text-gray-500">Funding Stage</p>
                   <p className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.funding_stage}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* AI Analysis */}
+        {(selectedStartup.ai_risk_score !== null || selectedStartup.market_trend_analysis) && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 dark:text-gray-50">
+              <BrainCircuit className="w-5 h-5 text-purple-700 dark:text-purple-400" /> AI Analysis
+            </h3>
+            <div className="space-y-3 text-sm">
+              {selectedStartup.ai_risk_score !== null && (
+                <div>
+                  <p className="text-gray-500">AI Risk Score</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-50">
+                    {selectedStartup.ai_risk_score} / 100
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      selectedStartup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                      selectedStartup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                      'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                    }`}>
+                      {selectedStartup.ai_risk_score < 30 ? 'Low Risk' :
+                       selectedStartup.ai_risk_score < 70 ? 'Moderate Risk' : 'High Risk'}
+                    </span>
+                  </p>
+                </div>
+              )}
+              {selectedStartup.market_trend_analysis && (
+                <div>
+                  <p className="text-gray-500">Market Trend Analysis</p>
+                  <p className="font-semibold text-gray-900 leading-relaxed dark:text-gray-50">
+                    {selectedStartup.market_trend_analysis}
+                  </p>
                 </div>
               )}
             </div>
