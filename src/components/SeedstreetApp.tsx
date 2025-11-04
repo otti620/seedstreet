@@ -18,7 +18,7 @@ import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
 import StartupDetailScreen from './screens/StartupDetailScreen';
 import ChatListScreen from './screens/ChatListScreen';
-import ChatConversationScreen from './screens/ChatConversationScreen';
+import ChatConversationScreen from './screens/screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
