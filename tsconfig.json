@@ -10,8 +10,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "jsxImportSource": "react", // Explicitly set jsxImportSource to 'react'
+    "jsx": "react-jsx", // Explicitly set to react-jsx for automatic runtime
     "incremental": true,
     "plugins": [
       {
