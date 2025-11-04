@@ -394,7 +394,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="dark:text-gray-50">Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} aria-label="Select startup category">
+                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select startup category">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                         <SelectValue placeholder="Select a category" />
@@ -461,7 +461,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="dark:text-gray-50">Currency</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} aria-label="Select currency">
+                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select currency">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                         <SelectValue placeholder="Select currency" />
@@ -484,7 +484,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="dark:text-gray-50">Funding Stage</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} aria-label="Select funding stage">
+                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select funding stage">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                         <SelectValue placeholder="Select funding stage" />
