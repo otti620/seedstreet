@@ -23,6 +23,7 @@ interface Startup {
   location: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   founder_id: string;
+  views: number; // Added views to the interface
 }
 
 interface ActivityLog { // New interface for activity log entries
@@ -262,11 +263,11 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">1,245</div> {/* Mock data for views */}
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Use actual views */}
                     <div className="text-xs text-gray-500">Total Views</div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">34</div> {/* Mock data for views this week */}
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Using total views for "this week" as placeholder */}
                     <div className="text-xs text-gray-500">This Week</div>
                   </div>
                 </div>

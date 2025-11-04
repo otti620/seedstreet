@@ -132,7 +132,8 @@ interface ActivityLog {
   icon: string | null;
 }
 
-// Custom hook for swipe-back gesture
+// Custom hook for swipe-back gesture - Temporarily commented out for debugging navigation
+/*
 const useSwipeBack = (onSwipeBack: () => void) => {
   const startX = useRef(0);
   const threshold = 80; // Pixels to swipe to trigger back action
@@ -160,6 +161,7 @@ const useSwipeBack = (onSwipeBack: () => void) => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 };
+*/
 
 
 const SeedstreetApp = () => {
@@ -237,7 +239,7 @@ const SeedstreetApp = () => {
     });
   }, []);
 
-  useSwipeBack(goBack); // Integrate swipe-back gesture
+  // useSwipeBack(goBack); // Temporarily commented out for debugging navigation
 
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
@@ -293,7 +295,9 @@ const SeedstreetApp = () => {
         } else {
           setUserProfile(profileData as Profile);
           setUserRole(profileData.role);
-          if (!profileData.onboarding_complete) {
+          if (profileData.role === 'admin') {
+            setCurrentScreen('adminDashboard');
+          } else if (!profileData.onboarding_complete) {
             setCurrentScreen('roleSelector');
           } else {
             setCurrentScreen('home');
@@ -303,11 +307,8 @@ const SeedstreetApp = () => {
         setIsLoggedIn(false);
         setUserRole(null);
         setUserProfile(null);
-        // If no session, the app should naturally flow from splash -> onboarding -> auth
-        // No need to explicitly set screen to 'auth' here, as onboarding handles it.
-        // If currentScreen is already 'auth' (e.g., after logout), keep it.
         if (currentScreen !== 'auth' && currentScreen !== 'onboarding') {
-             setCurrentScreen('onboarding'); // Ensure new users see onboarding
+             setCurrentScreen('onboarding');
         }
       }
       setLoadingSession(false);
