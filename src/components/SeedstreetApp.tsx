@@ -39,10 +39,15 @@ import { useAppData } from '@/hooks/use-app-data'; // Import the new hook
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation'; // Import the new mutation hook
 import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
 
-// Dynamically import the FramerMotionWrapper
-const DynamicFramerMotion = dynamic(() =>
-  import('./FramerMotionWrapper').then((mod) => mod.FramerMotionWrapper),
-  { ssr: false } // This is the key: only load on client side
+// Dynamically import AnimatePresence and motion.div directly from framer-motion
+const AnimatePresence = dynamic(() =>
+  import('framer-motion').then((mod) => mod.AnimatePresence),
+  { ssr: false }
+);
+
+const MotionDiv = dynamic(() =>
+  import('framer-motion').then((mod) => mod.motion.div),
+  { ssr: false }
 );
 
 
@@ -512,8 +517,8 @@ const SeedstreetApp = () => {
 
   // 3. Otherwise, render the main application content based on currentScreen
   return (
-    <DynamicFramerMotion.AnimatePresence mode="wait">
-      <DynamicFramerMotion.motionDiv
+    <AnimatePresence mode="wait">
+      <MotionDiv
         key={currentScreen}
         variants={screenVariants}
         initial="initial"
@@ -684,8 +689,8 @@ const SeedstreetApp = () => {
             setCurrentScreen={setCurrentScreen}
           />
         )}
-      </DynamicFramerMotion.motionDiv>
-    </DynamicFramerMotion.AnimatePresence>
+      </MotionDiv>
+    </AnimatePresence>
   );
 };
 
