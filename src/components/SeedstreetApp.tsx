@@ -7,7 +7,7 @@ import {
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+// Removed direct imports for AnimatePresence and motion
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
@@ -37,6 +37,14 @@ import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useAppData } from '@/hooks/use-app-data'; // Import the new hook
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation'; // Import the new mutation hook
+import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
+
+// Dynamically import the FramerMotionWrapper
+const DynamicFramerMotion = dynamic(() =>
+  import('./FramerMotionWrapper').then((mod) => mod.FramerMotionWrapper),
+  { ssr: false } // This is the key: only load on client side
+);
+
 
 // Define TypeScript interfaces for data structures (moved to use-app-data.tsx, but kept here for clarity if needed)
 interface Profile {
@@ -504,8 +512,8 @@ const SeedstreetApp = () => {
 
   // 3. Otherwise, render the main application content based on currentScreen
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
+    <DynamicFramerMotion.AnimatePresence mode="wait">
+      <DynamicFramerMotion.motionDiv
         key={currentScreen}
         variants={screenVariants}
         initial="initial"
@@ -676,8 +684,8 @@ const SeedstreetApp = () => {
             setCurrentScreen={setCurrentScreen}
           />
         )}
-      </motion.div>
-    </AnimatePresence>
+      </DynamicFramerMotion.motionDiv>
+    </DynamicFramerMotion.AnimatePresence>
   );
 };
 
