@@ -32,24 +32,13 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
+import FramerMotionWrapper from './FramerMotionWrapper'; // Import the new wrapper component
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useAppData } from '@/hooks/use-app-data'; // Import the new hook
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation'; // Import the new mutation hook
-import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
-
-// Dynamically import AnimatePresence and motion.div directly from framer-motion
-const AnimatePresence = dynamic(() =>
-  import('framer-motion').then((mod) => mod.AnimatePresence),
-  { ssr: false }
-);
-
-const MotionDiv = dynamic(() =>
-  import('framer-motion').then((mod) => mod.motion.div),
-  { ssr: false }
-);
-
+// Removed dynamic import for framer-motion components
 
 // Define TypeScript interfaces for data structures (moved to use-app-data.tsx, but kept here for clarity if needed)
 interface Profile {
@@ -517,180 +506,170 @@ const SeedstreetApp = () => {
 
   // 3. Otherwise, render the main application content based on currentScreen
   return (
-    <AnimatePresence mode="wait">
-      <MotionDiv
-        key={currentScreen}
-        variants={screenVariants}
-        initial="initial"
-        animate="in"
-        exit="out"
-        transition={{ type: "tween", duration: 0.2 }}
-        className="fixed inset-0" // Ensure the motion.div covers the full screen
-      >
-        {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={setCurrentScreen} />}
-        {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} />}
-        {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserProfile={setUserProfile} setActiveTab={setActiveTab} logActivity={logActivity} />}
-        {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
-          <HomeScreen
-            userRole={userRole}
-            startups={startups}
-            bookmarkedStartups={bookmarkedStartups}
-            interestedStartups={interestedStartups}
-            toggleBookmark={toggleBookmark}
-            toggleInterest={toggleInterest}
-            setSelectedStartup={setSelectedStartup}
-            setSelectedChat={setSelectedChat}
-            setCurrentScreen={setCurrentScreen}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            loading={loadingData || bookmarkLoading || interestLoading} {/* Combine loading states */}
-            userProfileId={userProfile?.id || null}
-            userProfileName={userProfile?.name || userProfile?.first_name || null}
-            userProfileEmail={userProfile?.email || null}
-            handleStartChat={handleStartChat}
-            recentActivities={recentActivities}
-          />
-        )}
-        {currentScreen === 'home' && activeTab === 'chats' && (
-          <ChatListScreen
-            chats={chats}
-            setCurrentScreen={setCurrentScreen}
-            setSelectedChat={setSelectedChat}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            userRole={userRole}
-          />
-        )}
-        {currentScreen === 'home' && activeTab === 'community' && (
-          <CommunityFeedScreen
-            communityPosts={communityPosts}
-            setCurrentScreen={setCurrentScreen}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            userRole={userRole}
-            userProfileId={userProfile?.id || null}
-            fetchCommunityPosts={fetchCommunityPosts}
-          />
-        )}
-        {currentScreen === 'home' && activeTab === 'profile' && (
-          <ProfileScreen
-            userProfile={userProfile}
-            userRole={userRole}
-            bookmarkedStartups={bookmarkedStartups}
-            interestedStartups={interestedStartups}
-            setCurrentScreen={setCurrentScreen}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            setIsLoggedIn={setIsLoggedIn}
-            setUserProfile={setUserProfile}
-          />
-        )}
-        {currentScreen === 'startupDetail' && selectedStartup && (
-          <StartupDetailScreen
-            selectedStartup={selectedStartup}
-            bookmarkedStartups={bookmarkedStartups}
-            interestedStartups={interestedStartups}
-            toggleBookmark={toggleBookmark}
-            toggleInterest={toggleInterest}
-            setCurrentScreen={setCurrentScreen}
-            setSelectedChat={setSelectedChat}
-            activeTab={activeTab}
-            userRole={userRole}
-            setActiveTab={setActiveTab}
-            handleStartChat={handleStartChat}
-          />
-        )}
-        {currentScreen === 'chat' && selectedChat && (
-          <ChatConversationScreen
-            selectedChat={selectedChat}
-            messages={messages}
-            setCurrentScreen={setCurrentScreen}
-            setActiveTab={setActiveTab}
-            userProfile={userProfile}
-            logActivity={logActivity}
-          />
-        )}
-        {currentScreen === 'editProfile' && userProfile && (
-          <EditProfileScreen
-            userProfile={userProfile}
-            setCurrentScreen={setCurrentScreen}
-            setUserProfile={setUserProfile}
-          />
-        )}
-        {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
-          <ManageStartupScreen
-            setCurrentScreen={setCurrentScreen}
-            userProfileId={userProfile.id}
-            userProfileName={userProfile.name}
-            userProfileEmail={userProfile.email}
-            startupId={selectedStartupId}
-            logActivity={logActivity}
-          />
-        )}
-        {currentScreen === 'createCommunityPost' && userProfile && (
-          <CreateCommunityPostScreen
-            setCurrentScreen={setCurrentScreen}
-            userProfile={userProfile}
-            postId={selectedCommunityPostId}
-          />
-        )}
-        {currentScreen === 'notifications' && userProfile && (
-          <NotificationsScreen
-            notifications={notifications}
-            setCurrentScreen={setCurrentScreen}
-            fetchNotifications={fetchNotifications}
-          />
-        )}
-        {currentScreen === 'startupListingCelebration' && listedStartupName && (
-          <StartupListingCelebrationScreen
-            startupName={listedStartupName}
-            setCurrentScreen={setCurrentScreen}
-          />
-        )}
-        {currentScreen === 'helpAndSupport' && (
-          <HelpAndSupportScreen
-            setCurrentScreen={setCurrentScreen}
-          />
-        )}
-        {currentScreen === 'merchStore' && (
-          <MerchStoreScreen
-            setCurrentScreen={setCurrentScreen}
-          />
-        )}
-        {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
-          <CommunityPostDetailScreen
-            setCurrentScreen={setCurrentScreen}
-            selectedCommunityPostId={selectedCommunityPostId}
-            userProfile={userProfile}
-          />
-        )}
-        {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
-          <AdminDashboardScreen
-            setCurrentScreen={setCurrentScreen}
-            maintenanceMode={maintenanceMode} // Pass maintenance mode state
-            fetchAppSettings={fetchAppSettings} // Pass function to update settings
-            setIsLoggedIn={setIsLoggedIn} // Pass for logout
-          />
-        )}
-        {currentScreen === 'savedStartups' && userProfile && (
-          <SavedStartupsScreen
-            setCurrentScreen={setCurrentScreen}
-            userProfileId={userProfile.id}
-            bookmarkedStartups={bookmarkedStartups}
-            toggleBookmark={toggleBookmark}
-            toggleInterest={toggleInterest}
-            setSelectedStartup={setSelectedStartup}
-            handleStartChat={handleStartChat}
-            interestedStartups={interestedStartups}
-          />
-        )}
-        {currentScreen === 'settings' && (
-          <SettingsScreen
-            setCurrentScreen={setCurrentScreen}
-          />
-        )}
-      </MotionDiv>
-    </AnimatePresence>
+    <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={setCurrentScreen} />}
+      {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} />}
+      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserProfile={setUserProfile} setActiveTab={setActiveTab} logActivity={logActivity} />}
+      {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
+        <HomeScreen
+          userRole={userRole}
+          startups={startups}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          setSelectedStartup={setSelectedStartup}
+          setSelectedChat={setSelectedChat}
+          setCurrentScreen={setCurrentScreen}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          loading={loadingData || bookmarkLoading || interestLoading} {/* Combine loading states */}
+          userProfileId={userProfile?.id || null}
+          userProfileName={userProfile?.name || userProfile?.first_name || null}
+          userProfileEmail={userProfile?.email || null}
+          handleStartChat={handleStartChat}
+          recentActivities={recentActivities}
+        />
+      )}
+      {currentScreen === 'home' && activeTab === 'chats' && (
+        <ChatListScreen
+          chats={chats}
+          setCurrentScreen={setCurrentScreen}
+          setSelectedChat={setSelectedChat}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+        />
+      )}
+      {currentScreen === 'home' && activeTab === 'community' && (
+        <CommunityFeedScreen
+          communityPosts={communityPosts}
+          setCurrentScreen={setCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+          userProfileId={userProfile?.id || null}
+          fetchCommunityPosts={fetchCommunityPosts}
+        />
+      )}
+      {currentScreen === 'home' && activeTab === 'profile' && (
+        <ProfileScreen
+          userProfile={userProfile}
+          userRole={userRole}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          setCurrentScreen={setCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          setIsLoggedIn={setIsLoggedIn}
+          setUserProfile={setUserProfile}
+        />
+      )}
+      {currentScreen === 'startupDetail' && selectedStartup && (
+        <StartupDetailScreen
+          selectedStartup={selectedStartup}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          setCurrentScreen={setCurrentScreen}
+          setSelectedChat={setSelectedChat}
+          activeTab={activeTab}
+          userRole={userRole}
+          setActiveTab={setActiveTab}
+          handleStartChat={handleStartChat}
+        />
+      )}
+      {currentScreen === 'chat' && selectedChat && (
+        <ChatConversationScreen
+          selectedChat={selectedChat}
+          messages={messages}
+          setCurrentScreen={setCurrentScreen}
+          setActiveTab={setActiveTab}
+          userProfile={userProfile}
+          logActivity={logActivity}
+        />
+      )}
+      {currentScreen === 'editProfile' && userProfile && (
+        <EditProfileScreen
+          userProfile={userProfile}
+          setCurrentScreen={setCurrentScreen}
+          setUserProfile={setUserProfile}
+        />
+      )}
+      {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
+        <ManageStartupScreen
+          setCurrentScreen={setCurrentScreen}
+          userProfileId={userProfile.id}
+          userProfileName={userProfile.name}
+          userProfileEmail={userProfile.email}
+          startupId={selectedStartupId}
+          logActivity={logActivity}
+        />
+      )}
+      {currentScreen === 'createCommunityPost' && userProfile && (
+        <CreateCommunityPostScreen
+          setCurrentScreen={setCurrentScreen}
+          userProfile={userProfile}
+          postId={selectedCommunityPostId}
+        />
+      )}
+      {currentScreen === 'notifications' && userProfile && (
+        <NotificationsScreen
+          notifications={notifications}
+          setCurrentScreen={setCurrentScreen}
+          fetchNotifications={fetchNotifications}
+        />
+      )}
+      {currentScreen === 'startupListingCelebration' && listedStartupName && (
+        <StartupListingCelebrationScreen
+          startupName={listedStartupName}
+          setCurrentScreen={setCurrentScreen}
+        />
+      )}
+      {currentScreen === 'helpAndSupport' && (
+        <HelpAndSupportScreen
+          setCurrentScreen={setCurrentScreen}
+        />
+      )}
+      {currentScreen === 'merchStore' && (
+        <MerchStoreScreen
+          setCurrentScreen={setCurrentScreen}
+        />
+      )}
+      {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
+        <CommunityPostDetailScreen
+          setCurrentScreen={setCurrentScreen}
+          selectedCommunityPostId={selectedCommunityPostId}
+          userProfile={userProfile}
+        />
+      )}
+      {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
+        <AdminDashboardScreen
+          setCurrentScreen={setCurrentScreen}
+          maintenanceMode={maintenanceMode}
+          fetchAppSettings={fetchAppSettings}
+          setIsLoggedIn={setIsLoggedIn}
+        />
+      )}
+      {currentScreen === 'savedStartups' && userProfile && (
+        <SavedStartupsScreen
+          setCurrentScreen={setCurrentScreen}
+          userProfileId={userProfile.id}
+          bookmarkedStartups={bookmarkedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          setSelectedStartup={setSelectedStartup}
+          handleStartChat={handleStartChat}
+          interestedStartups={interestedStartups}
+        />
+      )}
+      {currentScreen === 'settings' && (
+        <SettingsScreen
+          setCurrentScreen={setCurrentScreen}
+        />
+      )}
+    </FramerMotionWrapper>
   );
 };
 
