@@ -7,7 +7,7 @@ import {
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-// Removed direct imports for AnimatePresence and motion
+import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
@@ -32,13 +32,16 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreen
-import FramerMotionWrapper from './FramerMotionWrapper'; // Import the new wrapper component
+// Removed direct import for FramerMotionWrapper
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useAppData } from '@/hooks/use-app-data'; // Import the new hook
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation'; // Import the new mutation hook
-// Removed dynamic import for framer-motion components
+
+// Dynamically import FramerMotionWrapper with ssr: false
+const FramerMotionWrapper = dynamic(() => import('./FramerMotionWrapper'), { ssr: false });
 
 // Define TypeScript interfaces for data structures (moved to use-app-data.tsx, but kept here for clarity if needed)
 interface Profile {
