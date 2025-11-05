@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
 import "./globals.css";
 import { Toaster } from "sonner"; // Import Toaster
 import { ThemeProvider } from "next-themes"; // Import ThemeProvider
 import { Suspense } from "react"; // Import Suspense for potential future use
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator
 
-const geistSans = Geist({
+const geistSans = GeistSans({ // Use GeistSans directly
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = GeistMono({ // Use GeistMono directly
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
