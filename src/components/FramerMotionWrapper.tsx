@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from '@/lib/framer-motion-elements'; // Import from the new re-export module
 
 interface FramerMotionWrapperProps {
   currentScreen: string;
