@@ -17,9 +17,9 @@ import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
 import StartupDetailScreen from './screens/StartupDetailScreen';
 import ChatListScreen from './screens/ChatListScreen';
-import ChatConversationScreen from './screens/screens/ChatConversationScreen';
+import ChatConversationScreen from './screens/ChatConversationScreen'; // Corrected import path
 import ProfileScreen from './screens/ProfileScreen';
-import CommunityFeedScreen from './screens/CommunityFeedFeedScreen';
+import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import ManageStartupScreen from './screens/ManageStartupScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
