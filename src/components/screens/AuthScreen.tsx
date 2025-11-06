@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { motion } from 'framer-motion'; // Import motion for animations
 
 interface AuthScreenProps {
   setCurrentScreen: (screen: string) => void;
@@ -100,6 +101,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
     }
   };
 
+  const handleForgotPassword = () => {
+    toast.info("Password reset functionality coming soon! Please contact support if you need immediate assistance.", { duration: 5000 });
+    // In a real app, you would navigate to a password reset screen or trigger a Supabase password reset email.
+    // setCurrentScreen('forgotPassword');
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col dark:bg-gray-950">
       {/* Hero Section */}
@@ -113,7 +120,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
           <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-2xl shadow-xl flex items-center justify-center">
             <svg viewBox="0 0 100 120" className="w-16 h-16">
               <defs>
-                <linearGradient id="sGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="sGrad" x1="0%" y1="0%" y2="100%">
                   <stop offset="0%" style={{ stopColor: '#6B21A8' }} />
                   <stop offset="100%" style={{ stopColor: '#14B8A6' }} />
                 </linearGradient>
@@ -127,7 +134,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-10 p-6 overflow-y-auto dark:bg-gray-900">
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 100, damping: 10, delay: 0.1 }}
+        className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-10 p-6 overflow-y-auto dark:bg-gray-900"
+      >
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent mb-2">
@@ -203,6 +215,17 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                 )}
               />
 
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-purple-700 hover:underline text-right block w-full dark:text-purple-400"
+                  aria-label="Forgot password?"
+                >
+                  Forgot password?
+                </button>
+              )}
+
               <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all" aria-label={isSignUp ? 'Create Account' : 'Log In'}>
                 {loading ? (
                   <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -243,7 +266,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
