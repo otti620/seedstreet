@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Bell, CheckCircle, XCircle, Info, MessageCircle, Rocket, Bookmark, Sparkles } from 'lucide-react'; // Added Sparkles for community posts
+import { ArrowLeft, Bell, CheckCircle, XCircle, Info, MessageCircle, Rocket, Bookmark, Sparkles, Eye } from 'lucide-react'; // Added Sparkles for community posts and Eye for new_interest
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ interface Notification {
 
 interface NotificationsScreenProps {
   notifications: Notification[];
-  setCurrentScreen: (screen: string, params?: { startupId?: string, postId?: string }) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: { startupId?: string, postId?: string, chatId?: string }) => void; // Updated to accept chatId
   fetchNotifications: () => void; // Function to re-fetch notifications after an action
 }
 
@@ -57,12 +57,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
         break;
       case 'new_chat':
-        // For chat, we need to select the chat object, not just the ID.
-        // This will be handled by the parent component (SeedstreetApp) when it fetches chats.
-        // For now, we'll navigate to the chat list and expect the user to find it.
-        // A more robust solution would involve passing the full chat object or fetching it here.
-        toast.info("Navigating to chats. Please find your conversation.");
-        setCurrentScreen('home'); // Go to home, which will render ChatListScreen if activeTab is 'chats'
+        setCurrentScreen('chat', { chatId: notification.related_entity_id }); // Direct navigation to chat
         break;
       case 'new_comment':
       case 'post_liked':

@@ -41,6 +41,7 @@ interface EditProfileScreenProps {
   setCurrentScreen: (screen: string) => void;
   userProfile: Profile;
   setUserProfile: (profile: Profile | null) => void;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity
 }
 
 const formSchema = z.object({
@@ -57,6 +58,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   setCurrentScreen,
   userProfile,
   setUserProfile,
+  logActivity, // Destructure logActivity
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -105,6 +107,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         ...values,
         name: `${values.first_name} ${values.last_name}`,
       });
+      logActivity('profile_updated', `Updated profile details`, userProfile.id, 'User'); // Log activity
       setCurrentScreen('home'); // Go back to profile dashboard
     }
     setLoading(false);

@@ -16,7 +16,7 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean;
+  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -54,7 +54,7 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Chats</h1>
             <p className="text-sm text-gray-500">Your conversations</p>
           </div>
-          <button onClick={() => console.log('New chat')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="Start new chat">
+          <button onClick={() => setCurrentScreen('newChat')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="Start new chat">
             <Plus className="w-5 h-5 text-purple-700 dark:text-purple-300" />
           </button>
         </div>
@@ -92,9 +92,7 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                     chat.startup_name?.[0] || 'S'
                   )}
                 </div>
-                {chat.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
-                )}
+                {/* isOnline removed */}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">

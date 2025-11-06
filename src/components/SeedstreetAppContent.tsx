@@ -38,6 +38,7 @@ import WelcomeFlyer from './WelcomeFlyer';
 import CommitmentDialog from './CommitmentDialog'; // Import CommitmentDialog
 import StartupRoomScreen from './screens/StartupRoomScreen'; // Import StartupRoomScreen
 import AuthActionScreen from './screens/AuthActionScreen'; // Import AuthActionScreen
+import NewChatScreen from './screens/NewChatScreen'; // Import NewChatScreen
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -735,6 +736,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           authActionType={authActionType}
         />
       )}
+      {currentScreen === 'newChat' && userProfile && (
+        <NewChatScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          userProfile={userProfile}
+          logActivity={logActivity}
+        />
+      )}
       {/* Fallback for unhandled screens */}
       {!Object.values({
         onboarding: currentScreen === 'onboarding',
@@ -757,6 +765,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         termsAndPrivacy: currentScreen === 'termsAndPrivacy',
         startupRoom: currentScreen === 'startupRoom' && startupForRoom,
         authAction: currentScreen === 'authAction' && authActionType,
+        newChat: currentScreen === 'newChat' && userProfile,
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, Send, Paperclip, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, MoreVertical, Flag, Rocket } from 'lucide-react'; // Added Flag and Rocket
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -20,7 +26,7 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean;
+  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -47,7 +53,7 @@ interface Profile {
 interface ChatConversationScreenProps {
   selectedChat: Chat;
   messages: Message[];
-  setCurrentScreen: (screen: string, params?: { chatId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: { startupId?: string, chatId?: string }) => void;
   setActiveTab: (tab: string) => void;
   userProfile: Profile | null;
   logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
@@ -133,11 +139,46 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     setSendingMessage(false);
   };
 
+  const handleReportChat = async () => {
+    if (!userProfile?.id || !selectedChat) {
+      toast.error("You must be logged in to report a chat.");
+      return;
+    }
+
+    const reason = prompt("Please provide a reason for reporting this chat:");
+    if (!reason || reason.trim() === "") {
+      toast.info("Chat not reported. A reason is required.");
+      return;
+    }
+
+    const { error } = await supabase.from('flagged_messages').insert({
+      message_id: selectedChat.id, // Flagging the chat itself, not a specific message
+      original_message_id: null, // No specific original message
+      chat_id: selectedChat.id,
+      sender: selectedChat.founder_name, // Or investor_name, depending on who is being reported
+      sender_id: selectedChat.founder_id, // Or investor_id
+      chat_type: 'DM',
+      startup_name: selectedChat.startup_name,
+      reason: reason.trim(),
+      reported_by: userProfile.id,
+      status: 'Pending',
+    });
+
+    if (error) {
+      toast.error("Failed to report chat: " + error.message);
+      console.error("Error reporting chat:", error);
+    } else {
+      toast.success("Chat reported successfully. We will review it shortly.");
+      logActivity('chat_reported', `Reported chat with ${selectedChat.startup_name}`, selectedChat.id, 'Flag');
+    }
+  };
+
   const getSenderAvatar = (senderId: string) => {
     if (senderId === userProfile?.id) {
       return userProfile.avatar_id ? getAvatarUrl(userProfile.avatar_id) : undefined;
     } else {
-      return selectedChat.startup_logo; // Assuming the other party is the startup/founder
+      // Assuming the other party is the startup/founder, use startup logo
+      return selectedChat.startup_logo;
     }
   };
 
@@ -164,15 +205,25 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               ) : (
                 selectedChat.startup_name?.[0] || 'S'
               )}
-              {selectedChat.isOnline && (
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800" />
-              )}
+              {/* isOnline removed */}
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">{selectedChat.startup_name}</h2>
           </div>
-          <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Chat options">
-            <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Chat options">
+                <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setCurrentScreen('startupDetail', { startupId: selectedChat.startup_id })} className="flex items-center gap-2">
+                <Rocket className="w-4 h-4" /> View Startup Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleReportChat} className="flex items-center gap-2 text-red-600">
+                <Flag className="w-4 h-4" /> Report Chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
