@@ -58,41 +58,46 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
     setLoading(true);
     let authError = null;
 
-    if (isSignUp) {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            name: values.name,
-            role: null, // Role will be set in role selector
+    try {
+      if (isSignUp) {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            data: {
+              name: values.name,
+              role: null, // Role will be set in role selector
+            },
           },
-        },
-      });
-      authError = signUpError;
-      if (!authError && data?.user) {
-        toast.success("Account created! Please check your email to verify.");
-        setIsLoggedIn(true);
-        setCurrentScreen('roleSelector');
+        });
+        authError = signUpError;
+        if (!authError && data?.user) {
+          toast.success("Account created! Please check your email to verify.");
+          setIsLoggedIn(true);
+          setCurrentScreen('roleSelector');
+        }
+      } else { // Log In path
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        authError = signInError;
+        if (!authError && data?.user) {
+          toast.success("Logged in successfully!");
+          setIsLoggedIn(true);
+          // The useAppData hook will now fetch the full profile and determine the next screen
+          // based on role and onboarding_complete status.
+        }
       }
-    } else { // Log In path
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-      authError = signInError;
-      if (!authError && data?.user) {
-        toast.success("Logged in successfully!");
-        setIsLoggedIn(true);
-        // The useAppData hook will now fetch the full profile and determine the next screen
-        // based on role and onboarding_complete status.
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      authError = { message: error.message || "An unexpected authentication error occurred." };
+    } finally {
+      if (authError) {
+        toast.error(authError.message);
       }
+      setLoading(false);
     }
-
-    if (authError) {
-      toast.error(authError.message);
-    }
-    setLoading(false);
   };
 
   return (

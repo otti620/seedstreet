@@ -323,16 +323,22 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setLoadingData(true);
       const loadAllData = async () => {
         console.log("Loading all data for userId:", userId);
-        await Promise.all([
-          fetchUserProfile(),
-          fetchStartups(),
-          fetchChats(),
-          fetchCommunityPosts(),
-          fetchNotifications(),
-          fetchRecentActivities(),
-        ]);
-        setLoadingData(false);
-        console.log("All data loaded for userId:", userId);
+        try {
+          await Promise.all([
+            fetchUserProfile(),
+            fetchStartups(),
+            fetchChats(),
+            fetchCommunityPosts(),
+            fetchNotifications(),
+            fetchRecentActivities(),
+          ]);
+          console.log("All data loaded for userId:", userId);
+        } catch (error) {
+          console.error("Error during Promise.all data loading:", error);
+          toast.error("Failed to load some application data.");
+        } finally {
+          setLoadingData(false);
+        }
       };
       loadAllData();
 
