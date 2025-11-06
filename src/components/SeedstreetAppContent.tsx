@@ -546,7 +546,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const startupForRoom = selectedStartupRoomId ? startups.find(s => s.id === selectedStartupRoomId) : null;
 
   return (
-    <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+    <FramerMotionWrapper key="app-content-wrapper" currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
       {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
