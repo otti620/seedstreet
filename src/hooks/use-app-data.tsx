@@ -20,6 +20,7 @@ interface Profile {
   location: string | null;
   phone: string | null;
   last_seen: string | null;
+  show_welcome_flyer: boolean; // Added for welcome flyer
 }
 
 interface Startup {
@@ -155,7 +156,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setUserProfile(null);
       return;
     }
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -181,12 +181,10 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       }
       setUserProfile(data as Profile);
     }
-    setLoadingData(false);
   }, [userId]);
 
   // Fetch startups
   const fetchStartups = useCallback(async () => {
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('startups')
       .select('*')
@@ -198,7 +196,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setStartups(data as Startup[]);
     }
-    setLoadingData(false);
   }, []);
 
   // Fetch chats
@@ -207,7 +204,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setChats([]);
       return;
     }
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('chats')
       .select('*')
@@ -220,12 +216,10 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setChats(data as Chat[]);
     }
-    setLoadingData(false);
   }, [userId]);
 
   // Fetch community posts
   const fetchCommunityPosts = useCallback(async () => {
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('community_posts')
       .select('*')
@@ -237,7 +231,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setCommunityPosts(data as CommunityPost[]);
     }
-    setLoadingData(false);
   }, []);
 
   // Fetch messages for selected chat
@@ -246,7 +239,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setMessages([]);
       return;
     }
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -259,7 +251,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setMessages(data as Message[]);
     }
-    setLoadingData(false);
   }, [selectedChatId]);
 
   // Fetch notifications
@@ -268,7 +259,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setNotifications([]);
       return;
     }
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -281,7 +271,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setNotifications(data as Notification[]);
     }
-    setLoadingData(false);
   }, [userId]);
 
   // Fetch recent activities
@@ -290,7 +279,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setRecentActivities([]);
       return;
     }
-    setLoadingData(true);
     const { data, error } = await supabase
       .from('activity_log')
       .select('*')
@@ -304,7 +292,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setRecentActivities(data as ActivityLog[]);
     }
-    setLoadingData(false);
   }, [userId]);
 
   // Initial data fetch and real-time subscriptions
@@ -323,12 +310,19 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   useEffect(() => {
     if (isLoggedIn && userId) {
-      fetchUserProfile();
-      fetchStartups();
-      fetchChats();
-      fetchCommunityPosts();
-      fetchNotifications();
-      fetchRecentActivities();
+      setLoadingData(true);
+      const loadAllData = async () => {
+        await Promise.all([
+          fetchUserProfile(),
+          fetchStartups(),
+          fetchChats(),
+          fetchCommunityPosts(),
+          fetchNotifications(),
+          fetchRecentActivities(),
+        ]);
+        setLoadingData(false);
+      };
+      loadAllData();
 
       // Real-time subscriptions
       const startupChannel = supabase
@@ -356,12 +350,18 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userId}` }, () => fetchRecentActivities())
         .subscribe();
 
+      const profileChannel = supabase
+        .channel('public:profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () => fetchUserProfile())
+        .subscribe();
+
       return () => {
         supabase.removeChannel(startupChannel);
         supabase.removeChannel(chatChannel);
         supabase.removeChannel(communityPostChannel);
         supabase.removeChannel(notificationChannel);
         supabase.removeChannel(activityLogChannel);
+        supabase.removeChannel(profileChannel);
       };
     } else {
       // Clear data if logged out
@@ -371,6 +371,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setCommunityPosts([]);
       setNotifications([]);
       setRecentActivities([]);
+      setLoadingData(false); // Ensure loading is false when logged out
     }
   }, [isLoggedIn, userId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
 
@@ -404,5 +405,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     fetchAppSettings,
     fetchCommunityPosts, // Expose for specific re-fetches
     fetchNotifications, // Expose for specific re-fetches
+    fetchUserProfile, // Expose for specific re-fetches
   };
 };

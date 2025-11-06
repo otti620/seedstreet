@@ -33,6 +33,7 @@ import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import FramerMotionWrapper from './FramerMotionWrapper';
+import WelcomeFlyer from './WelcomeFlyer'; // Import the new WelcomeFlyer
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -45,7 +46,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
   email: string | null;
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null;
@@ -56,6 +57,7 @@ interface Profile {
   location: string | null;
   phone: string | null;
   last_seen: string | null;
+  show_welcome_flyer: boolean; // Added for welcome flyer
 }
 
 interface Startup {
@@ -138,6 +140,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     loadingData,
     fetchCommunityPosts,
     fetchNotifications,
+    fetchUserProfile, // Expose fetchUserProfile
   } = appData;
 
   const userRole = userProfile?.role || null;
@@ -207,13 +210,14 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   };
 
-  // Auth state change listener
+  // Auth state change listener for initial routing
   useEffect(() => {
     const handleAuthAndProfile = async (session: any | null) => {
       if (session) {
         setIsLoggedIn(true);
         const userId = session.user.id;
         
+        // Fetch the profile to get the role and onboarding status
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role, onboarding_complete')
@@ -223,7 +227,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         if (profileError || !profileData) {
           console.error("Error fetching user profile for initial role check:", profileError);
           toast.error("Failed to load user profile. Please complete onboarding.");
-          setCurrentScreen('roleSelector');
+          setCurrentScreen('roleSelector'); // Set initial screen
         } else {
           if (profileData.role === 'admin') {
             setCurrentScreen('adminDashboard');
@@ -235,7 +239,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         }
       } else {
         setIsLoggedIn(false);
-        setCurrentScreen('auth');
+        setCurrentScreen('auth'); // Always go to auth screen if logged out
       }
     };
 
@@ -251,7 +255,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, [setCurrentScreen, setUserProfile, setIsLoggedIn]);
+  }, [setCurrentScreen, setIsLoggedIn]); // Removed setUserProfile from dependencies
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
@@ -483,37 +487,64 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   };
 
+  const handleDismissWelcomeFlyer = async () => {
+    if (!userProfile?.id) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ show_welcome_flyer: false })
+      .eq('id', userProfile.id);
+
+    if (error) {
+      toast.error("Failed to dismiss welcome message.");
+      console.error("Error dismissing welcome flyer:", error);
+    } else {
+      setUserProfile(prev => prev ? { ...prev, show_welcome_flyer: false } : null);
+    }
+  };
+
   const screenVariants = {
     initial: { opacity: 0, x: 100 },
     in: { opacity: 1, x: 0 },
     out: { opacity: 0, x: -100 },
   };
 
+  // Determine if the welcome flyer should be shown
+  const showWelcomeFlyer = userProfile?.show_welcome_flyer && currentScreen === 'home';
+
   return (
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={setCurrentScreen} />}
-      {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} />}
-      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setUserProfile={setUserProfile} setActiveTab={setActiveTab} logActivity={logActivity} />}
+      {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
+      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} />}
       {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
-        <HomeScreen
-          userRole={userRole}
-          startups={startups}
-          bookmarkedStartups={bookmarkedStartups}
-          interestedStartups={interestedStartups}
-          toggleBookmark={toggleBookmark}
-          toggleInterest={toggleInterest}
-          setSelectedStartup={setSelectedStartup}
-          setSelectedChat={setSelectedChat}
-          setCurrentScreen={setCurrentScreen}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          loading={loadingData || bookmarkLoading || interestLoading}
-          userProfileId={userProfile?.id || null}
-          userProfileName={userProfile?.name || userProfile?.first_name || null}
-          userProfileEmail={userProfile?.email || null}
-          handleStartChat={handleStartChat}
-          recentActivities={recentActivities}
-        />
+        <>
+          <HomeScreen
+            userRole={userRole}
+            startups={startups}
+            bookmarkedStartups={bookmarkedStartups}
+            interestedStartups={interestedStartups}
+            toggleBookmark={toggleBookmark}
+            toggleInterest={toggleInterest}
+            setSelectedStartup={setSelectedStartup}
+            setSelectedChat={setSelectedChat}
+            setCurrentScreen={setCurrentScreen}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            loading={loadingData || bookmarkLoading || interestLoading}
+            userProfileId={userProfile?.id || null}
+            userProfileName={userProfile?.name || userProfile?.first_name || null}
+            userProfileEmail={userProfile?.email || null}
+            handleStartChat={handleStartChat}
+            recentActivities={recentActivities}
+          />
+          {showWelcomeFlyer && (
+            <WelcomeFlyer
+              userName={userProfile?.name || userProfile?.first_name || 'User'}
+              onDismiss={handleDismissWelcomeFlyer}
+            />
+          )}
+        </>
       )}
       {currentScreen === 'home' && activeTab === 'chats' && (
         <ChatListScreen
@@ -567,7 +598,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'chat' && selectedChat && (
         <ChatConversationScreen
           selectedChat={selectedChat}
-          messages={messages}
+          messages={appData.messages} // Use appData.messages directly
           setCurrentScreen={setCurrentScreen}
           setActiveTab={setActiveTab}
           userProfile={userProfile}

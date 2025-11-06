@@ -5,45 +5,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion'; // Import motion
 
-interface Profile { // Define Profile interface here for local use
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null;
-}
-
 interface RoleSelectorScreenProps {
   setCurrentScreen: (screen: string) => void;
-  setUserProfile: (profile: Profile | null) => void; // Changed from setUserRole
   setActiveTab: (tab: string) => void;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
 }
 
-const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setUserProfile, setActiveTab, logActivity }) => {
+const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setActiveTab, logActivity }) => {
   const handleRoleSelection = async (role: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role, onboarding_complete: true })
+        .update({ role: role, onboarding_complete: true, show_welcome_flyer: true }) // Set show_welcome_flyer to true
         .eq('id', user.id);
 
       if (error) {
         toast.error("Failed to set user role: " + error.message);
         console.error("Error setting user role:", error);
       } else {
-        // Update userProfile with the new role and onboarding status
-        setUserProfile(prev => prev ? { ...prev, role: role as 'investor' | 'founder' | 'admin', onboarding_complete: true } : null);
         setCurrentScreen('home');
         setActiveTab('home');
         toast.success(`Welcome, ${role}!`);

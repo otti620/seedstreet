@@ -21,27 +21,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-interface Profile { // Define Profile interface here for local use
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null;
-}
-
 interface AuthScreenProps {
   setCurrentScreen: (screen: string) => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  setUserProfile: (profile: Profile | null) => void; // Changed from setUserRole
 }
 
 // Define separate schemas for login and signup
@@ -59,7 +41,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 type SignUpFormInputs = z.infer<typeof signUpSchema>;
 type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>; // Combined type for useForm
 
-const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn, setUserProfile }) => {
+const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn }) => {
   const [isSignUp, setIsSignUp] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -73,13 +55,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
   });
 
   const handleAuth = async (values: AuthFormInputs) => {
-    console.log("handleAuth called. isSignUp:", isSignUp, "values:", values);
-    console.log("Current form errors (before submission logic):", form.formState.errors); // Log form errors
     setLoading(true);
     let authError = null;
 
     if (isSignUp) {
-      console.log("Attempting Sign Up with email:", values.email);
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -92,41 +71,21 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
       });
       authError = signUpError;
       if (!authError && data?.user) {
-        console.log("Sign Up successful, user:", data.user);
         toast.success("Account created! Please check your email to verify.");
         setIsLoggedIn(true);
-        // Update userProfile with initial data, role will be set in role selector
-        setUserProfile(prev => prev ? { ...prev, id: data.user!.id, email: data.user!.email, name: values.name, onboarding_complete: false, role: null, bookmarked_startups: [], interested_startups: [] } : null);
         setCurrentScreen('roleSelector');
       }
     } else { // Log In path
-      console.log("Attempting Log In with email:", values.email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
       authError = signInError;
       if (!authError && data?.user) {
-        console.log("Log In successful, user:", data.user);
         toast.success("Logged in successfully!");
         setIsLoggedIn(true);
-        // Fetch user role and navigate
-        const { data: profileData, error: profileError } = await supabase.from('profiles').select('role, onboarding_complete').eq('id', data.user.id).single();
-        if (profileError) {
-          console.error("Error fetching profile after login:", profileError);
-          toast.error("Failed to fetch user role after login: " + profileError.message);
-          setCurrentScreen('roleSelector'); // Still go to role selector if profile fetch fails
-        } else if (profileData?.role) {
-          console.log("User role found:", profileData.role);
-          // Update userProfile with fetched role and onboarding status
-          setUserProfile(prev => prev ? { ...prev, role: profileData.role, onboarding_complete: profileData.onboarding_complete } : null);
-          setCurrentScreen('home');
-        } else {
-          console.log("No role found for user, redirecting to role selector.");
-          setCurrentScreen('roleSelector');
-        }
-      } else {
-        console.log("Log In failed or no user data. Error:", authError);
+        // The useAppData hook will now fetch the full profile and determine the next screen
+        // based on role and onboarding_complete status.
       }
     }
 
@@ -259,7 +218,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
             onClick={() => {
               setIsSignUp(prev => {
                 const newState = !prev;
-                console.log("Toggle button clicked. isSignUp will be:", newState);
                 form.reset({ // Reset form fields on toggle
                   name: "",
                   email: "",
