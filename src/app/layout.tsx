@@ -4,7 +4,10 @@ import "./globals.css";
 import { Toaster } from "sonner"; // Import Toaster
 import { ThemeProvider } from "next-themes"; // Import ThemeProvider
 import { Suspense } from "react"; // Import Suspense for potential future use
-import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator
+import dynamic from "next/dynamic"; // Import dynamic for client-side only component loading
+
+// Dynamically import GlobalLoadingIndicator with ssr: false
+const GlobalLoadingIndicator = dynamic(() => import("@/components/GlobalLoadingIndicator").then(mod => mod.GlobalLoadingIndicator), { ssr: false });
 
 // const geistSans = GeistSans({ // Use GeistSans directly
 //   variable: "--font-geist-sans",
