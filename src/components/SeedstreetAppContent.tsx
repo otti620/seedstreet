@@ -628,6 +628,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           handleStartChat={handleStartChat}
           logActivity={logActivity}
           fetchUserProfile={fetchUserProfile}
+          userProfile={userProfile} {/* Pass userProfile here */}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
