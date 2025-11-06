@@ -65,6 +65,16 @@ const SeedstreetApp = () => {
 
   // Effect to determine the current screen based on appData states
   useEffect(() => {
+    // TEMPORARY LOGS FOR DEBUGGING BLANK SCREEN
+    console.log("--- SeedstreetApp Screen Logic ---");
+    console.log("loadingSession:", loadingSession);
+    console.log("loadingData:", loadingData);
+    console.log("isLoggedIn:", isLoggedIn);
+    console.log("currentUserId:", currentUserId);
+    console.log("userProfile:", userProfile ? { id: userProfile.id, role: userProfile.role, onboarding_complete: userProfile.onboarding_complete } : null);
+    console.log("maintenanceMode:", maintenanceMode);
+    // END TEMPORARY LOGS
+
     if (loadingSession || loadingData) {
       setCurrentScreenState('splash');
       return;
@@ -78,6 +88,7 @@ const SeedstreetApp = () => {
     if (!isLoggedIn) {
       setCurrentScreenState('auth');
     } else if (!userProfile) {
+      // If logged in but profile not loaded, it might be a new user or profile fetch failed
       setCurrentScreenState('roleSelector');
     } else if (!userProfile.onboarding_complete) {
       setCurrentScreenState('roleSelector');
