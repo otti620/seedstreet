@@ -23,61 +23,137 @@ const TermsAndPrivacyScreen: React.FC<TermsAndPrivacyScreenProps> = ({ setCurren
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-700 dark:text-gray-200">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Important Legal Information</h3>
-          <p className="mb-4">
-            **Disclaimer:** This is a placeholder for your Terms of Service and Privacy Policy.
-            **You MUST replace this content with legally sound documents drafted by a legal professional.**
-            Failure to do so may result in legal liabilities.
+          <h3 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Seedstreet Africa – Privacy Policy</h3>
+          <p className="text-sm mb-4">
+            **Effective Date: October 2025**
           </p>
-          <p className="mb-4">
-            Your Terms of Service should outline the rules and guidelines for using your application,
-            user responsibilities, intellectual property rights, disclaimers, and limitations of liability.
+          <p className="text-sm mb-4">
+            At Seedstreet Africa (“Seedstreet”, “we”, “us”, or “our”), your trust means everything to us. This Privacy Policy explains how we collect, use, share, and protect information when you use our website, mobile app, and related digital services (collectively, the “Platform”).
           </p>
-          <p className="mb-4">
-            Your Privacy Policy should clearly explain what personal data you collect, why you collect it,
-            how it's used, who it's shared with, and how users can manage their data. It should also
-            address data security measures and compliance with relevant privacy laws (e.g., GDPR, CCPA).
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">1. Information We Collect</h4>
+          <p className="text-sm mb-2">We collect the following types of information:</p>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-4">
+            <li>**Account Information:** Name, email, phone number, startup or investor details, and profile data provided during sign-up.</li>
+            <li>**Usage Data:** Device information, IP address, browser type, and analytics data collected via Firebase and other tools.</li>
+            <li>**Listings & Activity:** Information you upload or share, including startup listings, bios, documents, or investment preferences.</li>
+            <li>**Communications:** Messages sent through in-app chats, contact forms, or email.</li>
+            <li>**Cookies & Tracking:** We use cookies, local storage, and analytics to improve your experience and platform performance.</li>
+          </ul>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">2. How We Use Your Information</h4>
+          <p className="text-sm mb-2">We use your data to:</p>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-4">
+            <li>Operate and maintain the Seedstreet Platform.</li>
+            <li>Facilitate startup–investor discovery and communication.</li>
+            <li>Personalize content, recommendations, and updates.</li>
+            <li>Enhance platform performance and security.</li>
+            <li>Comply with legal and regulatory obligations.</li>
+          </ul>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">3. Data Sharing</h4>
+          <p className="text-sm mb-2">We never sell your data. We may share limited data with:</p>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-4">
+            <li>Service Providers (e.g., Firebase, analytics, hosting).</li>
+            <li>Regulatory authorities when legally required.</li>
+            <li>Business partners if you opt-in or consent to specific collaborations.</li>
+          </ul>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">4. Data Security</h4>
+          <p className="text-sm mb-4">
+            We employ encryption, access controls, and secure storage protocols to protect your data. However, no digital system is completely risk-free; you acknowledge and accept this residual risk.
           </p>
-          <p className="font-semibold text-red-600 dark:text-red-400">
-            Please consult with a legal expert to ensure your policies are comprehensive and compliant.
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">5. Data Retention</h4>
+          <p className="text-sm mb-4">
+            We retain user data for as long as your account remains active or as necessary to provide our services and comply with applicable law.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">6. Your Rights</h4>
+          <p className="text-sm mb-2">Depending on your location, you may:</p>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-4">
+            <li>Request access, correction, or deletion of your data.</li>
+            <li>Withdraw consent for certain processing activities.</li>
+            <li>Contact us to request portability or restriction of processing.</li>
+          </ul>
+          <p className="text-sm mb-4">
+            For all privacy-related inquiries, email us at <a href="mailto:seedstreetapp@gmail.com" className="underline text-purple-700 dark:text-purple-400">seedstreetapp@gmail.com</a>.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">7. International Transfers</h4>
+          <p className="text-sm mb-4">
+            Your data may be processed across multiple countries. We ensure appropriate safeguards consistent with international data protection laws.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">8. Updates to This Policy</h4>
+          <p className="text-sm mb-4">
+            We may periodically update this Privacy Policy. We’ll notify you of significant changes by email or platform notification.
           </p>
         </div>
 
-        <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4 dark:text-gray-50">Terms of Service (Placeholder)</h3>
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-          <p className="text-sm">
-            **1. Acceptance of Terms:** By accessing and using Seedstreet, you agree to be bound by these Terms of Service.
-            <br /><br />
-            **2. User Conduct:** You agree to use Seedstreet responsibly and not to engage in any unlawful or prohibited activities.
-            <br /><br />
-            **3. Intellectual Property:** All content and materials on Seedstreet are the property of Seedstreet or its licensors.
-            <br /><br />
-            **4. Disclaimers:** Seedstreet is provided "as is" without warranties of any kind.
-            <br /><br />
-            **5. Limitation of Liability:** Seedstreet shall not be liable for any damages arising from your use of the service.
-            <br /><br />
-            **6. Governing Law:** These terms are governed by the laws of [Your Jurisdiction].
-            <br /><br />
-            *(... more terms here ...)*
+          <h3 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Seedstreet Africa – Terms of Use</h3>
+          <p className="text-sm mb-4">
+            **Effective Date: October 2025**
           </p>
-        </div>
+          <p className="text-sm mb-4">
+            Welcome to Seedstreet Africa, a digital platform connecting startups and investors across Africa and beyond. By using our Platform, you agree to these Terms of Use. Please read carefully.
+          </p>
 
-        <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4 dark:text-gray-50">Privacy Policy (Placeholder)</h3>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-          <p className="text-sm">
-            **1. Data Collection:** We collect personal information such as email, name, and usage data.
-            <br /><br />
-            **2. Use of Data:** Your data is used to provide and improve our services, communicate with you, and for security.
-            <br /><br />
-            **3. Data Sharing:** We do not sell your personal data. We may share data with trusted third-party service providers.
-            <br /><br />
-            **4. Data Security:** We implement reasonable security measures to protect your data.
-            <br /><br />
-            **5. Your Rights:** You have the right to access, correct, or delete your personal data.
-            <br /><br />
-            **6. Cookies:** We use cookies to enhance your experience.
-            <br /><br />
-            *(... more privacy details here ...)*
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">1. Acceptance of Terms</h4>
+          <p className="text-sm mb-4">
+            By accessing or using the Seedstreet Platform, you confirm that you are at least 18 years old and have the legal capacity to enter into this agreement.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">2. Use of the Platform</h4>
+          <p className="text-sm mb-2">You may use Seedstreet only for lawful purposes. You agree not to:</p>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-4">
+            <li>Misrepresent your identity or affiliation.</li>
+            <li>Upload harmful, misleading, or copyrighted content without authorization.</li>
+            <li>Interfere with the operation or security of the Platform.</li>
+            <li>Use Seedstreet for financial solicitation outside approved guidelines.</li>
+          </ul>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">3. Accounts</h4>
+          <p className="text-sm mb-4">
+            You are responsible for maintaining the confidentiality of your account credentials. Any action performed through your account is considered authorized by you.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">4. Content Ownership</h4>
+          <p className="text-sm mb-4">
+            You retain ownership of the content you upload. However, by uploading, you grant Seedstreet a worldwide, non-exclusive license to display and distribute your content for platform functionality and promotion.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">5. Intellectual Property</h4>
+          <p className="text-sm mb-4">
+            All trademarks, logos, designs, and software belong to Seedstreet Africa or its licensors. You may not copy, modify, or redistribute platform assets without written permission.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">6. Investment Disclaimer</h4>
+          <p className="text-sm mb-4">
+            Seedstreet is not a registered broker-dealer, financial advisor, or exchange. All listings and startup information are for educational and discovery purposes only. Investments are at the user’s sole discretion and risk.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">7. Limitation of Liability</h4>
+          <p className="text-sm mb-4">
+            Seedstreet Africa is not liable for indirect, incidental, or consequential damages arising from the use of our Platform. We do not guarantee investment outcomes or business success.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">8. Termination</h4>
+          <p className="text-sm mb-4">
+            We reserve the right to suspend or terminate any account that violates these Terms.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">9. Governing Law</h4>
+          <p className="text-sm mb-4">
+            These Terms are governed by international standards, including GDPR and applicable digital commerce laws. Disputes will be handled through arbitration or mutually agreed mediation.
+          </p>
+
+          <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">10. Contact</h4>
+          <p className="text-sm mb-4">
+            For questions, support, or complaints, contact us at:<br />
+            📩 <a href="mailto:seedstreetapp@gmail.com" className="underline text-purple-700 dark:text-purple-400">seedstreetapp@gmail.com</a><br />
+            🌍 <a href="https://www.use-seedstreet.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-purple-700 dark:text-purple-400">www.use-seedstreet.vercel.app</a>
           </p>
         </div>
       </div>
