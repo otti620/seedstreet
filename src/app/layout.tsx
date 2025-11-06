@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 // import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
 import "./globals.css";
-import { Toaster } from "sonner"; // Import Toaster
-import { ThemeProvider } from "next-themes"; // Import ThemeProvider
+// Removed direct import of Toaster and ThemeProvider
 import { Suspense } from "react"; // Import Suspense for potential future use
-import dynamic from "next/dynamic"; // Import dynamic for client-side only component loading
+// Removed dynamic import of GlobalLoadingIndicator as it's now in ThemeProviderWrapper
 
-// Dynamically import GlobalLoadingIndicator with ssr: false
-const GlobalLoadingIndicator = dynamic(() => import("@/components/GlobalLoadingIndicator").then(mod => mod.GlobalLoadingIndicator), { ssr: false });
+import { ThemeProviderWrapper } from "@/components/ThemeProviderWrapper"; // Import the new wrapper
 
 // const geistSans = GeistSans({ // Use GeistSans directly
 //   variable: "--font-geist-sans",
@@ -35,16 +33,14 @@ export default function RootLayout({
         // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         className={`antialiased`}
       >
-        <ThemeProvider
+        <ThemeProviderWrapper
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <GlobalLoadingIndicator /> {/* Add GlobalLoadingIndicator here */}
           {children}
-          <Toaster richColors position="top-center" /> {/* Add Toaster here */}
-        </ThemeProvider>
+        </ThemeProviderWrapper>
       </body>
     </html>
   );
