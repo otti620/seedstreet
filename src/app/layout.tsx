@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
+// import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
 import "./globals.css";
 import { Toaster } from "sonner"; // Import Toaster
 import { ThemeProvider } from "next-themes"; // Import ThemeProvider
 import { Suspense } from "react"; // Import Suspense for potential future use
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator
 
-const geistSans = GeistSans({ // Use GeistSans directly
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// const geistSans = GeistSans({ // Use GeistSans directly
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
 
-const geistMono = GeistMono({ // Use GeistMono directly
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistMono = GeistMono({ // Use GeistMono directly
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -29,7 +29,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`antialiased`}
       >
         <ThemeProvider
           attribute="class"
