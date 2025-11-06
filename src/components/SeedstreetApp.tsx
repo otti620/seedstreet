@@ -15,11 +15,12 @@ const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { s
 const SeedstreetApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // New state for current user ID
   const [currentScreen, setCurrentScreenState] = useState('splash'); // Keep a local state for initial screen logic
 
   // Use the new custom hook for data management
   const appData = useAppData({
-    userId: supabase.auth.currentUser?.id || null, // Pass current user ID directly
+    userId: currentUserId, // Pass currentUserId from state
     isLoggedIn,
     selectedChatId: null, // Not relevant for top-level app
   });
@@ -40,8 +41,10 @@ const SeedstreetApp = () => {
       setLoadingSession(true);
       if (session) {
         setIsLoggedIn(true);
+        setCurrentUserId(session.user.id); // Set currentUserId from session
       } else {
         setIsLoggedIn(false);
+        setCurrentUserId(null); // Clear userId on logout
       }
       setLoadingSession(false);
     };
@@ -69,6 +72,7 @@ const SeedstreetApp = () => {
     console.log("userProfile:", userProfile);
     console.log("userRole:", userRole);
     console.log("maintenanceMode:", maintenanceMode);
+    console.log("currentUserId:", currentUserId); // Log currentUserId
 
     if (loadingSession || loadingData) {
       setCurrentScreenState('splash');
@@ -86,7 +90,9 @@ const SeedstreetApp = () => {
       setCurrentScreenState('auth');
       console.log("Setting screen to: auth (not logged in)");
     } else if (!userProfile) {
-      setCurrentScreenState('roleSelector');
+      // If logged in but profile not loaded, it might be a new user or profile fetch failed
+      // We can default to role selector or auth if profile is truly missing
+      setCurrentScreenState('roleSelector'); // Assume new user needs to select role
       console.log("Setting screen to: roleSelector (logged in, but no profile)");
     } else if (!userProfile.onboarding_complete) {
       setCurrentScreenState('roleSelector');
@@ -98,7 +104,7 @@ const SeedstreetApp = () => {
       setCurrentScreenState('home');
       console.log("Setting screen to: home");
     }
-  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode]);
+  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId]);
 
 
   // 1. Always show splash screen while session or app data is loading

@@ -152,8 +152,10 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch user profile
   const fetchUserProfile = useCallback(async () => {
+    console.log("fetchUserProfile called with userId:", userId);
     if (!userId) {
       setUserProfile(null);
+      console.log("No userId, setting userProfile to null.");
       return;
     }
     const { data, error } = await supabase
@@ -164,7 +166,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
     if (error) {
       console.error("Error fetching user profile:", error);
-      // Do not show toast here, as it might be a new user without a profile yet
       setUserProfile(null);
     } else if (data) {
       // Ensure name and email are populated, using fallbacks if necessary
@@ -187,6 +188,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         }
       }
       setUserProfile(profileData);
+      console.log("User profile fetched and set:", profileData);
     }
   }, [userId]);
 
@@ -316,9 +318,11 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
   }, [fetchAppSettings]);
 
   useEffect(() => {
+    console.log("useAppData main useEffect triggered. isLoggedIn:", isLoggedIn, "userId:", userId);
     if (isLoggedIn && userId) {
       setLoadingData(true);
       const loadAllData = async () => {
+        console.log("Loading all data for userId:", userId);
         await Promise.all([
           fetchUserProfile(),
           fetchStartups(),
@@ -328,6 +332,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
           fetchRecentActivities(),
         ]);
         setLoadingData(false);
+        console.log("All data loaded for userId:", userId);
       };
       loadAllData();
 
@@ -363,6 +368,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         .subscribe();
 
       return () => {
+        console.log("Unsubscribing from channels for userId:", userId);
         supabase.removeChannel(startupChannel);
         supabase.removeChannel(chatChannel);
         supabase.removeChannel(communityPostChannel);
@@ -371,6 +377,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         supabase.removeChannel(profileChannel);
       };
     } else {
+      console.log("Not logged in or no userId, clearing data.");
       // Clear data if logged out
       setUserProfile(null);
       setStartups([]);
