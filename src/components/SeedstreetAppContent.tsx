@@ -17,7 +17,7 @@ import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
 import StartupDetailScreen from './screens/StartupDetailScreen';
 import ChatListScreen from './screens/ChatListScreen';
-import ChatConversationScreen from './screens/ChatConversationScreen'; // Corrected import path
+import ChatConversationScreen from './screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityFeedScreen from './screens/CommunityFeedScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
@@ -33,7 +33,7 @@ import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import FramerMotionWrapper from './FramerMotionWrapper';
-import WelcomeFlyer from './WelcomeFlyer'; // Import the new WelcomeFlyer
+import WelcomeFlyer from './WelcomeFlyer';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,12 +41,11 @@ import localforage from 'localforage';
 import { useAppData } from '@/hooks/use-app-data';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
-// Define TypeScript interfaces for data structures (moved to use-app-data.tsx, but kept here for clarity if needed)
 interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  avatar_id: number | null; // Changed from avatar_url
+  avatar_id: number | null;
   email: string | null;
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null;
@@ -57,7 +56,7 @@ interface Profile {
   location: string | null;
   phone: string | null;
   last_seen: string | null;
-  show_welcome_flyer: boolean; // Added for welcome flyer
+  show_welcome_flyer: boolean;
 }
 
 interface Startup {
@@ -102,7 +101,11 @@ interface SeedstreetAppContentProps {
   loadingSession: boolean;
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
-  currentScreen: string; // Receive currentScreen from parent
+  currentScreen: string; // Directly use this prop
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => void; // Pass setter from parent
+  setUserProfile: (profile: Profile | null) => void; // Pass setUserProfile from useAppData
+  fetchCommunityPosts: () => Promise<void>; // Pass fetchCommunityPosts
+  fetchNotifications: () => Promise<void>; // Pass fetchNotifications
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -111,11 +114,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   loadingSession,
   maintenanceMode,
   fetchAppSettings,
-  currentScreen: initialCurrentScreen, // Use initialCurrentScreen for the state
+  currentScreen, // Directly use currentScreen prop
+  setCurrentScreen, // Use the setter from parent
+  setUserProfile, // Use setUserProfile from parent
+  fetchCommunityPosts,
+  fetchNotifications,
 }) => {
-  const [currentScreen, setCurrentScreenState] = useState(initialCurrentScreen);
-  const [screenHistory, setScreenHistory] = useState<string[]>([initialCurrentScreen]);
-
+  const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]); // Initialize with currentScreen
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
@@ -132,36 +137,28 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   const {
     userProfile,
-    setUserProfile,
     startups,
     chats,
-    communityPosts,
     messages,
-    notifications,
     recentActivities,
     loadingData,
-    fetchCommunityPosts,
-    fetchNotifications,
-    fetchUserProfile, // Expose fetchUserProfile
+    fetchUserProfile,
   } = appData;
 
   const userRole = userProfile?.role || null;
 
-  // Update currentScreenState when initialCurrentScreen prop changes
+  // Update screen history when currentScreen prop changes
   useEffect(() => {
-    setCurrentScreenState(initialCurrentScreen);
-    setScreenHistory([initialCurrentScreen]); // Reset history when main screen changes
-  }, [initialCurrentScreen]);
-
-  const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
-    setCurrentScreenState(screen);
     setScreenHistory(prev => {
-      if (prev[prev.length - 1] !== screen) {
-        return [...prev, screen];
+      if (prev[prev.length - 1] !== currentScreen) {
+        return [...prev, currentScreen];
       }
       return prev;
     });
+  }, [currentScreen]);
 
+  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
+    setCurrentScreen(screen, params); // Call the parent's setter
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
     } else {
@@ -188,18 +185,18 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedChat(null);
     }
-  }, [chats]);
+  }, [setCurrentScreen, chats]);
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
-        setCurrentScreenState(newHistory[newHistory.length - 1]);
+        setCurrentScreen(newHistory[newHistory.length - 1]); // Use parent's setter
         return newHistory;
       }
       return prev;
     });
-  }, []);
+  }, [setCurrentScreen]);
 
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
@@ -218,13 +215,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   };
 
-  // Removed the redundant useEffect for auth state change listener here.
-  // The parent SeedstreetApp now handles the primary screen determination.
-
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
 
-  // Mutation for toggling bookmark
   const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
     async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
       return supabase
@@ -263,7 +256,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     await toggleBookmarkMutation({ userId: userProfile.id, newBookmarks });
   };
 
-  // Mutation for toggling interest
   const { mutate: toggleInterestMutation, loading: interestLoading } = useSupabaseMutation(
     async ({ userId, newInterests, startupId, newInterestsCount, founderId, startupName, isInterested }: {
       userId: string;
@@ -446,7 +438,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
     if (chatToOpen) {
       setSelectedChat(chatToOpen);
-      setCurrentScreen('chat');
+      handleSetCurrentScreen('chat');
       setActiveTab('chats');
     }
   };
@@ -473,14 +465,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     out: { opacity: 0, x: -100 },
   };
 
-  // Determine if the welcome flyer should be shown
   const showWelcomeFlyer = userProfile?.show_welcome_flyer && currentScreen === 'home';
 
   return (
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
-      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={setCurrentScreen} />}
-      {currentScreen === 'auth' && <AuthScreen setCurrentScreen={setCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
-      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={setCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} />}
+      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} />}
+      {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
+      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} />}
       {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
         <>
           <HomeScreen
@@ -492,7 +483,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             toggleInterest={toggleInterest}
             setSelectedStartup={setSelectedStartup}
             setSelectedChat={setSelectedChat}
-            setCurrentScreen={setCurrentScreen}
+            setCurrentScreen={handleSetCurrentScreen}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             loading={loadingData || bookmarkLoading || interestLoading}
@@ -513,7 +504,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'home' && activeTab === 'chats' && (
         <ChatListScreen
           chats={chats}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           setSelectedChat={setSelectedChat}
           setActiveTab={setActiveTab}
           activeTab={activeTab}
@@ -523,7 +514,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'home' && activeTab === 'community' && (
         <CommunityFeedScreen
           communityPosts={communityPosts}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
@@ -537,7 +528,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userRole={userRole}
           bookmarkedStartups={bookmarkedStartups}
           interestedStartups={interestedStartups}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           setIsLoggedIn={setIsLoggedIn}
@@ -551,7 +542,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           interestedStartups={interestedStartups}
           toggleBookmark={toggleBookmark}
           toggleInterest={toggleInterest}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           setSelectedChat={setSelectedChat}
           activeTab={activeTab}
           userRole={userRole}
@@ -562,8 +553,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'chat' && selectedChat && (
         <ChatConversationScreen
           selectedChat={selectedChat}
-          messages={appData.messages} // Use appData.messages directly
-          setCurrentScreen={setCurrentScreen}
+          messages={appData.messages}
+          setCurrentScreen={handleSetCurrentScreen}
           setActiveTab={setActiveTab}
           userProfile={userProfile}
           logActivity={logActivity}
@@ -572,13 +563,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'editProfile' && userProfile && (
         <EditProfileScreen
           userProfile={userProfile}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           setUserProfile={setUserProfile}
         />
       )}
       {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
         <ManageStartupScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           userProfileId={userProfile.id}
           userProfileName={userProfile.name}
           userProfileEmail={userProfile.email}
@@ -588,7 +579,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {currentScreen === 'createCommunityPost' && userProfile && (
         <CreateCommunityPostScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           userProfile={userProfile}
           postId={selectedCommunityPostId}
         />
@@ -596,36 +587,36 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'notifications' && userProfile && (
         <NotificationsScreen
           notifications={notifications}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           fetchNotifications={fetchNotifications}
         />
       )}
       {currentScreen === 'startupListingCelebration' && listedStartupName && (
         <StartupListingCelebrationScreen
           startupName={listedStartupName}
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
         />
       )}
       {currentScreen === 'helpAndSupport' && (
         <HelpAndSupportScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
         />
       )}
       {currentScreen === 'merchStore' && (
         <MerchStoreScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
         />
       )}
       {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
         <CommunityPostDetailScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           selectedCommunityPostId={selectedCommunityPostId}
           userProfile={userProfile}
         />
       )}
       {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
         <AdminDashboardScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           maintenanceMode={maintenanceMode}
           fetchAppSettings={fetchAppSettings}
           setIsLoggedIn={setIsLoggedIn}
@@ -633,7 +624,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {currentScreen === 'savedStartups' && userProfile && (
         <SavedStartupsScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
           userProfileId={userProfile.id}
           bookmarkedStartups={bookmarkedStartups}
           toggleBookmark={toggleBookmark}
@@ -645,8 +636,32 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {currentScreen === 'settings' && (
         <SettingsScreen
-          setCurrentScreen={setCurrentScreen}
+          setCurrentScreen={handleSetCurrentScreen}
         />
+      )}
+      {/* Fallback for unhandled screens */}
+      {!Object.values({
+        onboarding: currentScreen === 'onboarding',
+        auth: currentScreen === 'auth',
+        roleSelector: currentScreen === 'roleSelector',
+        home: currentScreen === 'home',
+        startupDetail: currentScreen === 'startupDetail' && selectedStartup,
+        chat: currentScreen === 'chat' && selectedChat,
+        editProfile: currentScreen === 'editProfile' && userProfile,
+        manageStartup: currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email,
+        createCommunityPost: currentScreen === 'createCommunityPost' && userProfile,
+        notifications: currentScreen === 'notifications' && userProfile,
+        startupListingCelebration: currentScreen === 'startupListingCelebration' && listedStartupName,
+        helpAndSupport: currentScreen === 'helpAndSupport',
+        merchStore: currentScreen === 'merchStore',
+        communityPostDetail: currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile,
+        adminDashboard: currentScreen === 'adminDashboard' && userProfile?.role === 'admin',
+        savedStartups: currentScreen === 'savedStartups' && userProfile,
+        settings: currentScreen === 'settings',
+      }).some(Boolean) && (
+        <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
+          Error: Unknown Screen "{currentScreen}"
+        </div>
       )}
     </FramerMotionWrapper>
   );

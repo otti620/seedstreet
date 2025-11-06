@@ -15,36 +15,33 @@ const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { s
 const SeedstreetApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // New state for current user ID
-  const [currentScreen, setCurrentScreenState] = useState('splash'); // Keep a local state for initial screen logic
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentScreen, setCurrentScreenState] = useState('splash');
 
-  // Use the new custom hook for data management
   const appData = useAppData({
-    userId: currentUserId, // Pass currentUserId from state
+    userId: currentUserId,
     isLoggedIn,
-    selectedChatId: null, // Not relevant for top-level app
+    selectedChatId: null,
   });
 
   const {
     userProfile,
-    setUserProfile,
     maintenanceMode,
     fetchAppSettings,
-    loadingData, // Get loadingData from useAppData
+    loadingData,
   } = appData;
 
   const userRole = userProfile?.role || null;
 
-  // Auth state change listener for initial session management
   useEffect(() => {
     const handleAuthSession = async (session: any | null) => {
       setLoadingSession(true);
       if (session) {
         setIsLoggedIn(true);
-        setCurrentUserId(session.user.id); // Set currentUserId from session
+        setCurrentUserId(session.user.id);
       } else {
         setIsLoggedIn(false);
-        setCurrentUserId(null); // Clear userId on logout
+        setCurrentUserId(null);
       }
       setLoadingSession(false);
     };
@@ -61,20 +58,9 @@ const SeedstreetApp = () => {
     getInitialSession();
 
     return () => subscription.unsubscribe();
-  }, []); // Dependencies only on initial mount
+  }, []);
 
-  // Effect to determine the current screen based on appData states
   useEffect(() => {
-    // TEMPORARY LOGS FOR DEBUGGING BLANK SCREEN
-    console.log("--- SeedstreetApp Screen Logic ---");
-    console.log("loadingSession:", loadingSession);
-    console.log("loadingData:", loadingData);
-    console.log("isLoggedIn:", isLoggedIn);
-    console.log("currentUserId:", currentUserId);
-    console.log("userProfile:", userProfile ? { id: userProfile.id, role: userProfile.role, onboarding_complete: userProfile.onboarding_complete } : null);
-    console.log("maintenanceMode:", maintenanceMode);
-    // END TEMPORARY LOGS
-
     if (loadingSession || loadingData) {
       setCurrentScreenState('splash');
       return;
@@ -88,7 +74,6 @@ const SeedstreetApp = () => {
     if (!isLoggedIn) {
       setCurrentScreenState('auth');
     } else if (!userProfile) {
-      // If logged in but profile not loaded, it might be a new user or profile fetch failed
       setCurrentScreenState('roleSelector');
     } else if (!userProfile.onboarding_complete) {
       setCurrentScreenState('roleSelector');
@@ -99,26 +84,26 @@ const SeedstreetApp = () => {
     }
   }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId]);
 
-
-  // 1. Always show splash screen while session or app data is loading
   if (currentScreen === 'splash') {
     return <SplashScreen />;
   }
 
-  // 2. If maintenance mode is ON AND user is NOT admin, show maintenance screen
   if (currentScreen === 'maintenance') {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
   }
 
-  // 3. Otherwise, render the main application content
   return (
     <SeedstreetAppContent
       isLoggedIn={isLoggedIn}
       setIsLoggedIn={setIsLoggedIn}
-      loadingSession={loadingSession} // This will now be false if we reach here
+      loadingSession={loadingSession}
       maintenanceMode={maintenanceMode}
       fetchAppSettings={fetchAppSettings}
-      currentScreen={currentScreen} // Pass the determined currentScreen
+      currentScreen={currentScreen}
+      setCurrentScreen={setCurrentScreenState} // Pass the setter function
+      setUserProfile={appData.setUserProfile} // Pass setUserProfile from useAppData
+      fetchCommunityPosts={appData.fetchCommunityPosts} // Pass fetchCommunityPosts
+      fetchNotifications={appData.fetchNotifications} // Pass fetchNotifications
     />
   );
 };
