@@ -8,6 +8,7 @@ import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppData } from '@/hooks/use-app-data';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js'; // Import AuthChangeEvent and Session
 
 // Dynamically import SeedstreetAppContent with ssr: false
 const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { ssr: false });
@@ -45,7 +46,7 @@ const SeedstreetApp = () => {
   const userRole = userProfile?.role || null;
 
   useEffect(() => {
-    const handleAuthSession = async (session: any | null) => {
+    const handleAuthSession = async (session: Session | null) => { // Type session here
       setLoadingSession(true);
       if (session) {
         setIsLoggedIn(true);
@@ -57,7 +58,7 @@ const SeedstreetApp = () => {
       setLoadingSession(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => { // Type event and session here
       handleAuthSession(session);
     });
 
