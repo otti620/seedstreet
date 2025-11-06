@@ -152,10 +152,8 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch user profile
   const fetchUserProfile = useCallback(async () => {
-    console.log("fetchUserProfile called with userId:", userId);
     if (!userId) {
       setUserProfile(null);
-      console.log("No userId, setting userProfile to null.");
       return;
     }
     const { data, error } = await supabase
@@ -188,7 +186,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         }
       }
       setUserProfile(profileData);
-      console.log("User profile fetched and set:", profileData);
     }
   }, [userId]);
 
@@ -303,9 +300,9 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     }
   }, [userId]);
 
-  // Initial data fetch and real-time subscriptions
+  // Initial app settings fetch and real-time subscription
   useEffect(() => {
-    fetchAppSettings(); // Always fetch app settings
+    fetchAppSettings();
 
     const appSettingsChannel = supabase
       .channel('public:app_settings')
@@ -317,12 +314,11 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     };
   }, [fetchAppSettings]);
 
+  // Main data loading and real-time subscriptions for logged-in users
   useEffect(() => {
-    console.log("useAppData main useEffect triggered. isLoggedIn:", isLoggedIn, "userId:", userId);
     if (isLoggedIn && userId) {
-      setLoadingData(true);
+      setLoadingData(true); // Start loading when user is logged in and userId is available
       const loadAllData = async () => {
-        console.log("Loading all data for userId:", userId);
         try {
           await Promise.all([
             fetchUserProfile(),
@@ -332,12 +328,11 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
             fetchNotifications(),
             fetchRecentActivities(),
           ]);
-          console.log("All data loaded for userId:", userId);
         } catch (error) {
           console.error("Error during Promise.all data loading:", error);
           toast.error("Failed to load some application data.");
         } finally {
-          setLoadingData(false);
+          setLoadingData(false); // Always stop loading, even if there's an error
         }
       };
       loadAllData();
@@ -374,7 +369,6 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         .subscribe();
 
       return () => {
-        console.log("Unsubscribing from channels for userId:", userId);
         supabase.removeChannel(startupChannel);
         supabase.removeChannel(chatChannel);
         supabase.removeChannel(communityPostChannel);
@@ -382,16 +376,20 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         supabase.removeChannel(activityLogChannel);
         supabase.removeChannel(profileChannel);
       };
-    } else {
-      console.log("Not logged in or no userId, clearing data.");
-      // Clear data if logged out
+    } else if (!isLoggedIn) {
+      // User is explicitly logged out, clear all user-specific data and stop loading
       setUserProfile(null);
       setStartups([]);
       setChats([]);
       setCommunityPosts([]);
       setNotifications([]);
       setRecentActivities([]);
-      setLoadingData(false); // Ensure loading is false when logged out
+      setLoadingData(false);
+    } else {
+      // isLoggedIn is true, but userId is null. This is an intermediate state
+      // (e.g., after login, before onAuthStateChange updates currentUserId).
+      // Keep loadingData as true to show splash screen until userId is available.
+      setLoadingData(true);
     }
   }, [isLoggedIn, userId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
 

@@ -65,44 +65,26 @@ const SeedstreetApp = () => {
 
   // Effect to determine the current screen based on appData states
   useEffect(() => {
-    console.log("--- Determining current screen ---");
-    console.log("loadingSession:", loadingSession);
-    console.log("loadingData:", loadingData);
-    console.log("isLoggedIn:", isLoggedIn);
-    console.log("userProfile:", userProfile);
-    console.log("userRole:", userRole);
-    console.log("maintenanceMode:", maintenanceMode);
-    console.log("currentUserId:", currentUserId); // Log currentUserId
-
     if (loadingSession || loadingData) {
       setCurrentScreenState('splash');
-      console.log("Setting screen to: splash (loading)");
       return;
     }
 
     if (maintenanceMode.enabled && userRole !== 'admin') {
       setCurrentScreenState('maintenance');
-      console.log("Setting screen to: maintenance");
       return;
     }
 
     if (!isLoggedIn) {
       setCurrentScreenState('auth');
-      console.log("Setting screen to: auth (not logged in)");
     } else if (!userProfile) {
-      // If logged in but profile not loaded, it might be a new user or profile fetch failed
-      // We can default to role selector or auth if profile is truly missing
-      setCurrentScreenState('roleSelector'); // Assume new user needs to select role
-      console.log("Setting screen to: roleSelector (logged in, but no profile)");
+      setCurrentScreenState('roleSelector');
     } else if (!userProfile.onboarding_complete) {
       setCurrentScreenState('roleSelector');
-      console.log("Setting screen to: roleSelector (logged in, profile exists, but onboarding not complete)");
     } else if (userProfile.role === 'admin') {
       setCurrentScreenState('adminDashboard');
-      console.log("Setting screen to: adminDashboard");
     } else {
       setCurrentScreenState('home');
-      console.log("Setting screen to: home");
     }
   }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId]);
 
