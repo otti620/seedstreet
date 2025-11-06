@@ -28,6 +28,7 @@ interface CommunityPost {
   created_at: string;
   likes: string[];
   comments_count: number;
+  is_hidden: boolean; // Add is_hidden
 }
 
 interface CommunityFeedScreenProps {
@@ -152,6 +153,9 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
     </div>
   );
 
+  // Filter out hidden posts for non-admin users
+  const visibleCommunityPosts = userRole === 'admin' ? communityPosts : communityPosts.filter(post => !post.is_hidden);
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
@@ -171,9 +175,9 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <React.Fragment key={i}>{renderPostSkeleton()}</React.Fragment>)
-        ) : communityPosts.length > 0 ? (
+        ) : visibleCommunityPosts.length > 0 ? (
           <AnimatePresence>
-            {communityPosts.map(post => {
+            {visibleCommunityPosts.map(post => {
               const isLikedByUser = userProfileId && post.likes.includes(userProfileId);
               const isAuthor = userProfileId === post.author_id;
 

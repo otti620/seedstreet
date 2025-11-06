@@ -265,10 +265,20 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch community posts
   const fetchCommunityPosts = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    const userProfileData = user ? await supabase.from('profiles').select('role').eq('id', user.id).single() : null;
+    const isAdmin = userProfileData?.data?.role === 'admin';
+
+    let query = supabase
       .from('community_posts')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (!isAdmin) {
+      query = query.eq('is_hidden', false);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching community posts:", error);

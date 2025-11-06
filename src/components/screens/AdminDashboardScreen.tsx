@@ -63,6 +63,7 @@ interface CommunityPost {
   created_at: string;
   likes: string[];
   comments_count: number;
+  is_hidden: boolean; // Add is_hidden
 }
 
 interface AdminDashboardScreenProps {
@@ -89,9 +90,14 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   const [loading, setLoading] = useState(true);
   const [updatingMaintenance, setUpdatingMaintenance] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'analytics' | 'settings' | 'pendingStartups' | 'flaggedContent' | 'allUsers' | 'allStartups' | 'allCommunityPosts'>('analytics');
+  const [maintenanceMessage, setMaintenanceMessage] = useState(maintenanceMode.message); // State for editable message
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'user' | 'startup' | 'post'; id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    setMaintenanceMessage(maintenanceMode.message); // Sync local state with prop
+  }, [maintenanceMode.message]);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -171,7 +177,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setAllStartups(allStartupsData as Startup[]);
     }
 
-    // Fetch all community posts
+    // Fetch all community posts (including hidden ones for admin view)
     const { data: allCommunityPostsData, error: allCommunityPostsError } = await supabase
       .from('community_posts')
       .select('*')
@@ -266,7 +272,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     setUpdatingMaintenance(true);
     const { error } = await supabase
       .from('app_settings')
-      .update({ setting_value: { enabled: checked, message: maintenanceMode.message } })
+      .update({ setting_value: { enabled: checked, message: maintenanceMessage } }) // Use local state for message
       .eq('setting_key', 'maintenance_mode_enabled');
 
     if (error) {
@@ -277,6 +283,38 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       fetchAppSettings();
     }
     setUpdatingMaintenance(false);
+  };
+
+  const handleUpdateMaintenanceMessage = async () => {
+    setUpdatingMaintenance(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .update({ setting_value: { enabled: maintenanceMode.enabled, message: maintenanceMessage } })
+      .eq('setting_key', 'maintenance_mode_enabled');
+
+    if (error) {
+      toast.error("Failed to update maintenance message: " + error.message);
+      console.error("Error updating maintenance message:", error);
+    } else {
+      toast.success("Maintenance message updated!");
+      fetchAppSettings();
+    }
+    setUpdatingMaintenance(false);
+  };
+
+  const handleTogglePostVisibility = async (postId: string, isHidden: boolean) => {
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ is_hidden: isHidden })
+      .eq('id', postId);
+
+    if (error) {
+      toast.error(`Failed to ${isHidden ? 'hide' : 'unhide'} post: ${error.message}`);
+      console.error(`Error toggling post visibility:`, error);
+    } else {
+      toast.success(`Post ${isHidden ? 'hidden' : 'unhidden'} successfully!`);
+      fetchAdminData(); // Re-fetch all data to update lists
+    }
   };
 
   const handleLogout = async () => {
@@ -450,7 +488,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-gray-50">
               <Settings className="w-5 h-5 text-teal-600 dark:text-teal-400" /> App Settings
             </h3>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark:bg-gray-700">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark:bg-gray-700 mb-4">
               <Label htmlFor="maintenance-mode" className="text-gray-900 font-medium dark:text-gray-50">Maintenance Mode</Label>
               <Switch
                 id="maintenance-mode"
@@ -459,6 +497,25 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                 disabled={updatingMaintenance}
                 aria-label="Toggle maintenance mode"
               />
+            </div>
+            <div className="p-3 bg-gray-50 rounded-xl dark:bg-gray-700">
+              <Label htmlFor="maintenance-message" className="text-gray-900 font-medium dark:text-gray-50 mb-2 block">Maintenance Message</Label>
+              <textarea
+                id="maintenance-message"
+                value={maintenanceMessage}
+                onChange={(e) => setMaintenanceMessage(e.target.value)}
+                className="w-full p-2 rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-50"
+                rows={3}
+                aria-label="Custom maintenance message"
+              />
+              <Button
+                onClick={handleUpdateMaintenanceMessage}
+                disabled={updatingMaintenance || maintenanceMessage === maintenanceMode.message}
+                size="sm"
+                className="mt-3 bg-purple-700 text-white hover:bg-purple-800 dark:bg-purple-500 dark:hover:bg-purple-600"
+              >
+                Save Message
+              </Button>
             </div>
             {maintenanceMode.enabled && (
               <p className="text-sm text-amber-600 mt-2 dark:text-amber-400">
@@ -681,16 +738,30 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                     <p className="font-semibold text-gray-900 dark:text-gray-50">{post.author_name}</p>
                     <p className="text-sm text-gray-600 line-clamp-1 dark:text-gray-300">{post.content}</p>
                     <p className="text-xs text-gray-500 mt-1">{new Date(post.created_at).toLocaleString()}</p>
+                    <Badge variant="secondary" className={`mt-1 ${post.is_hidden ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'}`}>
+                      {post.is_hidden ? 'Hidden' : 'Visible'}
+                    </Badge>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => confirmDeleteItem('post', post.id, `Post by ${post.author_name}`)}
-                    className="h-8 text-xs"
-                    aria-label={`Delete post by ${post.author_name}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTogglePostVisibility(post.id, !post.is_hidden)}
+                      className="h-8 text-xs"
+                      aria-label={`${post.is_hidden ? 'Unhide' : 'Hide'} post by ${post.author_name}`}
+                    >
+                      {post.is_hidden ? 'Unhide' : 'Hide'}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => confirmDeleteItem('post', post.id, `Post by ${post.author_name}`)}
+                      className="h-8 text-xs"
+                      aria-label={`Delete post by ${post.author_name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))
             ) : (
