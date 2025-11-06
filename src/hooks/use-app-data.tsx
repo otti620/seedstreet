@@ -132,7 +132,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" });
-  const [loadingData, setLoadingData] = useState(false);
+  const [loadingData, setLoadingData] = useState(true); // Set to true initially
 
   // Fetch app settings (including maintenance mode)
   const fetchAppSettings = useCallback(async () => {
@@ -164,11 +164,18 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
     if (error) {
       console.error("Error fetching user profile:", error);
-      toast.error("Failed to load user profile.");
+      // Do not show toast here, as it might be a new user without a profile yet
       setUserProfile(null);
     } else if (data) {
+      // Ensure name and email are populated, using fallbacks if necessary
+      const profileData: Profile = {
+        ...data as Profile,
+        name: data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email?.split('@')[0] || 'User Name',
+        email: data.email || 'user@email.com',
+      };
+
       // Check if role is set but onboarding_complete is false
-      if (data.role && !data.onboarding_complete) {
+      if (profileData.role && !profileData.onboarding_complete) {
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ onboarding_complete: true })
@@ -176,10 +183,10 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         if (updateError) {
           console.error("Error updating onboarding_complete:", updateError);
         } else {
-          data.onboarding_complete = true;
+          profileData.onboarding_complete = true;
         }
       }
-      setUserProfile(data as Profile);
+      setUserProfile(profileData);
     }
   }, [userId]);
 

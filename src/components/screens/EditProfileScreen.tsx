@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -72,6 +71,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     },
   });
 
+  // No need for useEffect to fetch startup data, userProfile is passed as a prop
+  // The form's defaultValues are set directly from userProfile.
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
 
@@ -104,6 +106,17 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     }
     setLoading(false);
   };
+
+  // If userProfile is not available, render a loading state or redirect
+  if (!userProfile) {
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center dark:bg-gray-950">
+        <Skeleton className="w-24 h-24 rounded-full mb-4" />
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">

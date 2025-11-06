@@ -102,6 +102,7 @@ interface SeedstreetAppContentProps {
   loadingSession: boolean;
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
+  currentScreen: string; // Receive currentScreen from parent
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -110,9 +111,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   loadingSession,
   maintenanceMode,
   fetchAppSettings,
+  currentScreen: initialCurrentScreen, // Use initialCurrentScreen for the state
 }) => {
-  const [currentScreen, setCurrentScreenState] = useState('splash');
-  const [screenHistory, setScreenHistory] = useState<string[]>(['splash']);
+  const [currentScreen, setCurrentScreenState] = useState(initialCurrentScreen);
+  const [screenHistory, setScreenHistory] = useState<string[]>([initialCurrentScreen]);
 
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -144,6 +146,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   } = appData;
 
   const userRole = userProfile?.role || null;
+
+  // Update currentScreenState when initialCurrentScreen prop changes
+  useEffect(() => {
+    setCurrentScreenState(initialCurrentScreen);
+    setScreenHistory([initialCurrentScreen]); // Reset history when main screen changes
+  }, [initialCurrentScreen]);
 
   const setCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
     setCurrentScreenState(screen);
@@ -210,52 +218,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   };
 
-  // Auth state change listener for initial routing
-  useEffect(() => {
-    const handleAuthAndProfile = async (session: any | null) => {
-      if (session) {
-        setIsLoggedIn(true);
-        const userId = session.user.id;
-        
-        // Fetch the profile to get the role and onboarding status
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, onboarding_complete')
-          .eq('id', userId)
-          .single();
-
-        if (profileError || !profileData) {
-          console.error("Error fetching user profile for initial role check:", profileError);
-          toast.error("Failed to load user profile. Please complete onboarding.");
-          setCurrentScreen('roleSelector'); // Set initial screen
-        } else {
-          if (profileData.role === 'admin') {
-            setCurrentScreen('adminDashboard');
-          } else if (!profileData.onboarding_complete) {
-            setCurrentScreen('roleSelector');
-          } else {
-            setCurrentScreen('home');
-          }
-        }
-      } else {
-        setIsLoggedIn(false);
-        setCurrentScreen('auth'); // Always go to auth screen if logged out
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      handleAuthAndProfile(session);
-    });
-
-    const getInitialSession = async () => {
-      const { data: { session } = { session: null } } = await supabase.auth.getSession();
-      handleAuthAndProfile(session);
-    };
-
-    getInitialSession();
-
-    return () => subscription.unsubscribe();
-  }, [setCurrentScreen, setIsLoggedIn]); // Removed setUserProfile from dependencies
+  // Removed the redundant useEffect for auth state change listener here.
+  // The parent SeedstreetApp now handles the primary screen determination.
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
   const interestedStartups = userProfile?.interested_startups || [];
