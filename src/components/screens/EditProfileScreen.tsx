@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase, Image as ImageIcon, Upload } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react'; // Removed ImageIcon, Upload
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,13 +21,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
   email: string | null;
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null;
@@ -50,7 +51,6 @@ const formSchema = z.object({
   bio: z.string().max(500, { message: "Bio cannot exceed 500 characters." }).nullable(),
   location: z.string().nullable(),
   phone: z.string().nullable(),
-  // avatar_url is handled separately by file upload
 });
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
@@ -59,8 +59,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   setUserProfile,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.avatar_url);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,52 +72,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     },
   });
 
-  useEffect(() => {
-    if (avatarFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(avatarFile);
-    } else if (!userProfile.avatar_url) {
-      setAvatarPreview(null);
-    }
-  }, [avatarFile, userProfile.avatar_url]);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setAvatarFile(event.target.files[0]);
-    } else {
-      setAvatarFile(null);
-      setAvatarPreview(userProfile.avatar_url);
-    }
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    let avatarUrl = userProfile.avatar_url;
-
-    if (avatarFile) {
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${userProfile.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, avatarFile, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) {
-        toast.error("Failed to upload avatar: " + uploadError.message);
-        setLoading(false);
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      avatarUrl = publicUrlData.publicUrl;
-    }
 
     const { error } = await supabase
       .from('profiles')
@@ -131,7 +85,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         bio: values.bio,
         location: values.location,
         phone: values.phone,
-        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userProfile.id);
@@ -146,7 +99,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         ...userProfile,
         ...values,
         name: `${values.first_name} ${values.last_name}`,
-        avatar_url: avatarUrl,
       });
       setCurrentScreen('home'); // Go back to profile dashboard
     }
@@ -179,29 +131,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Form {...form}>
           <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Avatar Upload */}
+            {/* Avatar Display (no upload) */}
             <FormItem className="flex flex-col items-center gap-3">
-              <FormLabel htmlFor="avatar-upload" className="cursor-pointer" aria-label="Upload new avatar">
-                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 hover:border-purple-700 transition-all dark:bg-gray-800 dark:border-gray-700 dark:hover:border-purple-500">
-                  {avatarPreview ? (
-                    <Image src={avatarPreview} alt="Avatar Preview" layout="fill" objectFit="cover" className="rounded-full" />
-                  ) : (
-                    userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U'
-                  )}
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <Upload className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </FormLabel>
-              <Input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-                disabled={loading}
-              />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Click to upload new avatar</p>
+              <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                {userProfile.avatar_id ? (
+                  <Image src={getAvatarUrl(userProfile.avatar_id)} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                ) : (
+                  userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U'
+                )}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Your current avatar</p>
             </FormItem>
 
             <FormField

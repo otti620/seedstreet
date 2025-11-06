@@ -9,7 +9,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
   email: string | null;
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null;
@@ -72,12 +72,22 @@ interface CommunityPost {
   id: string;
   author_id: string;
   author_name: string;
-  author_avatar_url: string | null;
+  author_avatar_id: number | null; // Changed from author_avatar_url
   content: string;
   image_url: string | null;
   created_at: string;
   likes: string[];
   comments_count: number;
+}
+
+interface CommunityComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  author_name: string;
+  author_avatar_id: number | null; // Changed from author_avatar_url
+  content: string;
+  created_at: string;
 }
 
 interface Notification {

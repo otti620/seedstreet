@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -39,7 +40,7 @@ interface Message {
 interface Profile {
   id: string;
   name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
   email: string | null;
 }
 
@@ -122,7 +123,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         await supabase.from('notifications').insert({
           user_id: otherUserId,
           type: 'new_message',
-          message: `${userProfile.name} sent a message in ${selectedChat.startup_name} chat.`,
+          message: `${userProfile.name || userProfile.email} sent a message in ${selectedChat.startup_name} chat.`,
           link: `/chat/${selectedChat.id}`,
           related_entity_id: selectedChat.id,
         });
@@ -133,11 +134,8 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   };
 
   const getSenderAvatar = (senderId: string) => {
-    // In a real app, you'd fetch the other user's avatar.
-    // For now, we'll use the startup logo for the "other" party in a startup chat,
-    // and the userProfile avatar for the current user.
     if (senderId === userProfile?.id) {
-      return userProfile.avatar_url;
+      return userProfile.avatar_id ? getAvatarUrl(userProfile.avatar_id) : undefined;
     } else {
       return selectedChat.startup_logo; // Assuming the other party is the startup/founder
     }

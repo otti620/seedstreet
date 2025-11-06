@@ -15,13 +15,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
   id: string;
   author_id: string;
   author_name: string;
-  author_avatar_url: string | null;
+  author_avatar_id: number | null; // Changed from author_avatar_url
   content: string;
   image_url: string | null;
   created_at: string;
@@ -187,8 +188,8 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0 relative overflow-hidden">
-                      {post.author_avatar_url ? (
-                        <Image src={post.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
+                      {post.author_avatar_id ? (
+                        <Image src={getAvatarUrl(post.author_avatar_id)} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
                       ) : (
                         post.author_name?.[0] || '?'
                       )}

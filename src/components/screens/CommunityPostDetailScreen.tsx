@@ -26,13 +26,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
   id: string;
   author_id: string;
   author_name: string;
-  author_avatar_url: string | null;
+  author_avatar_id: number | null; // Changed from author_avatar_url
   content: string;
   image_url: string | null;
   created_at: string;
@@ -45,7 +46,7 @@ interface CommunityComment {
   post_id: string;
   author_id: string;
   author_name: string;
-  author_avatar_url: string | null;
+  author_avatar_id: number | null; // Changed from author_avatar_url
   content: string;
   created_at: string;
 }
@@ -53,7 +54,7 @@ interface CommunityComment {
 interface Profile {
   id: string;
   name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
 }
 
 interface CommunityPostDetailScreenProps {
@@ -191,7 +192,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
-      author_avatar_url: userProfile.avatar_url,
+      author_avatar_id: userProfile.avatar_id, // Changed from avatar_url
       content: commentContent,
       created_at: new Date().toISOString(),
     };
@@ -204,7 +205,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
-      author_avatar_url: userProfile.avatar_url,
+      author_avatar_id: userProfile.avatar_id, // Changed from avatar_url
       content: commentContent,
     }).select().single(); // Select the new row to get its actual ID
 
@@ -414,8 +415,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex items-start gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
-              {post.author_avatar_url ? (
-                <Image src={post.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
+              {post.author_avatar_id ? (
+                <Image src={getAvatarUrl(post.author_avatar_id)} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
               ) : (
                 post.author_name?.[0] || '?'
               )}
@@ -467,8 +468,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                   >
                     <div className="flex items-start gap-2 mb-1">
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 relative overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                        {comment.author_avatar_url ? (
-                          <Image src={comment.author_avatar_url} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                        {comment.author_avatar_id ? (
+                          <Image src={getAvatarUrl(comment.author_avatar_id)} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-full" />
                         ) : (
                           comment.author_name?.[0] || '?'
                         )}

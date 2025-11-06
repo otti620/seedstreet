@@ -20,19 +20,20 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 
 // Define TypeScript interfaces for data structures
 interface Profile {
   id: string;
   name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
 }
 
 interface CommunityPost {
   id: string;
   author_id: string;
   author_name: string;
-  author_avatar_url: string | null;
+  author_avatar_id: number | null; // Changed from author_avatar_url
   content: string;
   image_url: string | null;
   created_at: string;
@@ -48,7 +49,7 @@ interface CreateCommunityPostScreenProps {
 
 const formSchema = z.object({
   content: z.string().min(1, { message: "Post content cannot be empty." }).max(1000, { message: "Post cannot exceed 1000 characters." }),
-  // image_url is handled separately by file upload
+  image_url: z.string().url({ message: "Invalid image URL." }).optional().or(z.literal('')), // Keep image_url for existing posts, but no upload
 });
 
 const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
@@ -57,14 +58,13 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
   postId,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true); // For loading existing post data
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       content: '',
+      image_url: '',
     },
   });
 
@@ -86,10 +86,8 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
         } else if (data) {
           form.reset({
             content: data.content,
+            image_url: data.image_url || '',
           });
-          if (data.image_url) {
-            setImagePreview(data.image_url);
-          }
         }
         setInitialLoading(false);
       };
@@ -99,64 +97,12 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
     }
   }, [postId, form, setCurrentScreen]);
 
-  useEffect(() => {
-    if (imageFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(imageFile);
-    } else if (!postId) { // Clear preview if not editing and no file
-      setImagePreview(null);
-    }
-  }, [imageFile, postId]);
-
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setImageFile(event.target.files[0]);
-    } else {
-      setImageFile(null);
-      if (!postId) setImagePreview(null); // Only clear if not editing
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    let imageUrl = imagePreview; // Start with existing preview if any
-
-    if (imageFile) {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${userProfile.id}-${Date.now()}.${fileExt}`;
-      const filePath = `community_images/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('community_images')
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) {
-        toast.error("Failed to upload image: " + uploadError.message);
-        setLoading(false);
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage.from('community_images').getPublicUrl(filePath);
-      imageUrl = publicUrlData.publicUrl;
-    } else if (imagePreview === null && postId) {
-      // If in edit mode and image was removed, set imageUrl to null
-      imageUrl = null;
-    }
 
     const postData = {
       content: values.content,
-      image_url: imageUrl,
+      image_url: values.image_url || null, // Use the URL from the form, or null
       updated_at: new Date().toISOString(),
     };
 
@@ -177,7 +123,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
           ...postData,
           author_id: userProfile.id,
           author_name: userProfile.name,
-          author_avatar_url: userProfile.avatar_url,
+          author_avatar_id: userProfile.avatar_id, // Use avatar_id
           likes: [],
           comments_count: 0,
         });
@@ -257,39 +203,32 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
               )}
             />
 
-            {/* Image Upload */}
-            <FormItem>
-              <FormLabel className="dark:text-gray-50">Add Image (Optional)</FormLabel>
-              <div className="relative w-full h-48 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden dark:border-gray-700">
-                {imagePreview ? (
-                  <>
-                    <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="cover" />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
-                      aria-label="Remove image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </>
-                ) : (
-                  <label htmlFor="image-upload" className="flex flex-col items-center justify-center text-gray-500 cursor-pointer p-4">
-                    <ImageIcon className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium">Click to upload image</span>
+            {/* Image URL Input (no upload) */}
+            <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-gray-50">Image URL (Optional)</FormLabel>
+                  <div className="relative">
                     <Input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                      disabled={loading}
-                      aria-label="Upload image"
+                      {...field}
+                      type="url"
+                      placeholder=" "
+                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Image URL"
                     />
-                  </label>
-                )}
-              </div>
-            </FormItem>
+                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                  </div>
+                  <FormMessage />
+                  {field.value && (
+                    <div className="mt-4 relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <Image src={field.value} alt="Image Preview" layout="fill" objectFit="cover" />
+                    </div>
+                  )}
+                </FormItem>
+              )}
+            />
           </form>
         </Form>
       </div>

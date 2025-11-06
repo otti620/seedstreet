@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import BottomNav from '../BottomNav'; // Corrected path
 import MenuItem from '../MenuItem';
 import { supabase } from '@/integrations/supabase/client';
+import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
 // ThemeToggle is moved to SettingsScreen
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
@@ -14,7 +15,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  avatar_url: string | null;
+  avatar_id: number | null; // Changed from avatar_url
   email: string | null;
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null; // Added 'admin' role
@@ -63,8 +64,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
         <div className="flex flex-col items-center text-white">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-700 text-3xl font-bold mb-3 shadow-xl relative overflow-hidden">
-            {userProfile?.avatar_url ? (
-              <Image src={userProfile.avatar_url} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+            {userProfile?.avatar_id ? (
+              <Image src={getAvatarUrl(userProfile.avatar_id)} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
             ) : (
               userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
             )}
