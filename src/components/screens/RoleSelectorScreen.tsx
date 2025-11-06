@@ -10,9 +10,11 @@ interface RoleSelectorScreenProps {
   setActiveTab: (tab: string) => void;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
   fetchUserProfile: () => Promise<void>; // Added fetchUserProfile
+  investorCount: number; // New prop
+  founderCount: number; // New prop
 }
 
-const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setActiveTab, logActivity, fetchUserProfile }) => {
+const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setActiveTab, logActivity, fetchUserProfile, investorCount, founderCount }) => {
   const handleRoleSelection = async (role: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -74,7 +76,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
               </div>
 
               <div className="inline-block px-4 py-1.5 bg-teal-500/30 border border-teal-400/40 rounded-full text-teal-100 text-sm font-semibold">
-                Join 650+ investors
+                Join {investorCount.toLocaleString()}+ investors
               </div>
             </div>
           </motion.button>
@@ -100,7 +102,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
               </div>
 
               <div className="inline-block px-4 py-1.5 bg-purple-500/30 border border-purple-400/40 rounded-full text-purple-100 text-sm font-semibold">
-                Join 89 founders
+                Join {founderCount.toLocaleString()}+ founders
               </div>
             </div>
           </motion.button>

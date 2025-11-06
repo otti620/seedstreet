@@ -4,6 +4,8 @@ export const defaultAvatarUrls = [
   // Add more paths here if you have more memoji images (e.g., "/avatars/memoji/memoji-3.png")
 ];
 
+export const DEFAULT_AVATAR_COUNT = defaultAvatarUrls.length; // Export the count
+
 export const getAvatarUrl = (avatarId: number | null | undefined): string => {
   if (avatarId && avatarId >= 1) {
     // Use modulo to cycle through available avatars if avatarId is larger than count

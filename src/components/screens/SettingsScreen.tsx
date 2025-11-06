@@ -3,6 +3,8 @@
 import React from 'react';
 import { ArrowLeft, Palette } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle'; // Import ThemeToggle
+import MenuItem from '../MenuItem'; // Import MenuItem
+import { Lock } from 'lucide-react'; // Import Lock icon
 
 interface SettingsScreenProps {
   setCurrentScreen: (screen: string) => void;
@@ -33,10 +35,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setCurrentScreen }) => 
           </div>
         </div>
 
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 mb-0 p-5 flex items-center gap-2 dark:text-gray-50">
+            <Lock className="w-5 h-5 text-teal-600 dark:text-teal-400" /> Account Security
+          </h3>
+          <MenuItem icon={<Lock />} label="Change Password" onClick={() => setCurrentScreen('authAction', { authActionType: 'changePassword' })} />
+        </div>
+
         {/* Future settings can go here */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-          <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Account</h3>
-          <p className="text-gray-600 dark:text-gray-300">Account settings coming soon!</p>
+          <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Other Settings</h3>
+          <p className="text-gray-600 dark:text-gray-300">More settings coming soon!</p>
         </div>
       </div>
     </div>

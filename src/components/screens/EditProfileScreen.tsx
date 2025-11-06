@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import { getAvatarUrl, DEFAULT_AVATAR_COUNT } from '@/lib/default-avatars'; // Import getAvatarUrl and DEFAULT_AVATAR_COUNT
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -50,6 +50,7 @@ const formSchema = z.object({
   bio: z.string().max(500, { message: "Bio cannot exceed 500 characters." }).nullable(),
   location: z.string().nullable(),
   phone: z.string().nullable(),
+  avatar_id: z.number().min(1).max(DEFAULT_AVATAR_COUNT).nullable(), // Add avatar_id to schema
 });
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
@@ -68,6 +69,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       bio: userProfile.bio || '',
       location: userProfile.location || '',
       phone: userProfile.phone || '',
+      avatar_id: userProfile.avatar_id || 1, // Default to first avatar if none set
     },
   });
 
@@ -87,6 +89,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         bio: values.bio,
         location: values.location,
         phone: values.phone,
+        avatar_id: values.avatar_id, // Update avatar_id
         updated_at: new Date().toISOString(),
       })
       .eq('id', userProfile.id);
@@ -144,17 +147,36 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Form {...form}>
           <form id="profile-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Avatar Display (no upload) */}
-            <FormItem className="flex flex-col items-center gap-3">
-              <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-700 relative overflow-hidden border-2 border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                {userProfile.avatar_id ? (
-                  <Image src={getAvatarUrl(userProfile.avatar_id)} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
-                ) : (
-                  userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U'
-                )}
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Your current avatar</p>
-            </FormItem>
+            {/* Avatar Selection */}
+            <FormField
+              control={form.control}
+              name="avatar_id"
+              render={({ field }) => (
+                <FormItem className="flex flex-col items-center gap-3">
+                  <FormLabel className="dark:text-gray-50">Choose Your Avatar</FormLabel>
+                  <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
+                    {Array.from({ length: DEFAULT_AVATAR_COUNT }).map((_, index) => {
+                      const avatarId = index + 1;
+                      const isSelected = field.value === avatarId;
+                      return (
+                        <button
+                          key={avatarId}
+                          type="button"
+                          onClick={() => field.onChange(avatarId)}
+                          className={`relative w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-gray-700 overflow-hidden border-2 transition-all ${
+                            isSelected ? 'border-purple-700 ring-2 ring-purple-100 dark:border-purple-500 dark:ring-purple-900' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                          }`}
+                          aria-label={`Select avatar ${avatarId}`}
+                        >
+                          <Image src={getAvatarUrl(avatarId)} alt={`Avatar ${avatarId}`} layout="fill" objectFit="cover" className="rounded-full" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -167,7 +189,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="First name"
                     />
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -188,7 +210,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Last name"
                     />
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -209,7 +231,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       {...field}
                       type="email"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       disabled // Email is usually not editable directly here
                       aria-label="Email address"
                     />
@@ -248,7 +270,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       {...field}
                       type="text"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Location"
                     />
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -269,7 +291,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       {...field}
                       type="tel"
                       placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Phone number"
                     />
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />

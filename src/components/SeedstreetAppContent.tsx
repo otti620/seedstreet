@@ -37,6 +37,7 @@ import FramerMotionWrapper from './FramerMotionWrapper';
 import WelcomeFlyer from './WelcomeFlyer';
 import CommitmentDialog from './CommitmentDialog'; // Import CommitmentDialog
 import StartupRoomScreen from './screens/StartupRoomScreen'; // Import StartupRoomScreen
+import AuthActionScreen from './screens/AuthActionScreen'; // Import AuthActionScreen
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -166,6 +167,8 @@ interface SeedstreetAppContentProps {
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
   fetchUserProfile: () => Promise<void>;
+  investorCount: number; // New prop
+  founderCount: number; // New prop
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -190,6 +193,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchCommunityPosts,
   fetchNotifications,
   fetchUserProfile,
+  investorCount, // Destructure new prop
+  founderCount, // Destructure new prop
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
@@ -543,7 +548,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
-      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} />}
+      {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
       {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
         <>
           <HomeScreen
@@ -724,6 +729,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           selectedStartup={startupForRoom}
         />
       )}
+      {currentScreen === 'authAction' && authActionType && (
+        <AuthActionScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          authActionType={authActionType}
+        />
+      )}
       {/* Fallback for unhandled screens */}
       {!Object.values({
         onboarding: currentScreen === 'onboarding',
@@ -745,6 +756,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         settings: currentScreen === 'settings',
         termsAndPrivacy: currentScreen === 'termsAndPrivacy',
         startupRoom: currentScreen === 'startupRoom' && startupForRoom,
+        authAction: currentScreen === 'authAction' && authActionType,
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

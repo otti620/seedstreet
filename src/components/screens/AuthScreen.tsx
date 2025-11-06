@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User as UserIcon, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod'; // Corrected: changed '*s z' to '* as z'
+import * as z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import {
 import { motion } from 'framer-motion'; // Import motion for animations
 
 interface AuthScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { authActionType?: 'forgotPassword' | 'changePassword' }) => void; // Updated to accept params
   setIsLoggedIn: (loggedIn: boolean) => void;
 }
 
@@ -102,9 +102,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
   };
 
   const handleForgotPassword = () => {
-    toast.info("Password reset functionality coming soon! Please contact support if you need immediate assistance.", { duration: 5000 });
-    // In a real app, you would navigate to a password reset screen or trigger a Supabase password reset email.
-    // setCurrentScreen('forgotPassword');
+    setCurrentScreen('authAction', { authActionType: 'forgotPassword' });
   };
 
   return (

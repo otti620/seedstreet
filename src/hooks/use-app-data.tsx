@@ -152,6 +152,8 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]); // New state for commitments
+  const [investorCount, setInvestorCount] = useState(0); // New state for investor count
+  const [founderCount, setFounderCount] = useState(0); // New state for founder count
   const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" });
   const [loadingData, setLoadingData] = useState(true); // Set to true initially
 
@@ -357,19 +359,51 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     }
   }, [userId, userProfile?.role]);
 
+  // Fetch investor and founder counts
+  const fetchRoleCounts = useCallback(async () => {
+    const { count: investorCount, error: investorError } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'investor');
+
+    const { count: founderCount, error: founderError } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'founder');
+
+    if (investorError) {
+      console.error("Error fetching investor count:", investorError);
+    } else {
+      setInvestorCount(investorCount || 0);
+    }
+
+    if (founderError) {
+      console.error("Error fetching founder count:", founderError);
+    } else {
+      setFounderCount(founderCount || 0);
+    }
+  }, []);
+
   // Initial app settings fetch and real-time subscription
   useEffect(() => {
     fetchAppSettings();
+    fetchRoleCounts(); // Fetch role counts initially
 
     const appSettingsChannel = supabase
       .channel('public:app_settings')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: `setting_key=eq.maintenance_mode_enabled` }, () => fetchAppSettings())
       .subscribe();
+    
+    const profilesChannelForCounts = supabase // Subscribe to profiles for role count updates
+      .channel('public:profiles_role_counts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchRoleCounts())
+      .subscribe();
 
     return () => {
       supabase.removeChannel(appSettingsChannel);
+      supabase.removeChannel(profilesChannelForCounts);
     };
-  }, [fetchAppSettings]);
+  }, [fetchAppSettings, fetchRoleCounts]);
 
   // Main data loading and real-time subscriptions for logged-in users
   useEffect(() => {
@@ -484,6 +518,8 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     notifications,
     recentActivities,
     commitments, // Return commitments
+    investorCount, // Return investor count
+    founderCount, // Return founder count
     maintenanceMode,
     loadingData,
     fetchAppSettings,
