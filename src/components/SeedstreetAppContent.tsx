@@ -38,9 +38,9 @@ import WelcomeFlyer from './WelcomeFlyer';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
-import { useAppData } from '@/hooks/use-app-data';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
+// Define TypeScript interfaces for data structures (copied from use-app-data.tsx for consistency)
 interface Profile {
   id: string;
   first_name: string | null;
@@ -95,17 +95,70 @@ interface Chat {
   unread_counts: { [key: string]: number };
 }
 
+interface Message {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  sender_name: string;
+  text: string;
+  created_at: string;
+  read: boolean;
+}
+
+interface CommunityPost {
+  id: string;
+  author_id: string;
+  author_name: string;
+  author_avatar_id: number | null;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  likes: string[];
+  comments_count: number;
+}
+
+interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+  related_entity_id: string | null;
+}
+
+interface ActivityLog {
+  id: string;
+  user_id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+  entity_id: string | null;
+  icon: string | null;
+}
+
 interface SeedstreetAppContentProps {
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   loadingSession: boolean;
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
-  currentScreen: string; // Directly use this prop
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => void; // Pass setter from parent
-  setUserProfile: (profile: Profile | null) => void; // Pass setUserProfile from useAppData
-  fetchCommunityPosts: () => Promise<void>; // Pass fetchCommunityPosts
-  fetchNotifications: () => Promise<void>; // Pass fetchNotifications
+  currentScreen: string;
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => void;
+  // Props from useAppData
+  userProfile: Profile | null;
+  setUserProfile: (profile: Profile | null) => void;
+  startups: Startup[];
+  chats: Chat[];
+  communityPosts: CommunityPost[];
+  messages: Message[];
+  notifications: Notification[];
+  recentActivities: ActivityLog[];
+  loadingData: boolean;
+  fetchCommunityPosts: () => Promise<void>;
+  fetchNotifications: () => Promise<void>;
+  fetchUserProfile: () => Promise<void>;
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -114,13 +167,23 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   loadingSession,
   maintenanceMode,
   fetchAppSettings,
-  currentScreen, // Directly use currentScreen prop
-  setCurrentScreen, // Use the setter from parent
-  setUserProfile, // Use setUserProfile from parent
+  currentScreen,
+  setCurrentScreen,
+  // Destructure all props from useAppData
+  userProfile,
+  setUserProfile,
+  startups,
+  chats,
+  communityPosts,
+  messages,
+  notifications,
+  recentActivities,
+  loadingData,
   fetchCommunityPosts,
   fetchNotifications,
+  fetchUserProfile,
 }) => {
-  const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]); // Initialize with currentScreen
+  const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
@@ -128,22 +191,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
   const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
-
-  const appData = useAppData({
-    userId: supabase.auth.currentUser?.id || null,
-    isLoggedIn,
-    selectedChatId: selectedChat?.id || null,
-  });
-
-  const {
-    userProfile,
-    startups,
-    chats,
-    messages,
-    recentActivities,
-    loadingData,
-    fetchUserProfile,
-  } = appData;
 
   const userRole = userProfile?.role || null;
 
@@ -191,12 +238,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     setScreenHistory(prev => {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
-        setCurrentScreen(newHistory[newHistory.length - 1]); // Use parent's setter
+        handleSetCurrentScreen(newHistory[newHistory.length - 1]); // Use the local handler
         return newHistory;
       }
       return prev;
     });
-  }, [setCurrentScreen]);
+  }, [handleSetCurrentScreen]);
 
   const logActivity = async (type: string, description: string, entity_id: string | null = null, icon: string | null = null) => {
     if (!userProfile?.id) {
@@ -553,7 +600,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'chat' && selectedChat && (
         <ChatConversationScreen
           selectedChat={selectedChat}
-          messages={appData.messages}
+          messages={messages} // Use messages from props
           setCurrentScreen={handleSetCurrentScreen}
           setActiveTab={setActiveTab}
           userProfile={userProfile}
@@ -586,7 +633,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {currentScreen === 'notifications' && userProfile && (
         <NotificationsScreen
-          notifications={notifications}
+          notifications={notifications} // Use notifications from props
           setCurrentScreen={handleSetCurrentScreen}
           fetchNotifications={fetchNotifications}
         />

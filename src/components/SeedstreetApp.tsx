@@ -18,17 +18,28 @@ const SeedstreetApp = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentScreen, setCurrentScreenState] = useState('splash');
 
+  // Centralized useAppData call
   const appData = useAppData({
     userId: currentUserId,
     isLoggedIn,
-    selectedChatId: null,
+    selectedChatId: null, // This will be managed within SeedstreetAppContent
   });
 
   const {
     userProfile,
+    setUserProfile,
+    startups,
+    chats,
+    communityPosts,
+    messages,
+    notifications,
+    recentActivities,
     maintenanceMode,
-    fetchAppSettings,
     loadingData,
+    fetchAppSettings,
+    fetchCommunityPosts,
+    fetchNotifications,
+    fetchUserProfile,
   } = appData;
 
   const userRole = userProfile?.role || null;
@@ -100,10 +111,20 @@ const SeedstreetApp = () => {
       maintenanceMode={maintenanceMode}
       fetchAppSettings={fetchAppSettings}
       currentScreen={currentScreen}
-      setCurrentScreen={setCurrentScreenState} // Pass the setter function
-      setUserProfile={appData.setUserProfile} // Pass setUserProfile from useAppData
-      fetchCommunityPosts={appData.fetchCommunityPosts} // Pass fetchCommunityPosts
-      fetchNotifications={appData.fetchNotifications} // Pass fetchNotifications
+      setCurrentScreen={setCurrentScreenState}
+      // Pass all appData states and setters as props
+      userProfile={userProfile}
+      setUserProfile={setUserProfile}
+      startups={startups}
+      chats={chats}
+      communityPosts={communityPosts}
+      messages={messages}
+      notifications={notifications}
+      recentActivities={recentActivities}
+      loadingData={loadingData}
+      fetchCommunityPosts={fetchCommunityPosts}
+      fetchNotifications={fetchNotifications}
+      fetchUserProfile={fetchUserProfile}
     />
   );
 };
