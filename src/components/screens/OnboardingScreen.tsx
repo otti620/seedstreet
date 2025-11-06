@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'; // Import motion
 
 interface OnboardingScreenProps {
   setCurrentScreen: (screen: string) => void;
-  onOnboardingComplete: () => void; // New prop
+  onOnboardingComplete?: () => void; // Made optional
 }
 
 const slides = [
@@ -34,7 +34,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, o
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
-      <button onClick={() => { onOnboardingComplete(); setCurrentScreen('auth'); }} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
+      <button onClick={() => { onOnboardingComplete?.(); setCurrentScreen('auth'); }} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
       
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md text-center space-y-12">
@@ -75,7 +75,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, o
         <button 
           onClick={() => {
             if (currentSlide === slides.length - 1) {
-              onOnboardingComplete(); // Call the new callback
+              onOnboardingComplete?.(); // Use optional chaining here
               setCurrentScreen('auth');
             } else {
               setCurrentSlide(currentSlide + 1);
