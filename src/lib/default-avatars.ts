@@ -1,16 +1,16 @@
 export const defaultAvatarUrls = [
-  "/avatars/memojis/memoji-1.png",
-  "/avatars/memojis/memoji-2.png",
-  "/avatars/memojis/memoji-3.png",
-  "/avatars/memojis/memoji-4.png",
-  "/avatars/memojis/memoji-5.png",
-  "/avatars/memojis/memoji-6.png",
+  "/avatars/memoji/memoji-1.png",
+  "/avatars/memoji/memoji-2.png",
+  // Add more paths here if you have more memoji images (e.g., "/avatars/memoji/memoji-3.png")
 ];
 
 export const getAvatarUrl = (avatarId: number | null | undefined): string => {
-  if (avatarId && avatarId >= 1 && avatarId <= defaultAvatarUrls.length) {
-    return defaultAvatarUrls[avatarId - 1];
+  if (avatarId && avatarId >= 1) {
+    // Use modulo to cycle through available avatars if avatarId is larger than count
+    // avatarId is 1-indexed, so we subtract 1 for 0-indexed array access
+    const index = (avatarId - 1) % defaultAvatarUrls.length;
+    return defaultAvatarUrls[index];
   }
-  // Fallback to a default if ID is invalid or missing, or return a generic placeholder
-  return "/avatars/memojis/memoji-1.png"; // Or a generic placeholder image
+  // Fallback to a default if ID is invalid or missing
+  return defaultAvatarUrls[0]; // Always return the first avatar as a fallback
 };
