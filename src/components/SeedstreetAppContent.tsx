@@ -32,6 +32,7 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
+import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen'; // Import new screen
 import FramerMotionWrapper from './FramerMotionWrapper';
 import WelcomeFlyer from './WelcomeFlyer';
 
@@ -518,7 +519,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
-      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onOnboardingComplete={onboardingComplete} />}
+      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
       {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} />}
       {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
@@ -688,6 +689,11 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           setCurrentScreen={handleSetCurrentScreen}
         />
       )}
+      {currentScreen === 'termsAndPrivacy' && ( // New screen route
+        <TermsAndPrivacyScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
       {/* Fallback for unhandled screens */}
       {!Object.values({
         onboarding: currentScreen === 'onboarding',
@@ -707,6 +713,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         adminDashboard: currentScreen === 'adminDashboard' && userProfile?.role === 'admin',
         savedStartups: currentScreen === 'savedStartups' && userProfile,
         settings: currentScreen === 'settings',
+        termsAndPrivacy: currentScreen === 'termsAndPrivacy', // Include new screen in fallback check
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

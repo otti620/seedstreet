@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User as UserIcon, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import *s z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -262,7 +262,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
           {isSignUp && (
             <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-              By signing up, you agree to our <span className="underline">Terms & Privacy Policy</span>
+              By signing up, you agree to our <button onClick={() => setCurrentScreen('termsAndPrivacy')} className="underline text-purple-700 dark:text-purple-400" aria-label="View Terms & Privacy Policy">Terms & Privacy Policy</button>
             </p>
           )}
         </div>
