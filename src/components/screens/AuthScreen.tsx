@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User as UserIcon, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import *s z from 'zod';
+import * as z from 'zod'; // Corrected: changed '*s z' to '* as z'
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
