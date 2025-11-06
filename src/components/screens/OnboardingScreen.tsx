@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'; // Import motion
 
 interface OnboardingScreenProps {
   setCurrentScreen: (screen: string) => void;
+  onOnboardingComplete: () => void; // New prop
 }
 
 const slides = [
@@ -28,12 +29,12 @@ const slides = [
   }
 ];
 
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen }) => {
+const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, onOnboardingComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
-      <button onClick={() => setCurrentScreen('auth')} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
+      <button onClick={() => { onOnboardingComplete(); setCurrentScreen('auth'); }} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
       
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md text-center space-y-12">
@@ -72,7 +73,14 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen })
         </div>
         
         <button 
-          onClick={() => currentSlide === slides.length - 1 ? setCurrentScreen('auth') : setCurrentSlide(currentSlide + 1)} 
+          onClick={() => {
+            if (currentSlide === slides.length - 1) {
+              onOnboardingComplete(); // Call the new callback
+              setCurrentScreen('auth');
+            } else {
+              setCurrentSlide(currentSlide + 1);
+            }
+          }} 
           className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg active:scale-95 transition-all"
           aria-label={currentSlide === slides.length - 1 ? "Get Started" : "Next slide"}
         >

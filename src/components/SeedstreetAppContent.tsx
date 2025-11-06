@@ -146,6 +146,7 @@ interface SeedstreetAppContentProps {
   fetchAppSettings: () => void;
   currentScreen: string;
   setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => void;
+  onboardingComplete: () => void; // New prop for onboarding completion
   // Props from useAppData
   userProfile: Profile | null;
   setUserProfile: (profile: Profile | null) => void;
@@ -158,7 +159,7 @@ interface SeedstreetAppContentProps {
   loadingData: boolean;
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
-  fetchUserProfile: () => Promise<void>; // Added fetchUserProfile
+  fetchUserProfile: () => Promise<void>;
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -169,6 +170,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchAppSettings,
   currentScreen,
   setCurrentScreen,
+  onboardingComplete, // Destructure new prop
   // Destructure all props from useAppData
   userProfile,
   setUserProfile,
@@ -181,7 +183,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   loadingData,
   fetchCommunityPosts,
   fetchNotifications,
-  fetchUserProfile, // Destructure fetchUserProfile
+  fetchUserProfile,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
@@ -516,7 +518,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
-      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} />}
+      {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onOnboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
       {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} />}
       {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (

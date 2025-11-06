@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppData } from '@/hooks/use-app-data';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js'; // Import AuthChangeEvent and Session
+import localforage from 'localforage'; // Import localforage
 
 // Dynamically import SeedstreetAppContent with ssr: false
 const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { ssr: false });
@@ -16,14 +17,15 @@ const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { s
 const SeedstreetApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // Re-introducing currentUserId state
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentScreen, setCurrentScreenState] = useState('splash');
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null); // null means not yet loaded from localforage
 
   // Centralized useAppData call
   const appData = useAppData({
-    userId: currentUserId, // Pass currentUserId from state
+    userId: currentUserId,
     isLoggedIn,
-    selectedChatId: null, // This will be managed within SeedstreetAppContent
+    selectedChatId: null,
   });
 
   const {
@@ -45,20 +47,29 @@ const SeedstreetApp = () => {
 
   const userRole = userProfile?.role || null;
 
+  // Effect to load onboarding status from localforage
   useEffect(() => {
-    const handleAuthSession = async (session: Session | null) => { // Type session here
+    const checkOnboardingStatus = async () => {
+      const seen = await localforage.getItem<boolean>('hasSeenOnboarding');
+      setHasSeenOnboarding(!!seen);
+    };
+    checkOnboardingStatus();
+  }, []);
+
+  useEffect(() => {
+    const handleAuthSession = async (session: Session | null) => {
       setLoadingSession(true);
       if (session) {
         setIsLoggedIn(true);
-        setCurrentUserId(session.user.id); // Set currentUserId from session
+        setCurrentUserId(session.user.id);
       } else {
         setIsLoggedIn(false);
-        setCurrentUserId(null); // Clear userId on logout
+        setCurrentUserId(null);
       }
       setLoadingSession(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => { // Type event and session here
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       handleAuthSession(session);
     });
 
@@ -73,7 +84,8 @@ const SeedstreetApp = () => {
   }, []);
 
   useEffect(() => {
-    if (loadingSession || loadingData) {
+    // Wait for all initial loading and localforage to be ready
+    if (loadingSession || loadingData || hasSeenOnboarding === null) {
       setCurrentScreenState('splash');
       return;
     }
@@ -84,7 +96,11 @@ const SeedstreetApp = () => {
     }
 
     if (!isLoggedIn) {
-      setCurrentScreenState('auth');
+      if (!hasSeenOnboarding) {
+        setCurrentScreenState('onboarding');
+      } else {
+        setCurrentScreenState('auth');
+      }
     } else if (!userProfile) {
       setCurrentScreenState('roleSelector');
     } else if (!userProfile.onboarding_complete) {
@@ -94,7 +110,12 @@ const SeedstreetApp = () => {
     } else {
       setCurrentScreenState('home');
     }
-  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId]); // currentUserId is a dependency here
+  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId, hasSeenOnboarding]);
+
+  const handleOnboardingComplete = useCallback(async () => {
+    await localforage.setItem('hasSeenOnboarding', true);
+    setHasSeenOnboarding(true); // Update local state as well
+  }, []);
 
   if (currentScreen === 'splash') {
     return <SplashScreen />;
@@ -113,6 +134,7 @@ const SeedstreetApp = () => {
       fetchAppSettings={fetchAppSettings}
       currentScreen={currentScreen}
       setCurrentScreen={setCurrentScreenState}
+      onboardingComplete={handleOnboardingComplete} // Pass the new callback
       // Pass all appData states and setters as props
       userProfile={userProfile}
       setUserProfile={setUserProfile}
