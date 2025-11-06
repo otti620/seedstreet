@@ -15,12 +15,11 @@ const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { s
 const SeedstreetApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentScreen, setCurrentScreenState] = useState('splash');
+  // Removed currentUserId state, useAppData will get it directly
 
   // Centralized useAppData call
   const appData = useAppData({
-    userId: currentUserId,
+    userId: null, // userId is now managed internally by useAppData
     isLoggedIn,
     selectedChatId: null, // This will be managed within SeedstreetAppContent
   });
@@ -49,10 +48,9 @@ const SeedstreetApp = () => {
       setLoadingSession(true);
       if (session) {
         setIsLoggedIn(true);
-        setCurrentUserId(session.user.id);
+        // currentUserId is no longer managed here
       } else {
         setIsLoggedIn(false);
-        setCurrentUserId(null);
       }
       setLoadingSession(false);
     };
@@ -93,7 +91,7 @@ const SeedstreetApp = () => {
     } else {
       setCurrentScreenState('home');
     }
-  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode, currentUserId]);
+  }, [loadingSession, loadingData, isLoggedIn, userProfile, userRole, maintenanceMode]); // Removed currentUserId from dependencies
 
   if (currentScreen === 'splash') {
     return <SplashScreen />;

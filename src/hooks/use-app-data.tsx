@@ -118,12 +118,12 @@ interface AppSettings {
 }
 
 interface UseAppDataProps {
-  userId: string | null;
+  // userId prop is no longer needed, as it's accessed directly
   isLoggedIn: boolean;
   selectedChatId: string | null;
 }
 
-export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataProps) => {
+export const useAppData = ({ isLoggedIn, selectedChatId }: UseAppDataProps) => {
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [startups, setStartups] = useState<Startup[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -133,6 +133,9 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
   const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" });
   const [loadingData, setLoadingData] = useState(true); // Set to true initially
+
+  // Get userId directly from Supabase auth
+  const currentUserId = supabase.auth.currentUser?.id || null;
 
   // Fetch app settings (including maintenance mode)
   const fetchAppSettings = useCallback(async () => {
@@ -152,14 +155,14 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch user profile
   const fetchUserProfile = useCallback(async () => {
-    if (!userId) {
+    if (!currentUserId) {
       setUserProfile(null);
       return;
     }
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', currentUserId)
       .single();
 
     if (error) {
@@ -178,7 +181,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ onboarding_complete: true })
-          .eq('id', userId);
+          .eq('id', currentUserId);
         if (updateError) {
           console.error("Error updating onboarding_complete:", updateError);
         } else {
@@ -187,7 +190,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       }
       setUserProfile(profileData);
     }
-  }, [userId]);
+  }, [currentUserId]); // Dependency on currentUserId
 
   // Fetch startups
   const fetchStartups = useCallback(async () => {
@@ -206,14 +209,14 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch chats
   const fetchChats = useCallback(async () => {
-    if (!userId) {
+    if (!currentUserId) {
       setChats([]);
       return;
     }
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .contains('user_ids', [userId])
+      .contains('user_ids', [currentUserId])
       .order('last_message_timestamp', { ascending: false });
 
     if (error) {
@@ -222,7 +225,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setChats(data as Chat[]);
     }
-  }, [userId]);
+  }, [currentUserId]); // Dependency on currentUserId
 
   // Fetch community posts
   const fetchCommunityPosts = useCallback(async () => {
@@ -261,14 +264,14 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
-    if (!userId) {
+    if (!currentUserId) {
       setNotifications([]);
       return;
     }
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', currentUserId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -277,18 +280,18 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setNotifications(data as Notification[]);
     }
-  }, [userId]);
+  }, [currentUserId]); // Dependency on currentUserId
 
   // Fetch recent activities
   const fetchRecentActivities = useCallback(async () => {
-    if (!userId) {
+    if (!currentUserId) {
       setRecentActivities([]);
       return;
     }
     const { data, error } = await supabase
       .from('activity_log')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', currentUserId)
       .order('timestamp', { ascending: false })
       .limit(5);
 
@@ -298,7 +301,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     } else if (data) {
       setRecentActivities(data as ActivityLog[]);
     }
-  }, [userId]);
+  }, [currentUserId]); // Dependency on currentUserId
 
   // Initial app settings fetch and real-time subscription
   useEffect(() => {
@@ -316,7 +319,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
   // Main data loading and real-time subscriptions for logged-in users
   useEffect(() => {
-    if (isLoggedIn && userId) {
+    if (isLoggedIn && currentUserId) {
       setLoadingData(true); // Start loading when user is logged in and userId is available
       const loadAllData = async () => {
         try {
@@ -345,7 +348,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
       const chatChannel = supabase
         .channel('public:chats')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${userId}}` }, () => fetchChats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${currentUserId}}` }, () => fetchChats())
         .subscribe();
 
       const communityPostChannel = supabase
@@ -355,17 +358,17 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
 
       const notificationChannel = supabase
         .channel('public:notifications')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => fetchNotifications())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${currentUserId}` }, () => fetchNotifications())
         .subscribe();
 
       const activityLogChannel = supabase
         .channel('public:activity_log')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${userId}` }, () => fetchRecentActivities())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${currentUserId}` }, () => fetchRecentActivities())
         .subscribe();
 
       const profileChannel = supabase
         .channel('public:profiles')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () => fetchUserProfile())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${currentUserId}` }, () => fetchUserProfile())
         .subscribe();
 
       return () => {
@@ -386,12 +389,12 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setRecentActivities([]);
       setLoadingData(false);
     } else {
-      // isLoggedIn is true, but userId is null. This is an intermediate state
+      // isLoggedIn is true, but currentUserId is null. This is an intermediate state
       // (e.g., after login, before onAuthStateChange updates currentUserId).
-      // Keep loadingData as true to show splash screen until userId is available.
+      // Keep loadingData as true to show splash screen until currentUserId is available.
       setLoadingData(true);
     }
-  }, [isLoggedIn, userId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
+  }, [isLoggedIn, currentUserId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
 
   // Fetch messages when selectedChatId changes
   useEffect(() => {
