@@ -32,9 +32,11 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
-import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen'; // Import new screen
+import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen';
 import FramerMotionWrapper from './FramerMotionWrapper';
 import WelcomeFlyer from './WelcomeFlyer';
+import CommitmentDialog from './CommitmentDialog'; // Import CommitmentDialog
+import StartupRoomScreen from './screens/StartupRoomScreen'; // Import StartupRoomScreen
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -58,6 +60,7 @@ interface Profile {
   phone: string | null;
   last_seen: string | null;
   show_welcome_flyer: boolean;
+  total_committed: number; // Add total_committed
 }
 
 interface Startup {
@@ -79,6 +82,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
+  amount_raised: number; // Add amount_raised
 }
 
 interface Chat {
@@ -89,7 +93,7 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean;
+  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -116,6 +120,7 @@ interface CommunityPost {
   created_at: string;
   likes: string[];
   comments_count: number;
+  is_hidden: boolean; // Add is_hidden
 }
 
 interface Notification {
@@ -146,8 +151,8 @@ interface SeedstreetAppContentProps {
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
   currentScreen: string;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => void;
-  onboardingComplete: () => void; // New prop for onboarding completion
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void; // Updated to accept authActionType and startupRoomId
+  onboardingComplete: () => void;
   // Props from useAppData
   userProfile: Profile | null;
   setUserProfile: (profile: Profile | null) => void;
@@ -171,7 +176,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchAppSettings,
   currentScreen,
   setCurrentScreen,
-  onboardingComplete, // Destructure new prop
+  onboardingComplete,
   // Destructure all props from useAppData
   userProfile,
   setUserProfile,
@@ -194,6 +199,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
   const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
+  const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined); // New state for AuthActionScreen
+  const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined); // New state for StartupRoomScreen
 
   const userRole = userProfile?.role || null;
 
@@ -207,12 +214,14 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     });
   }, [currentScreen]);
 
-  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string }) => {
+  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => {
     setCurrentScreen(screen, params); // Call the parent's setter
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
+      setSelectedStartup(startups.find(s => s.id === params.startupId) || null);
     } else {
       setSelectedStartupId(undefined);
+      setSelectedStartup(null);
     }
     if (params?.startupName) {
       setListedStartupName(params.startupName);
@@ -235,7 +244,17 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedChat(null);
     }
-  }, [setCurrentScreen, chats]);
+    if (params?.authActionType) {
+      setAuthActionType(params.authActionType);
+    } else {
+      setAuthActionType(undefined);
+    }
+    if (params?.startupRoomId) {
+      setSelectedStartupRoomId(params.startupRoomId);
+    } else {
+      setSelectedStartupRoomId(undefined);
+    }
+  }, [setCurrentScreen, startups, chats]); // Added startups to dependencies
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
@@ -517,6 +536,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   const showWelcomeFlyer = userProfile?.show_welcome_flyer && currentScreen === 'home';
 
+  // Find the selected startup for the room screen
+  const startupForRoom = selectedStartupRoomId ? startups.find(s => s.id === selectedStartupRoomId) : null;
+
   return (
     <FramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
@@ -598,6 +620,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userRole={userRole}
           setActiveTab={setActiveTab}
           handleStartChat={handleStartChat}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
@@ -689,9 +713,15 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           setCurrentScreen={handleSetCurrentScreen}
         />
       )}
-      {currentScreen === 'termsAndPrivacy' && ( // New screen route
+      {currentScreen === 'termsAndPrivacy' && (
         <TermsAndPrivacyScreen
           setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'startupRoom' && startupForRoom && (
+        <StartupRoomScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          selectedStartup={startupForRoom}
         />
       )}
       {/* Fallback for unhandled screens */}
@@ -713,7 +743,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         adminDashboard: currentScreen === 'adminDashboard' && userProfile?.role === 'admin',
         savedStartups: currentScreen === 'savedStartups' && userProfile,
         settings: currentScreen === 'settings',
-        termsAndPrivacy: currentScreen === 'termsAndPrivacy', // Include new screen in fallback check
+        termsAndPrivacy: currentScreen === 'termsAndPrivacy',
+        startupRoom: currentScreen === 'startupRoom' && startupForRoom,
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

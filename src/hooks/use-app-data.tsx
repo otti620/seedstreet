@@ -21,6 +21,8 @@ interface Profile {
   phone: string | null;
   last_seen: string | null;
   show_welcome_flyer: boolean; // Added for welcome flyer
+  avatar_url: string | null; // Add avatar_url
+  total_committed: number; // Add total_committed
 }
 
 interface Startup {
@@ -42,6 +44,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
+  amount_raised: number; // Add amount_raised
 }
 
 interface Chat {
@@ -52,7 +55,7 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  isOnline: boolean;
+  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -79,6 +82,7 @@ interface CommunityPost {
   created_at: string;
   likes: string[];
   comments_count: number;
+  is_hidden: boolean; // Add is_hidden
 }
 
 interface CommunityComment {
@@ -112,6 +116,22 @@ interface ActivityLog {
   icon: string | null;
 }
 
+interface Commitment { // New interface for commitments
+  id: string;
+  investor_id: string;
+  investor_name: string;
+  founder_id: string;
+  founder_name: string;
+  startup_id: string;
+  startup_name: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  date_updated: string;
+  proof_uploaded: boolean;
+  proof_url: string | null;
+}
+
 interface AppSettings {
   enabled: boolean;
   message: string;
@@ -131,6 +151,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
+  const [commitments, setCommitments] = useState<Commitment[]>([]); // New state for commitments
   const [maintenanceMode, setMaintenanceMode] = useState<AppSettings>({ enabled: false, message: "" });
   const [loadingData, setLoadingData] = useState(true); // Set to true initially
 
@@ -171,7 +192,23 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         ...data as Profile,
         name: data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email?.split('@')[0] || 'User Name',
         email: data.email || 'user@email.com',
+        total_committed: 0, // Initialize total_committed
       };
+
+      // Fetch total committed amount for the investor
+      if (profileData.role === 'investor') {
+        const { data: commitmentsData, error: commitmentsError } = await supabase
+          .from('commitments')
+          .select('amount')
+          .eq('investor_id', userId)
+          .eq('status', 'Approved'); // Only count approved commitments
+
+        if (commitmentsError) {
+          console.error("Error fetching investor commitments:", commitmentsError);
+        } else if (commitmentsData) {
+          profileData.total_committed = commitmentsData.reduce((sum, commitment) => sum + commitment.amount, 0);
+        }
+      }
 
       // Check if role is set but onboarding_complete is false
       if (profileData.role && !profileData.onboarding_complete) {
@@ -300,6 +337,26 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     }
   }, [userId]);
 
+  // Fetch commitments (for investor profile)
+  const fetchCommitments = useCallback(async () => {
+    if (!userId || userProfile?.role !== 'investor') {
+      setCommitments([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('commitments')
+      .select('*')
+      .eq('investor_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching commitments:", error);
+      setCommitments([]);
+    } else if (data) {
+      setCommitments(data as Commitment[]);
+    }
+  }, [userId, userProfile?.role]);
+
   // Initial app settings fetch and real-time subscription
   useEffect(() => {
     fetchAppSettings();
@@ -327,6 +384,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
             fetchCommunityPosts(),
             fetchNotifications(),
             fetchRecentActivities(),
+            fetchCommitments(), // Fetch commitments
           ]);
         } catch (error) {
           console.error("Error during Promise.all data loading:", error);
@@ -367,6 +425,11 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         .channel('public:profiles')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () => fetchUserProfile())
         .subscribe();
+      
+      const commitmentsChannel = supabase // New subscription for commitments
+        .channel('public:commitments')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'commitments', filter: `investor_id=eq.${userId}` }, () => fetchCommitments())
+        .subscribe();
 
       return () => {
         supabase.removeChannel(startupChannel);
@@ -375,6 +438,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
         supabase.removeChannel(notificationChannel);
         supabase.removeChannel(activityLogChannel);
         supabase.removeChannel(profileChannel);
+        supabase.removeChannel(commitmentsChannel); // Unsubscribe from commitments
       };
     } else if (!isLoggedIn) {
       // User is explicitly logged out, clear all user-specific data and stop loading
@@ -384,6 +448,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       setCommunityPosts([]);
       setNotifications([]);
       setRecentActivities([]);
+      setCommitments([]); // Clear commitments
       setLoadingData(false);
     } else {
       // isLoggedIn is true, but userId is null. This is an intermediate state
@@ -391,7 +456,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
       // Keep loadingData as true to show splash screen until userId is available.
       setLoadingData(true);
     }
-  }, [isLoggedIn, userId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities]);
+  }, [isLoggedIn, userId, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities, fetchCommitments]);
 
   // Fetch messages when selectedChatId changes
   useEffect(() => {
@@ -418,6 +483,7 @@ export const useAppData = ({ userId, isLoggedIn, selectedChatId }: UseAppDataPro
     messages,
     notifications,
     recentActivities,
+    commitments, // Return commitments
     maintenanceMode,
     loadingData,
     fetchAppSettings,

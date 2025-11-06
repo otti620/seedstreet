@@ -25,6 +25,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   phone: string | null;
+  total_committed: number; // Add total_committed
 }
 
 interface ProfileScreenProps {
@@ -93,7 +94,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <div className="text-xs text-gray-500 mt-1">Interested</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">0</div> {/* Placeholder for committed */}
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+                {userProfile?.total_committed ? `$${userProfile.total_committed.toLocaleString()}` : '$0'}
+              </div>
               <div className="text-xs text-gray-500 mt-1">Committed</div>
             </div>
           </div>

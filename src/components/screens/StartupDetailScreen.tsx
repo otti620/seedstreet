@@ -1,11 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Import useState
 import Image from 'next/image'; // Import Image from next/image
 import { ArrowLeft, Heart, Bookmark, MessageCircle, DollarSign, Eye, MapPin, Users, TrendingUp, BrainCircuit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import CommitmentDialog from '../CommitmentDialog'; // Import CommitmentDialog
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -35,12 +36,14 @@ interface StartupDetailScreenProps {
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupRoomId?: string }) => void; // Updated to accept startupRoomId
   setSelectedChat: (chat: any) => void;
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
   handleStartChat: (startup: Startup) => Promise<void>;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity
+  fetchUserProfile: () => Promise<void>; // Add fetchUserProfile
 }
 
 const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
@@ -55,9 +58,17 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
   userRole,
   setActiveTab,
   handleStartChat,
+  logActivity,
+  fetchUserProfile,
 }) => {
   const isBookmarked = bookmarkedStartups.includes(selectedStartup.id);
   const isInterested = interestedStartups.includes(selectedStartup.id);
+  const [isCommitmentDialogOpen, setIsCommitmentDialogOpen] = useState(false);
+
+  // Log activity when the screen is viewed
+  React.useEffect(() => {
+    logActivity('startup_viewed', `Viewed startup: ${selectedStartup.name}`, selectedStartup.id, 'Eye');
+  }, [selectedStartup.id, selectedStartup.name, logActivity]);
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -184,13 +195,23 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
         {/* Actions */}
         <div className="flex gap-3 pb-4">
           {userRole === 'investor' && (
-            <Button
-              onClick={() => handleStartChat(selectedStartup)}
-              className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Slide in 💬
-            </Button>
+            <>
+              <Button
+                onClick={() => handleStartChat(selectedStartup)}
+                className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Slide in 💬
+              </Button>
+              <Button
+                onClick={() => setIsCommitmentDialogOpen(true)}
+                className="flex-1 h-12 bg-gradient-to-r from-green-600 to-blue-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                aria-label="Make a commitment"
+              >
+                <DollarSign className="w-4 h-4" />
+                Commit 💰
+              </Button>
+            </>
           )}
           <Button
             onClick={() => toggleInterest(selectedStartup.id)}
@@ -203,8 +224,32 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
             <Eye className="w-4 h-4" />
             {isInterested ? 'Interest Signaled' : 'Signal Interest'}
           </Button>
+          <Button
+            onClick={() => setCurrentScreen('startupRoom', { startupId: selectedStartup.id })} // Navigate to StartupRoomScreen
+            className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
+            aria-label={`Join room for ${selectedStartup.name}`}
+          >
+            <Rocket className="w-4 h-4" />
+            Join room 🚀
+          </Button>
         </div>
       </div>
+
+      {isCommitmentDialogOpen && userRole === 'investor' && (
+        <CommitmentDialog
+          isOpen={isCommitmentDialogOpen}
+          onClose={() => setIsCommitmentDialogOpen(false)}
+          startupId={selectedStartup.id}
+          startupName={selectedStartup.name}
+          startupLogo={selectedStartup.logo}
+          founderId={selectedStartup.founder_id}
+          founderName={selectedStartup.founder_name}
+          investorId={selectedStartup.id} {/* This should be userProfile.id, not selectedStartup.id */}
+          investorName={selectedStartup.founder_name} {/* This should be userProfile.name, not selectedStartup.founder_name */}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
+        />
+      )}
     </div>
   );
 };
