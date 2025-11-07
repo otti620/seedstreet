@@ -71,26 +71,31 @@ const SeedstreetApp: React.FC = () => {
   useEffect(() => {
     const checkSessionAndDetermineScreen = async () => {
       if (!splashTimerComplete || currentScreen !== 'splash') {
+        console.log("DEBUG: Skipping initial screen determination (splash not complete or not on splash screen).", { splashTimerComplete, currentScreen });
         return;
       }
 
       setLoadingSession(true);
+      console.log("DEBUG: Starting session check...");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
 
       if (sessionError) {
-        console.error("Error getting session:", sessionError);
+        console.error("DEBUG: Error getting session:", sessionError);
         setIsLoggedIn(false);
         if (!onboardingSeenLocally) {
           setCurrentScreen('onboarding');
+          console.log("DEBUG: No session, onboarding not seen locally -> 'onboarding'");
         } else {
           setCurrentScreen('auth');
+          console.log("DEBUG: No session, onboarding seen locally -> 'auth'");
         }
         setLoadingSession(false);
         return;
       }
 
       if (session) {
+        console.log("DEBUG: Session found for user:", session.user.id);
         setIsLoggedIn(true);
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -98,37 +103,47 @@ const SeedstreetApp: React.FC = () => {
           .eq('id', session.user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error("Error fetching user profile:", profileError);
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+          console.error("DEBUG: Error fetching user profile for session user:", profileError);
           setIsLoggedIn(false);
           if (!onboardingSeenLocally) {
             setCurrentScreen('onboarding');
+            console.log("DEBUG: Profile fetch error, onboarding not seen locally -> 'onboarding'");
           } else {
             setCurrentScreen('auth');
+            console.log("DEBUG: Profile fetch error, onboarding seen locally -> 'auth'");
           }
           setLoadingSession(false);
           return;
         }
 
         if (profile) {
+          console.log("DEBUG: User profile found:", profile);
           setUserProfile(profile);
           if (!profile.role) {
             setCurrentScreen('roleSelector');
-          } else if (!profile.onboarding_complete) { // Still check for logged-in users who might have skipped
+            console.log("DEBUG: Profile has no role -> 'roleSelector'");
+          } else if (!profile.onboarding_complete) {
             setCurrentScreen('onboarding');
-          }
-          else {
+            console.log("DEBUG: Profile has role but onboarding not complete -> 'onboarding'");
+          } else {
             setCurrentScreen('home');
+            console.log("DEBUG: Profile has role and onboarding complete -> 'home'");
           }
         } else {
+          // User logged in but no profile (e.g., new signup via email link, or profile creation failed)
           setCurrentScreen('roleSelector');
+          console.log("DEBUG: Session found, but no profile in DB -> 'roleSelector'");
         }
       } else { // No session (not logged in)
+        console.log("DEBUG: No active session found.");
         setIsLoggedIn(false);
         if (!onboardingSeenLocally) {
           setCurrentScreen('onboarding');
+          console.log("DEBUG: No session, onboarding not seen locally -> 'onboarding'");
         } else {
           setCurrentScreen('auth');
+          console.log("DEBUG: No session, onboarding seen locally -> 'auth'");
         }
       }
       setLoadingSession(false);
