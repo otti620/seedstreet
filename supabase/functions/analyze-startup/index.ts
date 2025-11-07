@@ -33,10 +33,9 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    // Hardcoding Gemini API key for now as requested.
-    // IMPORTANT: Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API key.
-    // For production, this should be stored as a Supabase secret.
-    const geminiApiKey = "YOUR_GEMINI_API_KEY_HERE"; 
+    // Gemini API key hardcoded as requested for now.
+    // IMPORTANT: For production, this should be stored as a Supabase secret.
+    const geminiApiKey = "AIzaSyA1sBEnueJ6xeiy0DkU3pw4Z5OphB2cVjQ"; 
 
     const prompt = `Analyze the following startup data for its market trend and potential risks. Provide a market trend analysis (around 2-3 sentences) and an AI risk score (a number between 0 and 100, where 0 is low risk and 100 is high risk). Format the output as a JSON object with 'marketTrendAnalysis' (string) and 'aiRiskScore' (number).
 
