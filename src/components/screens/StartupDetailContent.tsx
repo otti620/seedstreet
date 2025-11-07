@@ -78,55 +78,52 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
   }, [selectedStartup.id, selectedStartup.name, logActivity]);
 
   return (
-    <React.Fragment>
-      <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
-              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
-            <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Startup Details</h2>
-            <button onClick={() => toggleBookmark(selectedStartup.id)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
-              <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Startup Details</h2>
+          <button onClick={() => toggleBookmark(selectedStartup.id)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
+            <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
+          </button>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Startup Header */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg flex-shrink-0 relative overflow-hidden">
-                {selectedStartup.logo.startsWith('http') ? (
-                  <Image src={selectedStartup.logo} alt={`${selectedStartup.name} logo`} layout="fill" objectFit="cover" className="rounded-xl" />
-                ) : (
-                  selectedStartup.logo
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Startup Header */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg flex-shrink-0 relative overflow-hidden">
+              {selectedStartup.logo.startsWith('http') ? (
+                <Image src={selectedStartup.logo} alt={`${selectedStartup.name} logo`} layout="fill" objectFit="cover" className="rounded-xl" />
+              ) : (
+                selectedStartup.logo
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.name}</h3>
+              <p className="text-gray-600 dark:text-gray-300">{selectedStartup.tagline}</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">{selectedStartup.category}</Badge>
+                {selectedStartup.ai_risk_score !== null && (
+                  <Badge
+                    variant="secondary"
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      selectedStartup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                      selectedStartup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                      'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                    }`}
+                  >
+                    <BrainCircuit className="w-3 h-3" />
+                    Risk: {selectedStartup.ai_risk_score}
+                  </Badge>
                 )}
               </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.name}</h3>
-                <p className="text-gray-600 dark:text-gray-300">{selectedStartup.tagline}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">{selectedStartup.category}</Badge>
-                  {selectedStartup.ai_risk_score !== null && (
-                    <Badge
-                      variant="secondary"
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        selectedStartup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                        selectedStartup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                        'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                      }`}
-                    >
-                      <BrainCircuit className="w-3 h-3" />
-                      Risk: {selectedStartup.ai_risk_score}
-                    </Badge>
-                  )}
-                </div>
-              </div>
             </div>
-            <p className="text-gray-700 mt-4 dark:text-gray-200">{selectedStartup.pitch}</p>
           </div>
 
           {/* Key Metrics */}
@@ -233,7 +230,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
               {isInterested ? 'Interest Signaled' : 'Signal Interest'}
             </Button>
             <Button
-              onClick={() => setCurrentScreen('startupRoom', { startupRoomId: selectedStartup.id })} {/* Corrected param name */}
+              onClick={() => setCurrentScreen('startupRoom', { startupRoomId: selectedStartup.id })}
               className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
               aria-label={`Join room for ${selectedStartup.name}`}
             >
@@ -259,7 +256,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
           fetchUserProfile={fetchUserProfile}
         />
       )}
-    </React.Fragment>
+    </div>
   );
 };
 
