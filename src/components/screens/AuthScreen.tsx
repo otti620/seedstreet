@@ -280,32 +280,35 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
             </form>
           </Form>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            {isSignUp ? 'Already have an account?' : 'New here, fam?'}{' '}
-          </p>
-          <button 
-            onClick={() => {
-              setIsSignUp(prev => {
-                const newState = !prev;
-                form.reset({
-                  name: "",
-                  email: "",
-                  password: "",
-                });
-                return newState;
-              });
-            }} 
-            className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
-            aria-label={isSignUp ? 'Log In' : 'Sign Up'}
-          >
-            {isSignUp ? 'Log In' : 'Sign Up'}
-          </button>
-
-          {isSignUp && (
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-              By signing up, you agree to our <button onClick={() => setCurrentScreen('termsAndPrivacy')} className="underline text-purple-700 dark:text-purple-400" aria-label="View Terms & Privacy Policy">Terms & Privacy Policy</button>
+          {/* Wrapped these elements in a div */}
+          <div>
+            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+              {isSignUp ? 'Already have an account?' : 'New here, fam?'}{' '}
             </p>
-          )}
+            <button 
+              onClick={() => {
+                setIsSignUp(prev => {
+                  const newState = !prev;
+                  form.reset({
+                    name: "",
+                    email: "",
+                    password: "",
+                  });
+                  return newState;
+                });
+              }} 
+              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
+              aria-label={isSignUp ? 'Log In' : 'Sign Up'}
+            >
+              {isSignUp ? 'Log In' : 'Sign Up'}
+            </button>
+
+            {isSignUp && (
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+                By signing up, you agree to our <button onClick={() => setCurrentScreen('termsAndPrivacy')} className="underline text-purple-700 dark:text-purple-400" aria-label="View Terms & Privacy Policy">Terms & Privacy Policy</button>
+              </p>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
