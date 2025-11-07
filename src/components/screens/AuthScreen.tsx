@@ -110,7 +110,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
 
   return (
     <div className="fixed inset-0 flex flex-col dark:bg-gray-950">
-      {/* Hero Section */}
       <div className="h-2/5 bg-gradient-to-br from-purple-700 to-teal-500 relative overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0">
           <motion.div
@@ -149,7 +148,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
         </div>
       </div>
 
-      {/* Form Section */}
       <motion.div
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
