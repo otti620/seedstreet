@@ -18,6 +18,7 @@ import { DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
+import { motion } from 'framer-motion';
 
 interface CommitmentDialogProps {
   isOpen: boolean;
@@ -157,22 +158,27 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
             Enter the amount you wish to commit to {startupName}. This action will notify the founder.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="py-4">
-          <Label htmlFor="commitment-amount" className="sr-only">Commitment Amount</Label>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="py-4"
+        >
           <div className="relative">
             <Input
               id="commitment-amount"
               type="number"
-              placeholder="e.g., 1000"
+              placeholder=" "
               value={amount}
               onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
-              className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+              className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
               aria-label="Commitment amount"
               min="1"
             />
-            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+            <Label htmlFor="commitment-amount" className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Commitment Amount</Label>
+            <DollarSign className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
           </div>
-        </div>
+        </motion.div>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button variant="outline" onClick={onClose} disabled={committing} className="dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
@@ -180,7 +186,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button onClick={handleSubmit} disabled={committing || amount === '' || amount <= 0}>
+            <Button onClick={handleSubmit} disabled={committing || amount === '' || amount <= 0} className="bg-gradient-to-r from-purple-700 to-teal-600 text-white">
               {committing ? (
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

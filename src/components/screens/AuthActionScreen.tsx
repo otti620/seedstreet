@@ -21,7 +21,7 @@ import {
 import { motion } from 'framer-motion';
 
 interface AuthActionScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: { authActionType?: 'forgotPassword' | 'changePassword' }) => void;
   authActionType: 'forgotPassword' | 'changePassword';
 }
 
@@ -77,7 +77,7 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
       console.error("Change password error:", error);
     } else {
       toast.success("Password updated successfully!");
-      setCurrentScreen('home'); // Redirect to home after successful password change
+      setCurrentScreen('auth'); // Redirect to auth after successful password change
     }
     setLoading(false);
   };
@@ -98,9 +98,9 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('auth')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back">
+          <button onClick={() => setCurrentScreen('auth')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors" aria-label="Back">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">{title}</h2>
@@ -119,12 +119,17 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
           <p className="text-gray-600 mb-6 dark:text-gray-300">{description}</p>
 
           {emailSent && authActionType === 'forgotPassword' ? (
-            <div className="text-center text-green-600 dark:text-green-400">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="text-center text-green-600 dark:text-green-400"
+            >
               <Mail className="w-16 h-16 mx-auto mb-4" />
               <p className="font-semibold text-lg">Email sent!</p>
               <p className="text-sm text-gray-700 dark:text-gray-200">Please check your inbox for instructions to reset your password.</p>
-              <Button onClick={() => setCurrentScreen('auth')} className="mt-6">Back to Login</Button>
-            </div>
+              <Button onClick={() => setCurrentScreen('auth')} className="mt-6 bg-gradient-to-r from-purple-700 to-teal-600 text-white">Back to Login</Button>
+            </motion.div>
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -139,11 +144,11 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
                             {...field}
                             type="email"
                             placeholder=" "
-                            className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                            className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                             aria-label="Email"
                           />
-                          <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Email</Label>
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                          <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Email Address</Label>
+                          <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                         </div>
                         <FormMessage />
                       </FormItem>
@@ -163,11 +168,11 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
                               {...field}
                               type="password"
                               placeholder=" "
-                              className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                              className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                               aria-label="New password"
                             />
                             <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">New Password</Label>
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                            <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -183,11 +188,11 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
                               {...field}
                               type="password"
                               placeholder=" "
-                              className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                              className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                               aria-label="Confirm new password"
                             />
                             <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Confirm New Password</Label>
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                            <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -196,7 +201,7 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
                   </>
                 )}
 
-                <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all" aria-label={authActionType === 'forgotPassword' ? 'Send Reset Link' : 'Change Password'}>
+                <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all" aria-label={authActionType === 'forgotPassword' ? 'Send Reset Link' : 'Change Password'}>
                   {loading ? (
                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

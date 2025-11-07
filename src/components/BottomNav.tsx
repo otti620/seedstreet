@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Home, Rocket, MessageCircle, Sparkles, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface BottomNavProps {
   activeTab: string;
@@ -19,16 +20,17 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-50 dark:bg-gray-900 dark:border-gray-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-50 dark:bg-gray-900 dark:border-gray-800 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex justify-around items-center max-w-lg mx-auto">
         {navItems.map(item => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           
           return (
-            <button
+            <motion.button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
+              whileTap={{ scale: 0.9 }}
               className={`relative flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all ${
                 isActive ? 'scale-105' : 'scale-100'
               }`}
@@ -56,9 +58,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole
                 {item.label}
               </span>
               {isActive && (
-                <div className="absolute -top-1 w-1 h-1 bg-gradient-to-r from-purple-700 to-teal-600 rounded-full animate-pulse-dot" />
+                <motion.div
+                  layoutId="activeTabIndicator" // Unique layoutId for shared layout animation
+                  className="absolute -top-1 w-1 h-1 bg-gradient-to-r from-purple-700 to-teal-600 rounded-full animate-pulse-dot"
+                />
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>

@@ -2,18 +2,28 @@
 
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
 
 interface TermsAndPrivacyScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
 }
 
 const TermsAndPrivacyScreen: React.FC<TermsAndPrivacyScreenProps> = ({ setCurrentScreen }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('auth')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to authentication">
+          <button onClick={() => setCurrentScreen('auth')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors" aria-label="Back to authentication">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Terms & Privacy Policy</h2>
@@ -22,7 +32,12 @@ const TermsAndPrivacyScreen: React.FC<TermsAndPrivacyScreenProps> = ({ setCurren
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-700 dark:text-gray-200">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+        >
           <h3 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Seedstreet Africa – Privacy Policy</h3>
           <p className="text-sm mb-4">
             **Effective Date: October 2025**
@@ -89,9 +104,14 @@ const TermsAndPrivacyScreen: React.FC<TermsAndPrivacyScreenProps> = ({ setCurren
           <p className="text-sm mb-4">
             We may periodically update this Privacy Policy. We’ll notify you of significant changes by email or platform notification.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+        >
           <h3 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Seedstreet Africa – Terms of Use</h3>
           <p className="text-sm mb-4">
             **Effective Date: October 2025**
@@ -152,10 +172,10 @@ const TermsAndPrivacyScreen: React.FC<TermsAndPrivacyScreenProps> = ({ setCurren
           <h4 className="text-lg font-bold text-gray-900 mt-6 mb-3 dark:text-gray-50">10. Contact</h4>
           <p className="text-sm mb-4">
             For questions, support, or complaints, contact us at:<br />
-            📩 <a href="mailto:seedstreetapp@gmail.com" className="underline text-purple-700 dark:text-purple-400">seedstreetapp@gmail.com</a><br />
+            📩 <a href="mailto:seedstreetapp@gmail.com" target="_blank" rel="noopener noreferrer" className="underline text-purple-700 dark:text-purple-400">seedstreetapp@gmail.com</a><br />
             🌍 <a href="https://www.use-seedstreet.vercel.app" target="_blank" rel="noopener noreferrer" className="underline text-purple-700 dark:text-purple-400">www.use-seedstreet.vercel.app</a>
           </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

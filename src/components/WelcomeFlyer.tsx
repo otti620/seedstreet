@@ -17,7 +17,7 @@ const WelcomeFlyer: React.FC<WelcomeFlyerProps> = ({ userName, onDismiss }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 100 }}
       transition={{ type: "spring", stiffness: 100, damping: 10 }}
-      className="fixed bottom-24 left-4 right-4 z-50 max-w-md mx-auto bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-2xl p-6 shadow-xl flex flex-col items-center text-center space-y-4"
+      className="fixed bottom-24 left-4 right-4 z-50 max-w-md mx-auto bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-2xl p-6 shadow-xl flex flex-col items-center text-center space-y-4 border-2 border-white/30"
     >
       <button
         onClick={onDismiss}
@@ -33,7 +33,7 @@ const WelcomeFlyer: React.FC<WelcomeFlyerProps> = ({ userName, onDismiss }) => {
       </p>
       <Button
         onClick={onDismiss}
-        className="w-full bg-white text-purple-700 rounded-xl font-semibold hover:bg-gray-100 active:scale-95 transition-all"
+        className="w-full bg-white text-purple-700 rounded-xl font-semibold hover:bg-gray-100 active:scale-95 transition-all shadow-md"
         aria-label="Start exploring"
       >
         Start Exploring

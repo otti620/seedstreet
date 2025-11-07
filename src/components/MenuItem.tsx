@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -11,9 +12,12 @@ interface MenuItemProps {
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ icon, label, count, onClick }) => (
-  <button 
+  <motion.button 
+    whileHover={{ x: 5 }}
+    whileTap={{ scale: 0.98 }}
     className="w-full flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-700 dark:active:bg-gray-600 dark:border-gray-700"
     onClick={onClick}
+    aria-label={label}
   >
     <div className="flex items-center gap-3">
       <div className="text-gray-600 dark:text-gray-300">{icon}</div>
@@ -27,7 +31,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, label, count, onClick }) => (
       )}
       <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
     </div>
-  </button>
+  </motion.button>
 );
 
 export default MenuItem;

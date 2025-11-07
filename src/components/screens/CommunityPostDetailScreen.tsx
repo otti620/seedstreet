@@ -7,9 +7,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import {
   Form,
   FormControl,
@@ -27,6 +24,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
 import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 // Define TypeScript interfaces for data structures
 interface CommunityPost {
@@ -55,10 +55,20 @@ interface Profile {
   id: string;
   name: string | null;
   avatar_id: number | null; // Changed from avatar_url
+  email: string | null; // Added email for fallback name
+}
+
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
 }
 
 interface CommunityPostDetailScreenProps {
-  setCurrentScreen: (screen: string, params?: { postId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   selectedCommunityPostId: string;
   userProfile: Profile | null;
 }
@@ -169,7 +179,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
         await supabase.from('notifications').insert({
           user_id: post.author_id,
           type: 'post_liked',
-          message: `${userProfile.name || userProfile.email} liked your post!`,
+          message: `${userProfile.name || userProfile.email?.split('@')[0]} liked your post!`,
           link: `/communityPostDetail/${post.id}`,
           related_entity_id: post.id,
         });
@@ -226,7 +236,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
         await supabase.from('notifications').insert({
           user_id: post.author_id,
           type: 'new_comment',
-          message: `${userProfile.name || userProfile.email} commented on your post!`,
+          message: `${userProfile.name || userProfile.email?.split('@')[0]} commented on your post!`,
           link: `/communityPostDetail/${post.id}`,
           related_entity_id: post.id,
         });
@@ -342,7 +352,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
   if (loading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
-        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-6 w-48" />
@@ -379,30 +389,30 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to community feed">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors" aria-label="Back to community feed">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Post Details</h2>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Post options">
-                <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <Button variant="ghost" size="icon" className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
               {isPostAuthor && (
                 <>
-                  <DropdownMenuItem onClick={() => setCurrentScreen('createCommunityPost', { postId: post.id })} className="flex items-center gap-2">
-                    <Edit className="w-4 h-4" /> Edit Post
+                  <DropdownMenuItem onClick={() => setCurrentScreen('createCommunityPost', { postId: post.id })} className="flex items-center gap-2 dark:text-gray-50">
+                    <Edit className="w-4 h-4 text-blue-600" /> Edit Post
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => confirmDeleteComment(post as unknown as CommunityComment)} className="flex items-center gap-2 text-red-600">
+                  <DropdownMenuItem onClick={() => confirmDeleteComment(post as unknown as CommunityComment)} className="flex items-center gap-2 text-red-600 dark:text-red-400">
                     <Trash2 className="w-4 h-4" /> Delete Post
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuItem onClick={handleReportPost} className="flex items-center gap-2 text-red-600">
+              <DropdownMenuItem onClick={handleReportPost} className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <Flag className="w-4 h-4" /> Report Post
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -412,9 +422,14 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
       {/* Post Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+        >
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0 relative overflow-hidden">
               {post.author_avatar_id ? (
                 <Image src={getAvatarUrl(post.author_avatar_id)} alt="Author Avatar" layout="fill" objectFit="cover" className="rounded-xl" />
               ) : (
@@ -430,7 +445,9 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
           </div>
           <p className="text-sm text-gray-700 mb-3 dark:text-gray-200">{post.content}</p>
           {post.image_url && (
-            <Image src={post.image_url} alt="Post Image" width={500} height={300} objectFit="cover" className="mt-3 rounded-lg w-full" />
+            <div className="relative w-full h-48 rounded-xl overflow-hidden mt-3">
+              <Image src={post.image_url} alt="Post Image" layout="fill" objectFit="cover" className="rounded-lg" />
+            </div>
           )}
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
@@ -448,14 +465,14 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
               {post.comments_count > 0 && <span>{post.comments_count}</span>}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Comments Section */}
         <div className="space-y-3">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">Comments ({comments.length})</h3>
           {comments.length > 0 ? (
             <AnimatePresence initial={false}>
-              {comments.map(comment => {
+              {comments.map((comment, index) => {
                 const isCommentAuthor = userProfile?.id === comment.author_id;
                 return (
                   <motion.div
@@ -463,7 +480,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
                     className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
                   >
                     <div className="flex items-start gap-2 mb-1">
@@ -485,8 +502,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => confirmDeleteComment(comment)} className="flex items-center gap-2 text-red-600">
+                          <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
+                            <DropdownMenuItem onClick={() => confirmDeleteComment(comment)} className="flex items-center gap-2 text-red-600 dark:text-red-400">
                               <Trash2 className="w-4 h-4" /> Delete Comment
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -505,7 +522,7 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       </div>
 
       {/* Comment Input */}
-      <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800">
+      <div className="bg-white border-t border-gray-100 p-4 dark:bg-gray-900 dark:border-gray-800 shadow-lg">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleAddComment)} className="flex items-end gap-2">
             <FormField

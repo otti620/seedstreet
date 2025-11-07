@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, Image as ImageIcon, Send, X } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Send, X, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,6 +21,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import { motion } from 'framer-motion';
+import { Label } from '@/components/ui/label'; // Import Label for floating labels
 
 // Define TypeScript interfaces for data structures
 interface Profile {
@@ -41,8 +43,17 @@ interface CommunityPost {
   comments_count: number;
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface CreateCommunityPostScreenProps {
-  setCurrentScreen: (screen: string, params?: { postId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   userProfile: Profile;
   postId?: string; // Optional prop for editing
 }
@@ -143,7 +154,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
   if (initialLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
-        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+        <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="h-6 w-48" />
@@ -151,8 +162,8 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -161,9 +172,9 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to community feed">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors" aria-label="Back to community feed">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">
@@ -176,7 +187,10 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              postId ? 'Save Changes' : 'Post'
+              <>
+                {postId ? <Save className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                {postId ? 'Save Changes' : 'Post'}
+              </>
             )}
           </Button>
         </div>
@@ -186,49 +200,61 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Form {...form}>
           <form id="community-post-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">What's on your mind?</FormLabel>
-                  <Textarea
-                    {...field}
-                    placeholder="Share an update, ask a question, or start a discussion..."
-                    className="min-h-[150px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                    aria-label="Post content"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.05 }}
+            >
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">What's on your mind?</FormLabel>
+                    <Textarea
+                      {...field}
+                      placeholder="Share an update, ask a question, or start a discussion..."
+                      className="min-h-[150px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Post content"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
             {/* Image URL Input (no upload) */}
-            <FormField
-              control={form.control}
-              name="image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Image URL (Optional)</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      type="url"
-                      placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      aria-label="Image URL"
-                    />
-                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                  </div>
-                  <FormMessage />
-                  {field.value && (
-                    <div className="mt-4 relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <Image src={field.value} alt="Image Preview" layout="fill" objectFit="cover" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <FormField
+                control={form.control}
+                name="image_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="url"
+                        placeholder=" "
+                        className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Image URL"
+                      />
+                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Image URL (Optional)</Label>
+                      <ImageIcon className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                     </div>
-                  )}
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-4 relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <Image src={field.value} alt="Image Preview" layout="fill" objectFit="cover" />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+            </motion.div>
           </form>
         </Form>
       </div>
