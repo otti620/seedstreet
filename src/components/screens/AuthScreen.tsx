@@ -43,7 +43,7 @@ type SignUpFormInputs = z.infer<typeof signUpSchema>;
 type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>; // Combined type for useForm
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn }) => {
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [isSignUp, setIsSignUp] = useState(false); // Changed default to false for login
   const [loading, setLoading] = useState(false);
 
   const form = useForm<AuthFormInputs>({
