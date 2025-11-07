@@ -288,12 +288,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
           <button 
             onClick={() => {
               setIsSignUp(prev => {
+                const newState = !prev;
                 form.reset({
                   name: "",
                   email: "",
                   password: "",
                 });
-                return !prev;
+                return newState;
               });
             }} 
             className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
