@@ -165,9 +165,11 @@ const SeedstreetApp: React.FC = () => {
       } else {
         setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
         toast.success("Onboarding complete! Welcome to Seedstreet.");
+        setCurrentScreen('home'); // Redirect to home for logged-in users
       }
+    } else {
+      setCurrentScreen('auth'); // Redirect to auth for unauthenticated users
     }
-    setCurrentScreen('auth'); // Always go to auth after onboarding
   }, [userProfile, setCurrentScreen]);
 
   if (maintenanceMode.enabled) {
