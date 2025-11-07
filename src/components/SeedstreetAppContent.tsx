@@ -198,7 +198,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null); // Keep this state
   const [activeTab, setActiveTab] = useState('home');
 
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
@@ -206,6 +206,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
   const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined);
   const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
+  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(undefined); // New state for selectedChatId
 
   const userRole = userProfile?.role || null;
 
@@ -217,6 +218,15 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       setSelectedStartup(null);
     }
   }, [selectedStartupId, startups]);
+
+  // Effect to update selectedChat when selectedChatId or chats change
+  useEffect(() => {
+    if (selectedChatId && chats.length > 0) {
+      setSelectedChat(chats.find(c => c.id === selectedChatId) || null);
+    } else if (!selectedChatId) {
+      setSelectedChat(null);
+    }
+  }, [selectedChatId, chats]);
 
 
   // Update screen history when currentScreen prop changes
@@ -248,15 +258,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       setSelectedCommunityPostId(undefined);
     }
     if (params?.chatId) {
-      const chatToSelect = chats.find(chat => chat.id === params.chatId);
-      if (chatToSelect) {
-        setSelectedChat(chatToSelect);
-      } else {
-        console.warn("Chat not found for ID:", params.chatId);
-        setSelectedChat(null);
-      }
+      setSelectedChatId(params.chatId); // Set selectedChatId here
+      // setSelectedChat is now handled by the useEffect
     } else {
-      setSelectedChat(null);
+      setSelectedChatId(undefined);
     }
     if (params?.authActionType) {
       setAuthActionType(params.authActionType);
@@ -311,7 +316,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         .single();
     },
     {
-      onSuccess: (data, variables) => { // Updated signature
+      onSuccess: (data, variables) => {
         setUserProfile(prev => prev ? { ...prev, bookmarked_startups: variables.newBookmarks } : null);
         const isBookmarked = variables.newBookmarks.includes(selectedStartupId || '');
         toast.success(isBookmarked ? "Startup bookmarked!" : "Bookmark removed!");
@@ -380,7 +385,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return { data: { newInterests, newInterestsCount }, error: null };
     },
     {
-      onSuccess: (data, variables) => { // Updated signature
+      onSuccess: (data, variables) => {
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
@@ -521,7 +526,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
     if (chatToOpen) {
       setSelectedChat(chatToOpen);
-      handleSetCurrentScreen('chat');
+      handleSetCurrentScreen('chat', { chatId: chatToOpen.id }); // Pass chatId here
       setActiveTab('chats');
     }
   };
@@ -715,7 +720,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         <SavedStartupsScreen
           setCurrentScreen={handleSetCurrentScreen}
           userProfileId={userProfile.id}
-          bookmarkedStartups={bookmarkedStartmarkedStartups}
+          bookmarkedStartups={bookmarkedStartups}
           toggleBookmark={toggleBookmark}
           toggleInterest={toggleInterest}
           setSelectedStartup={setSelectedStartup}
