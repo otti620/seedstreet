@@ -63,7 +63,10 @@ const SeedstreetApp: React.FC = () => {
     const checkSessionAndDetermineScreen = async () => {
       // Only proceed if the splash timer is complete and we are still on the splash screen
       // This prevents premature redirection before the splash screen has been shown.
-      if (!splashTimerComplete || currentScreen !== 'splash') return;
+      if (!splashTimerComplete || currentScreen !== 'splash') {
+        console.log("Skipping initial screen determination:", { splashTimerComplete, currentScreen });
+        return;
+      }
 
       setLoadingSession(true);
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -72,6 +75,7 @@ const SeedstreetApp: React.FC = () => {
         console.error("Error getting session:", sessionError);
         setIsLoggedIn(false);
         setCurrentScreen('auth');
+        console.log("Setting currentScreen to 'auth' due to session error.");
         setLoadingSession(false);
         return;
       }
@@ -88,6 +92,7 @@ const SeedstreetApp: React.FC = () => {
           console.error("Error fetching user profile:", profileError);
           setIsLoggedIn(false);
           setCurrentScreen('auth');
+          console.log("Setting currentScreen to 'auth' due to profile fetch error.");
           setLoadingSession(false);
           return;
         }
@@ -96,18 +101,23 @@ const SeedstreetApp: React.FC = () => {
           setUserProfile(profile);
           if (!profile.role) {
             setCurrentScreen('roleSelector');
+            console.log("Setting currentScreen to 'roleSelector' (no role).");
           } else if (!profile.onboarding_complete) {
             setCurrentScreen('onboarding');
+            console.log("Setting currentScreen to 'onboarding' (onboarding not complete).");
           } else {
             setCurrentScreen('home');
+            console.log("Setting currentScreen to 'home' (all set).");
           }
         } else {
           // User logged in but no profile (e.g., new signup via email link)
           setCurrentScreen('roleSelector');
+          console.log("Setting currentScreen to 'roleSelector' (no profile found for logged-in user).");
         }
       } else {
         setIsLoggedIn(false);
         setCurrentScreen('auth');
+        console.log("Setting currentScreen to 'auth' (no session).");
       }
       setLoadingSession(false);
     };
