@@ -564,6 +564,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+      {currentScreen === 'splash' && <SplashScreen />} {/* Added SplashScreen rendering */}
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
       {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
@@ -763,6 +764,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {/* Fallback for unhandled screens */}
       {!Object.values({
+        splash: currentScreen === 'splash', // Added splash to the list of handled screens
         onboarding: currentScreen === 'onboarding',
         auth: currentScreen === 'auth',
         roleSelector: currentScreen === 'roleSelector',
