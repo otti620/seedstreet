@@ -4,8 +4,8 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { PostgrestError } from '@supabase/supabase-js';
 
-interface UseSupabaseMutationOptions {
-  onSuccess?: (data: any) => void;
+interface UseSupabaseMutationOptions<TVariables, TData> { // Added TVariables and TData to interface
+  onSuccess?: (data: TData, variables: TVariables) => void; // Updated signature
   onError?: (error: PostgrestError) => void;
   successMessage?: string;
   errorMessage?: string;
@@ -13,7 +13,7 @@ interface UseSupabaseMutationOptions {
 
 export const useSupabaseMutation = <TVariables, TData>(
   mutationFn: (variables: TVariables) => Promise<{ data: TData | null; error: PostgrestError | null }>,
-  options?: UseSupabaseMutationOptions
+  options?: UseSupabaseMutationOptions<TVariables, TData> // Passed TVariables and TData
 ) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<PostgrestError | null>(null);
@@ -36,7 +36,7 @@ export const useSupabaseMutation = <TVariables, TData>(
 
       setData(data);
       toast.success(options?.successMessage || "Operation completed successfully!");
-      options?.onSuccess?.(data);
+      options?.onSuccess?.(data as TData, variables); // Pass both data and variables
       return { data, error: null };
     } catch (err: any) {
       const postgrestError: PostgrestError = {

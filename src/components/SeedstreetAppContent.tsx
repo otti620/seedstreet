@@ -197,7 +197,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
-  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null); // Keep this state
+  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
@@ -311,9 +311,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         .single();
     },
     {
-      onSuccess: (data) => {
-        setUserProfile(prev => prev ? { ...prev, bookmarked_startups: data.bookmarked_startups } : null);
-        const isBookmarked = data.bookmarked_startups.includes(selectedStartupId || '');
+      onSuccess: (data, variables) => { // Updated signature
+        setUserProfile(prev => prev ? { ...prev, bookmarked_startups: variables.newBookmarks } : null);
+        const isBookmarked = variables.newBookmarks.includes(selectedStartupId || '');
         toast.success(isBookmarked ? "Startup bookmarked!" : "Bookmark removed!");
         logActivity(isBookmarked ? 'bookmark_added' : 'bookmark_removed', `${isBookmarked ? 'Added' : 'Removed'} a startup to bookmarks`, selectedStartupId, 'Bookmark');
       },
@@ -380,7 +380,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return { data: { newInterests, newInterestsCount }, error: null };
     },
     {
-      onSuccess: (data, variables) => {
+      onSuccess: (data, variables) => { // Updated signature
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
@@ -715,7 +715,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         <SavedStartupsScreen
           setCurrentScreen={handleSetCurrentScreen}
           userProfileId={userProfile.id}
-          bookmarkedStartups={bookmarkedStartups}
+          bookmarkedStartups={bookmarkedStartmarkedStartups}
           toggleBookmark={toggleBookmark}
           toggleInterest={toggleInterest}
           setSelectedStartup={setSelectedStartup}
