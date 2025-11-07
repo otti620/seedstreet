@@ -287,6 +287,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             <Paperclip className="w-5 h-5" />
           </button>
           <Textarea
+            key={selectedChat.id} // Added key prop here
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {
