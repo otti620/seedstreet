@@ -11,10 +11,9 @@ interface FramerMotionWrapperProps {
     in: { opacity: number; x: number };
     out: { opacity: number; x: number };
   };
-  // Removed 'key' from interface as it's a special React prop
 }
 
-const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
+export const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
@@ -31,5 +30,3 @@ const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, cur
     </AnimatePresence>
   );
 };
-
-export default FramerMotionWrapper;
