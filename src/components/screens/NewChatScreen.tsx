@@ -24,6 +24,8 @@ interface Startup {
   logo: string;
   founder_id: string;
   founder_name: string;
+  active_chats: number; // Added for update
+  room_members: number; // Added for update
 }
 
 interface NewChatScreenProps {
@@ -56,7 +58,7 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
     // Search for startups
     const { data: startupsData, error: startupsError } = await supabase
       .from('startups')
-      .select('id, name, logo, founder_id, founder_name')
+      .select('id, name, logo, founder_id, founder_name, active_chats, room_members') // Select active_chats and room_members
       .ilike('name', `%${lowerCaseTerm}%`)
       .eq('status', 'Approved'); // Only show approved startups
 
@@ -111,6 +113,8 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
     let startupLogo: string | null = null;
     let founderId: string | null = null;
     let investorId: string | null = null;
+    let currentActiveChats = 0; // For startup metrics
+    let currentRoomMembers = 0; // For startup metrics
 
     if ('role' in target) { // It's a Profile
       targetUserId = target.id;
@@ -134,6 +138,8 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
       founderId = target.founder_id;
       targetUserId = target.founder_id; // Chat with the founder of the startup
       targetUserName = target.founder_name;
+      currentActiveChats = target.active_chats; // Get current values
+      currentRoomMembers = target.room_members; // Get current values
 
       if (userProfile.role === 'investor') {
         investorId = userProfile.id;
@@ -194,6 +200,26 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
       chatToOpenId = newChat.id;
       toast.success("New chat started!");
       logActivity('chat_started', `Started a chat with ${targetUserName} about ${startupName || 'general'}`, chatToOpenId, 'MessageCircle');
+
+      // Increment active_chats and room_members for the startup if it's a startup chat
+      if (startupId) {
+        const { data: updatedStartup, error: updateStartupError } = await supabase
+          .from('startups')
+          .update({
+            active_chats: currentActiveChats + 1,
+            room_members: currentRoomMembers + 1, // Assuming starting a chat also means joining the room
+          })
+          .eq('id', startupId)
+          .select('active_chats, room_members')
+          .single();
+
+        if (updateStartupError) {
+          console.error("Error updating startup chat metrics:", updateStartupError);
+          toast.error("Failed to update startup chat metrics.");
+        } else {
+          console.log("Startup chat metrics updated:", updatedStartup);
+        }
+      }
 
       // Send notification to the other user
       await supabase.from('notifications').insert({

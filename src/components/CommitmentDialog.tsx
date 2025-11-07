@@ -90,7 +90,26 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
 
       if (updateStartupError) throw updateStartupError;
 
-      // 3. Send notification to founder
+      // 3. Update investor's total_committed
+      const { data: investorProfileData, error: fetchInvestorProfileError } = await supabase
+        .from('profiles')
+        .select('total_committed')
+        .eq('id', investorId)
+        .single();
+
+      if (fetchInvestorProfileError) throw fetchInvestorProfileError;
+
+      const newTotalCommitted = (investorProfileData?.total_committed || 0) + commitmentAmount;
+
+      const { error: updateInvestorProfileError } = await supabase
+        .from('profiles')
+        .update({ total_committed: newTotalCommitted })
+        .eq('id', investorId);
+
+      if (updateInvestorProfileError) throw updateInvestorProfileError;
+
+
+      // 4. Send notification to founder
       await supabase.from('notifications').insert({
         user_id: founderId,
         type: 'new_commitment',
@@ -99,10 +118,10 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
         related_entity_id: startupId,
       });
 
-      // 4. Log activity for investor
+      // 5. Log activity for investor
       await logActivity('commitment_made', `Committed $${commitmentAmount.toLocaleString()} to ${startupName}`, startupId, '💰');
       
-      // 5. Re-fetch user profile to update 'committed' count
+      // 6. Re-fetch user profile to update 'committed' count
       await fetchUserProfile();
 
       return newCommitment;

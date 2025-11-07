@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -50,7 +51,7 @@ interface Profile {
 }
 
 interface ChatConversationScreenProps {
-  selectedChat: Chat;
+  selectedChat: Chat | null; // Make selectedChat nullable
   messages: Message[];
   setCurrentScreen: (screen: string, params?: { startupId?: string, chatId?: string }) => void;
   setActiveTab: (tab: string) => void;
@@ -111,7 +112,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   }, [optimisticMessages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !userProfile?.id || !userProfile?.name) return;
+    if (!newMessage.trim() || !userProfile?.id || !userProfile?.name || !selectedChat) return;
 
     setSendingMessage(true);
     const messageText = newMessage.trim();
@@ -216,7 +217,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       return otherUserProfile.avatar_id ? getAvatarUrl(otherUserProfile.avatar_id) : undefined;
     }
     // Fallback to startup logo if other user profile not found or for general chat context
-    return selectedChat.startup_logo;
+    return selectedChat?.startup_logo;
   };
 
   const getSenderInitials = (senderId: string) => {
@@ -225,8 +226,19 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     } else if (otherUserProfile?.id === senderId) {
       return otherUserProfile.name?.[0] || otherUserProfile.email?.[0]?.toUpperCase() || 'O';
     }
-    return selectedChat.startup_name?.[0] || 'S';
+    return selectedChat?.startup_name?.[0] || 'S';
   };
+
+  if (!selectedChat) {
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center dark:bg-gray-950">
+        <Skeleton className="w-24 h-24 rounded-full mb-4" />
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-4 w-32" />
+        <p className="text-gray-600 mt-4 dark:text-gray-300">Loading chat...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -349,7 +361,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+                </svg>
             ) : (
               <Send className="w-5 h-5" />
             )}

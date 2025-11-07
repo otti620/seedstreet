@@ -392,7 +392,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       onSuccess: (data, variables) => {
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
-        logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
+        logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Added' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
       },
       onError: (error) => {
         console.error("Error updating interest:", error);
@@ -519,6 +519,24 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       toast.success("New chat started!");
       logActivity('chat_started', `Started a chat with ${founderName} about ${startup.name}`, chatToOpen.id, 'MessageCircle');
 
+      // Increment active_chats and room_members for the startup
+      const { data: updatedStartup, error: updateStartupError } = await supabase
+        .from('startups')
+        .update({
+          active_chats: startup.active_chats + 1,
+          room_members: startup.room_members + 1, // Assuming starting a chat also means joining the room
+        })
+        .eq('id', startup.id)
+        .select('active_chats, room_members')
+        .single();
+
+      if (updateStartupError) {
+        console.error("Error updating startup chat metrics:", updateStartupError);
+        toast.error("Failed to update startup chat metrics.");
+      } else {
+        console.log("Startup chat metrics updated:", updatedStartup);
+      }
+
       await supabase.from('notifications').insert({
         user_id: startup.founder_id,
         type: 'new_chat',
@@ -564,8 +582,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <>
-      {/* Removed temporary visual indicator for current screen */}
-
       {currentScreen === 'splash' && <SplashScreen />}
       {/* All other screens remain inside ScreenTransitionWrapper */}
       {currentScreen !== 'splash' && (
