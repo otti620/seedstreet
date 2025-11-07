@@ -11,14 +11,14 @@ interface FramerMotionWrapperProps {
     in: { opacity: number; x: number };
     out: { opacity: number; x: number };
   };
-  key: string; // Add key prop to satisfy React's list rendering requirements if used in a list, or for AnimatePresence
+  // Removed 'key' from interface as it's a special React prop
 }
 
-const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants, key }) => {
+const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={currentScreen} // Use currentScreen as the key for motion.div to trigger exit/enter animations
+        key={currentScreen} // This key is for AnimatePresence to track children, which is correct.
         initial="initial"
         animate="in"
         exit="out"
