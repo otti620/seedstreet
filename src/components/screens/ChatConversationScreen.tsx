@@ -68,7 +68,8 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>(messages); // Local state for optimistic updates
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>(messages);
+  const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null); // State for the other user's profile
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Sync optimisticMessages with the 'messages' prop when it changes (from real-time updates)
@@ -76,24 +77,48 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     setOptimisticMessages(messages);
   }, [messages]);
 
+  // Fetch other user's profile
+  useEffect(() => {
+    const fetchOtherUserProfile = async () => {
+      if (!userProfile?.id || !selectedChat) return;
+
+      const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
+      if (!otherUserId) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, avatar_id, email')
+        .eq('id', otherUserId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching other user profile:", error);
+        setOtherUserProfile(null);
+      } else if (data) {
+        setOtherUserProfile(data as Profile);
+      }
+    };
+
+    fetchOtherUserProfile();
+  }, [userProfile?.id, selectedChat]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [optimisticMessages]); // Scroll to bottom when optimisticMessages update
+  }, [optimisticMessages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !userProfile?.id || !userProfile?.name) return;
 
     setSendingMessage(true);
     const messageText = newMessage.trim();
-    setNewMessage(''); // Clear input immediately
+    setNewMessage('');
 
-    // Optimistic UI update: Add message to local state immediately
     const tempMessage: Message = {
-      id: `temp-${Date.now()}`, // Temporary ID
+      id: `temp-${Date.now()}`,
       chat_id: selectedChat.id,
       sender_id: userProfile.id,
       sender_name: userProfile.name,
@@ -102,7 +127,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       read: true,
     };
     setOptimisticMessages(prevMessages => [...prevMessages, tempMessage]);
-    scrollToBottom(); // Scroll to new message immediately
+    scrollToBottom();
 
     const { data, error } = await supabase.from('messages').insert({
       chat_id: selectedChat.id,
@@ -114,7 +139,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     if (error) {
       toast.error("Failed to send message: " + error.message);
       console.error("Error sending message:", error);
-      // Revert optimistic update on error
       setOptimisticMessages(prevMessages => prevMessages.filter(msg => msg.id !== tempMessage.id));
     } else {
       // Update chat's last message and unread counts
@@ -158,11 +182,11 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     }
 
     const { error } = await supabase.from('flagged_messages').insert({
-      message_id: selectedChat.id, // Flagging the chat itself, not a specific message
-      original_message_id: null, // No specific original message
+      message_id: selectedChat.id,
+      original_message_id: null,
       chat_id: selectedChat.id,
-      sender: selectedChat.founder_name, // Or investor_name, depending on who is being reported
-      sender_id: selectedChat.founder_id, // Or investor_id
+      sender: selectedChat.founder_name,
+      sender_id: selectedChat.founder_id,
       chat_type: 'DM',
       startup_name: selectedChat.startup_name,
       reason: reason.trim(),
@@ -182,18 +206,20 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   const getSenderAvatar = (senderId: string) => {
     if (senderId === userProfile?.id) {
       return userProfile.avatar_id ? getAvatarUrl(userProfile.avatar_id) : undefined;
-    } else {
-      // Assuming the other party is the startup/founder, use startup logo
-      return selectedChat.startup_logo;
+    } else if (otherUserProfile?.id === senderId) {
+      return otherUserProfile.avatar_id ? getAvatarUrl(otherUserProfile.avatar_id) : undefined;
     }
+    // Fallback for unexpected cases, or if startup_logo is intended for non-profile avatars
+    return selectedChat.startup_logo;
   };
 
   const getSenderInitials = (senderId: string) => {
     if (senderId === userProfile?.id) {
       return userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || 'U';
-    } else {
-      return selectedChat.startup_name?.[0] || 'S';
+    } else if (otherUserProfile?.id === senderId) {
+      return otherUserProfile.name?.[0] || otherUserProfile.email?.[0]?.toUpperCase() || 'O';
     }
+    return selectedChat.startup_name?.[0] || 'S';
   };
 
   return (
@@ -249,7 +275,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             >
               {!isMyMessage && (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                  {senderAvatar ? (
+                  {senderAvatar && senderAvatar.startsWith('http') ? (
                     <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
                   ) : (
                     senderInitials
@@ -272,7 +298,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               </div>
               {isMyMessage && (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                  {senderAvatar ? (
+                  {senderAvatar && senderAvatar.startsWith('http') ? (
                     <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
                   ) : (
                     senderInitials
