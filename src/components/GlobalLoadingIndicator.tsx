@@ -2,22 +2,15 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppData } from '@/hooks/use-app-data'; // Import useAppData
-import { supabase } from '@/integrations/supabase/client'; // Import supabase for userId
 
-export const GlobalLoadingIndicator: React.FC = () => {
-  // We need a dummy userId and isLoggedIn for useAppData to function in layout
-  // In a real app, this might be handled by a global context or a more direct state.
-  // For now, we'll use a placeholder and rely on the hook's internal logic.
-  const { loadingData } = useAppData({
-    userId: supabase.auth.currentUser?.id || null,
-    isLoggedIn: !!supabase.auth.currentUser, // Check if user is logged in
-    selectedChatId: null, // Not relevant for global loading
-  });
+interface GlobalLoadingIndicatorProps {
+  loading: boolean; // New prop
+}
 
+export const GlobalLoadingIndicator: React.FC<GlobalLoadingIndicatorProps> = ({ loading }) => {
   return (
     <AnimatePresence>
-      {loadingData && (
+      {loading && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

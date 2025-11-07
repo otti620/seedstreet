@@ -564,10 +564,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <>
-      {/* Temporary visual indicator for current screen */}
-      <div className="fixed top-0 left-0 z-[9999] bg-blue-500 text-white text-xs p-1 rounded-br-md">
-        Current Screen: {currentScreen}
-      </div>
+      {/* Removed temporary visual indicator for current screen */}
 
       {currentScreen === 'splash' && <SplashScreen />}
       {/* All other screens remain inside ScreenTransitionWrapper */}

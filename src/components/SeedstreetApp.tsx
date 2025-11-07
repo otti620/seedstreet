@@ -35,6 +35,7 @@ const SeedstreetApp: React.FC = () => {
   const [maintenanceMode, setMaintenanceMode] = useState({ enabled: false, message: '' });
   const [splashTimerComplete, setSplashTimerComplete] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null); // Manage userProfile here
+  const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false); // New state
 
   // 1. Splash screen timer: Ensures splash screen shows for a minimum duration
   useEffect(() => {
@@ -57,6 +58,13 @@ const SeedstreetApp: React.FC = () => {
   useEffect(() => {
     fetchAppSettings();
   }, [fetchAppSettings]);
+
+  // useAppData hook for fetching *other* data once logged in and initial screen is set
+  const {
+    startups, chats, communityPosts, messages, notifications, recentActivities,
+    loadingData, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications,
+    fetchRecentActivities, investorCount, founderCount
+  } = useAppData(isLoggedIn, userProfile, setUserProfile, currentScreen);
 
   // 3. Session check and initial screen determination
   useEffect(() => {
@@ -125,6 +133,16 @@ const SeedstreetApp: React.FC = () => {
     checkSessionAndDetermineScreen();
   }, [splashTimerComplete, currentScreen]); // Dependencies: re-run when splash timer completes or currentScreen changes (if still 'splash')
 
+  // Effect to control global loading indicator based on useAppData's loadingData
+  // This runs whenever loadingData or currentScreen changes, but only *after* splash.
+  useEffect(() => {
+    if (currentScreen !== 'splash' && !loadingSession) { // Only show if not on splash and session is done loading
+      setShowGlobalLoadingIndicator(loadingData);
+    } else {
+      setShowGlobalLoadingIndicator(false); // Hide during splash and initial session loading
+    }
+  }, [loadingData, currentScreen, loadingSession]);
+
   // Handle screen changes from child components
   const handleSetCurrentScreen = useCallback((screen: string, params?: any) => {
     setCurrentScreen(screen);
@@ -150,13 +168,6 @@ const SeedstreetApp: React.FC = () => {
     }
   }, [userProfile, setCurrentScreen]);
 
-  // useAppData hook for fetching *other* data once logged in and initial screen is set
-  const {
-    startups, chats, communityPosts, messages, notifications, recentActivities,
-    loadingData, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications,
-    fetchRecentActivities, investorCount, founderCount
-  } = useAppData(isLoggedIn, userProfile, setUserProfile, currentScreen);
-
   if (maintenanceMode.enabled) {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
   }
@@ -164,16 +175,32 @@ const SeedstreetApp: React.FC = () => {
   // If splash timer is not complete, or session is still loading, show splash screen
   // This ensures the splash screen is visible for the minimum duration
   if (!splashTimerComplete || loadingSession) {
-    return <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
-      isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
-      userProfile, setUserProfile, startups, chats, communityPosts, messages, notifications, recentActivities,
-      loadingData, fetchCommunityPosts, fetchNotifications, fetchUserProfile, investorCount, founderCount
-    }} />;
+    return (
+      <ThemeProviderWrapper
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+        showGlobalLoadingIndicator={false} // No global indicator during splash/initial session load
+      >
+        <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
+          isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
+          userProfile, setUserProfile, startups, chats, communityPosts, messages, notifications, recentActivities,
+          loadingData, fetchCommunityPosts, fetchNotifications, fetchUserProfile, investorCount, founderCount
+        }} />
+      </ThemeProviderWrapper>
+    );
   }
 
   // Once splash is done and initial screen determined, render the actual app content
   return (
-    <>
+    <ThemeProviderWrapper
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      showGlobalLoadingIndicator={showGlobalLoadingIndicator} // Pass the state
+    >
       <SeedstreetAppContent
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={setIsLoggedIn}
@@ -199,7 +226,7 @@ const SeedstreetApp: React.FC = () => {
         founderCount={founderCount}
       />
       <Toaster richColors position="top-center" />
-    </>
+    </ThemeProviderWrapper>
   );
 };
 

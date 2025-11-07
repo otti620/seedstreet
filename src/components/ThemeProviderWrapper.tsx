@@ -6,10 +6,14 @@ import { type ThemeProviderProps } from "next-themes/dist/types";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import { Toaster } from "sonner";
 
-export function ThemeProviderWrapper({ children, ...props }: ThemeProviderProps) {
+interface ThemeProviderWrapperProps extends ThemeProviderProps {
+  showGlobalLoadingIndicator?: boolean; // New prop
+}
+
+export function ThemeProviderWrapper({ children, showGlobalLoadingIndicator = false, ...props }: ThemeProviderWrapperProps) {
   return (
     <NextThemesProvider {...props}>
-      <GlobalLoadingIndicator />
+      <GlobalLoadingIndicator loading={showGlobalLoadingIndicator} /> {/* Pass loading prop */}
       {children}
       <Toaster richColors position="top-center" />
     </NextThemesProvider>
