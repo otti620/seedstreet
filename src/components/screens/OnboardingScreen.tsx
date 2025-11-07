@@ -33,7 +33,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, o
   const [currentSlide, setCurrentSlide] = useState(0);
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
+    <div className="bg-gray-50 flex flex-col w-full h-full dark:bg-gray-950"> {/* Removed fixed inset-0 */}
       <button onClick={() => { onOnboardingComplete?.(); setCurrentScreen('auth'); }} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
       
       <div className="flex-1 flex items-center justify-center p-8">
