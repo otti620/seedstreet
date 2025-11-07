@@ -46,7 +46,17 @@ import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
 // Dynamically import FramerMotionWrapper with ssr: false
-const FramerMotionWrapper = dynamic(() => import('./FramerMotionWrapper'), { ssr: false });
+const FramerMotionWrapper = dynamic(
+  () => import('./FramerMotionWrapper').then((mod) => mod.default),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-950 text-gray-500">
+        Loading application...
+      </div>
+    ),
+  }
+);
 
 // Define TypeScript interfaces for data structures (copied from use-app-data.tsx for consistency)
 interface Profile {
