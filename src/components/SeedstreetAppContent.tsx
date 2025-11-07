@@ -565,14 +565,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   return (
     <>
       {currentScreen === 'splash' && <SplashScreen />}
-      {currentScreen === 'onboarding' && (
-        <div className="w-full h-full absolute top-0 left-0">
-          <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
-        </div>
-      )}
       {/* All other screens remain inside ScreenTransitionWrapper */}
-      {currentScreen !== 'splash' && currentScreen !== 'onboarding' && (
+      {currentScreen !== 'splash' && (
         <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+          {currentScreen === 'onboarding' && (
+            <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
+          )}
           {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
           {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
           {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
