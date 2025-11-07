@@ -161,7 +161,7 @@ interface SeedstreetAppContentProps {
   startups: Startup[];
   chats: Chat[];
   communityPosts: CommunityPost[];
-  messages: Message[];
+  // Removed messages from props
   notifications: Notification[];
   recentActivities: ActivityLog[];
   loadingData: boolean;
@@ -185,7 +185,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   startups,
   chats,
   communityPosts,
-  messages,
+  // Removed messages from destructuring
   notifications,
   recentActivities,
   loadingData,
@@ -568,6 +568,20 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   // Find the selected startup for the room screen
   const startupForRoom = selectedStartupRoomId ? startups.find(s => s.id === selectedStartupRoomId) : null;
 
+  const fetchMessagesForChat = useCallback(async (chatId: string): Promise<Message[] | null> => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error("Error fetching messages for chat:", error);
+      toast.error("Failed to load messages for this chat.");
+      return null;
+    }
+    return data as Message[];
+  }, []);
+
   return (
     <>
       {currentScreen === 'splash' && <SplashScreen />}
@@ -663,11 +677,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           {currentScreen === 'chat' && selectedChat && (
             <ChatConversationScreen
               selectedChat={selectedChat}
-              messages={messages}
+              // messages prop removed
               setCurrentScreen={handleSetCurrentScreen}
               setActiveTab={setActiveTab}
               userProfile={userProfile}
               logActivity={logActivity}
+              fetchMessagesForChat={fetchMessagesForChat} // New prop
             />
           )}
           {currentScreen === 'editProfile' && userProfile && (

@@ -52,31 +52,29 @@ interface Profile {
 
 interface ChatConversationScreenProps {
   selectedChat: Chat | null; // Make selectedChat nullable
-  messages: Message[];
+  // messages prop removed
   setCurrentScreen: (screen: string, params?: { startupId?: string, chatId?: string }) => void;
   setActiveTab: (tab: string) => void;
   userProfile: Profile | null;
   logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
+  fetchMessagesForChat: (chatId: string) => Promise<Message[] | null>; // New prop
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   selectedChat,
-  messages,
+  // messages prop removed
   setCurrentScreen,
   setActiveTab,
   userProfile,
   logActivity,
+  fetchMessagesForChat, // New prop
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>(messages);
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]); // Local state for messages
   const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null); // State for the other user's profile
+  const [loadingMessages, setLoadingMessages] = useState(true); // Loading state for messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Sync optimisticMessages with the 'messages' prop when it changes (from real-time updates)
-  useEffect(() => {
-    setOptimisticMessages(messages);
-  }, [messages]);
 
   // Fetch other user's profile
   useEffect(() => {
@@ -102,6 +100,53 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
     fetchOtherUserProfile();
   }, [userProfile?.id, selectedChat]);
+
+  // Fetch messages for the selected chat and set up real-time subscription
+  useEffect(() => {
+    if (!selectedChat?.id) {
+      setOptimisticMessages([]);
+      setLoadingMessages(false);
+      return;
+    }
+
+    const loadMessages = async () => {
+      setLoadingMessages(true);
+      const fetched = await fetchMessagesForChat(selectedChat.id);
+      if (fetched) {
+        setOptimisticMessages(fetched);
+      }
+      setLoadingMessages(false);
+    };
+
+    loadMessages();
+
+    // Real-time subscription for messages in this specific chat
+    const channel = supabase
+      .channel(`chat_messages:${selectedChat.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
+        setOptimisticMessages(prevMessages => {
+          if (payload.eventType === 'INSERT') {
+            const newMessage = payload.new as Message;
+            // Check if message already exists (e.g., from optimistic update)
+            if (!prevMessages.some(msg => msg.id === newMessage.id)) {
+              return [...prevMessages, newMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMessage = payload.new as Message;
+            return prevMessages.map(msg => (msg.id === updatedMessage.id ? updatedMessage : msg));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedMessageId = (payload.old as Message).id;
+            return prevMessages.filter(msg => msg.id !== deletedMessageId);
+          }
+          return prevMessages; // No change or unhandled event type
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedChat?.id, fetchMessagesForChat]); // Re-run when selectedChat.id changes
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -143,11 +188,9 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
       // Revert optimistic update on error
       setOptimisticMessages(prevMessages => prevMessages.filter(msg => msg.id !== tempMessage.id));
     } else if (newMessageData) {
-      // Replace the temporary message with the real one from the database
-      setOptimisticMessages(prevMessages =>
-        prevMessages.map(msg => (msg.id === tempMessage.id ? (newMessageData as Message) : msg))
-      );
-
+      // The real-time subscription will handle updating optimisticMessages with the actual message
+      // No need to manually replace tempMessage here.
+      
       // Update chat's last message and unread counts
       const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
       const newUnreadCounts = { ...selectedChat.unread_counts };
@@ -278,54 +321,72 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {optimisticMessages.map((message, index) => {
-          const isMyMessage = message.sender_id === userProfile?.id;
-          const senderAvatar = getSenderAvatar(message.sender_id);
-          const senderInitials = getSenderInitials(message.sender_id);
+        {loadingMessages ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <svg className="animate-spin h-8 w-8 text-purple-700 dark:text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-gray-600 mt-3 dark:text-gray-300">Loading messages...</p>
+          </div>
+        ) : optimisticMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">
+              💬
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No messages yet</h3>
+            <p className="text-gray-600 mb-6 dark:text-gray-400">Start the conversation!</p>
+          </div>
+        ) : (
+          optimisticMessages.map((message, index) => {
+            const isMyMessage = message.sender_id === userProfile?.id;
+            const senderAvatar = getSenderAvatar(message.sender_id);
+            const senderInitials = getSenderInitials(message.sender_id);
 
-          return (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`flex items-end gap-3 ${isMyMessage ? 'justify-end' : 'justify-start'}`}
-            >
-              {!isMyMessage && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                  {senderAvatar && senderAvatar.startsWith('http') ? (
-                    <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
-                  ) : (
-                    senderInitials
-                  )}
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex items-end gap-3 ${isMyMessage ? 'justify-end' : 'justify-start'}`}
+              >
+                {!isMyMessage && (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+                    {senderAvatar && senderAvatar.startsWith('http') ? (
+                      <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                    ) : (
+                      senderInitials
+                    )}
+                  </div>
+                )}
+                <div className={`flex flex-col max-w-[70%] ${isMyMessage ? 'items-end' : 'items-start'}`}>
+                  <div
+                    className={`px-4 py-2 rounded-2xl ${
+                      isMyMessage
+                        ? 'bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-br-none'
+                        : 'bg-gray-200 text-gray-800 rounded-bl-none dark:bg-gray-700 dark:text-gray-50'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                    {format(new Date(message.created_at), 'p')}
+                  </span>
                 </div>
-              )}
-              <div className={`flex flex-col max-w-[70%] ${isMyMessage ? 'items-end' : 'items-start'}`}>
-                <div
-                  className={`px-4 py-2 rounded-2xl ${
-                    isMyMessage
-                      ? 'bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-br-none'
-                      : 'bg-gray-200 text-gray-800 rounded-bl-none dark:bg-gray-700 dark:text-gray-50'
-                  }`}
-                >
-                  <p className="text-sm">{message.text}</p>
-                </div>
-                <span className="text-xs text-gray-500 mt-1 dark:text-gray-400">
-                  {format(new Date(message.created_at), 'p')}
-                </span>
-              </div>
-              {isMyMessage && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                  {senderAvatar && senderAvatar.startsWith('http') ? (
-                    <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
-                  ) : (
-                    senderInitials
-                  )}
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+                {isMyMessage && (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden dark:bg-gray-700 dark:text-gray-50">
+                    {senderAvatar && senderAvatar.startsWith('http') ? (
+                      <Image src={senderAvatar} alt="Sender Avatar" layout="fill" objectFit="cover" className="rounded-full" />
+                    ) : (
+                      senderInitials
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -336,7 +397,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             <Paperclip className="w-5 h-5" />
           </button>
           <Textarea
-            key={selectedChat.id}
+            key={selectedChat?.id} // Use chat ID as key to reset textarea on chat change
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {

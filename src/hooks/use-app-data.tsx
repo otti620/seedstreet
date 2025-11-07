@@ -19,7 +19,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   phone: string | null;
-  last_seen: string | null;
+  last_seen: string | null; // Assuming this is the field for last activity
   show_welcome_flyer: boolean;
   total_committed: number;
 }
@@ -112,7 +112,7 @@ export const useAppData = (
   const [startups, setStartups] = useState<Startup[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Removed messages state, as it will be fetched per chat
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
   const [loadingData, setLoadingData] = useState(false);
@@ -156,25 +156,7 @@ export const useAppData = (
     }
   }, []); // No dependency on userId here, as community posts are public
 
-  const fetchMessages = useCallback(async () => {
-    // This should ideally fetch messages for the currently selected chat, not all messages
-    // For now, keeping it simple, but will need refinement for performance
-    if (chats.length === 0) {
-      setMessages([]);
-      return;
-    }
-    const chatIds = chats.map(chat => chat.id);
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .in('chat_id', chatIds)
-      .order('created_at', { ascending: true });
-    if (error) {
-      console.error("Error fetching messages:", error);
-    } else {
-      setMessages(data || []);
-    }
-  }, [chats]); // Depends on chats
+  // Removed fetchMessages function
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -229,7 +211,7 @@ export const useAppData = (
           fetchStartups(),
           fetchChats(),
           fetchCommunityPosts(),
-          fetchMessages(),
+          // Removed fetchMessages() from here
           fetchNotifications(),
           fetchRecentActivities(),
           fetchUserCounts(),
@@ -242,20 +224,20 @@ export const useAppData = (
       setStartups([]);
       setChats([]);
       setCommunityPosts([]);
-      setMessages([]);
+      // Removed messages state clear
       setNotifications([]);
       setRecentActivities([]);
       setInvestorCount(0);
       setFounderCount(0);
       setLoadingData(false);
     }
-  }, [isLoggedIn, userId, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
+  }, [isLoggedIn, userId, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
 
   return {
     startups,
     chats,
     communityPosts,
-    messages,
+    // Removed messages from return
     notifications,
     recentActivities,
     loadingData,
