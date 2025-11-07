@@ -2,8 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  // Removed framer-motion from transpilePackages to avoid potential conflicts
-  // transpilePackages: ['framer-motion'], 
+  transpilePackages: ['framer-motion'], // Re-added framer-motion to transpilePackages
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Removed the custom babel-loader rule for framer-motion
     return config;
