@@ -7,7 +7,7 @@ import {
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-// Removed dynamic from next/dynamic as it's no longer needed for ScreenTransitionWrapper
+import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
@@ -197,7 +197,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
-  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
+  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null); // Keep this state
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
@@ -208,6 +208,16 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
 
   const userRole = userProfile?.role || null;
+
+  // Effect to update selectedStartup when selectedStartupId or startups change
+  useEffect(() => {
+    if (selectedStartupId && startups.length > 0) {
+      setSelectedStartup(startups.find(s => s.id === selectedStartupId) || null);
+    } else if (!selectedStartupId) {
+      setSelectedStartup(null);
+    }
+  }, [selectedStartupId, startups]);
+
 
   // Update screen history when currentScreen prop changes
   useEffect(() => {
@@ -223,10 +233,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     setCurrentScreen(screen, params);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
-      setSelectedStartup(startups.find(s => s.id === params.startupId) || null);
+      // setSelectedStartup is now handled by the useEffect
     } else {
       setSelectedStartupId(undefined);
-      setSelectedStartup(null);
     }
     if (params?.startupName) {
       setListedStartupName(params.startupName);
@@ -259,7 +268,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedStartupRoomId(undefined);
     }
-  }, [setCurrentScreen, startups, chats]);
+  }, [setCurrentScreen, chats, startups]); // Added startups to dependencies for completeness
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
