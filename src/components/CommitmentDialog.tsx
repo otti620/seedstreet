@@ -54,7 +54,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
         throw new Error("Commitment amount must be positive.");
       }
 
-      // 1. Insert into commitments table
+      // 1. Insert into commitments table with 'Approved' status for immediate visibility
       const { data: newCommitment, error: commitmentError } = await supabase
         .from('commitments')
         .insert({
@@ -65,7 +65,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
           startup_id: startupId,
           startup_name: startupName,
           amount: commitmentAmount,
-          status: 'Pending',
+          status: 'Approved', // Changed from 'Pending' to 'Approved'
         })
         .select()
         .single();

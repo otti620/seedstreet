@@ -118,7 +118,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     setNewMessage('');
 
     const tempMessage: Message = {
-      id: `temp-${Date.now()}`,
+      id: `temp-${Date.now()}`, // Temporary ID
       chat_id: selectedChat.id,
       sender_id: userProfile.id,
       sender_name: userProfile.name,
@@ -129,7 +129,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     setOptimisticMessages(prevMessages => [...prevMessages, tempMessage]);
     scrollToBottom();
 
-    const { data, error } = await supabase.from('messages').insert({
+    const { data: newMessageData, error } = await supabase.from('messages').insert({
       chat_id: selectedChat.id,
       sender_id: userProfile.id,
       sender_name: userProfile.name,
@@ -139,8 +139,14 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     if (error) {
       toast.error("Failed to send message: " + error.message);
       console.error("Error sending message:", error);
+      // Revert optimistic update on error
       setOptimisticMessages(prevMessages => prevMessages.filter(msg => msg.id !== tempMessage.id));
-    } else {
+    } else if (newMessageData) {
+      // Replace the temporary message with the real one from the database
+      setOptimisticMessages(prevMessages =>
+        prevMessages.map(msg => (msg.id === tempMessage.id ? (newMessageData as Message) : msg))
+      );
+
       // Update chat's last message and unread counts
       const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
       const newUnreadCounts = { ...selectedChat.unread_counts };
@@ -209,7 +215,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     } else if (otherUserProfile?.id === senderId) {
       return otherUserProfile.avatar_id ? getAvatarUrl(otherUserProfile.avatar_id) : undefined;
     }
-    // Fallback for unexpected cases, or if startup_logo is intended for non-profile avatars
+    // Fallback to startup logo if other user profile not found or for general chat context
     return selectedChat.startup_logo;
   };
 
