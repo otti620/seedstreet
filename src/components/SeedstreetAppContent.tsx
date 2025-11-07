@@ -47,7 +47,7 @@ import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
 // Dynamically import ScreenTransitionWrapper with ssr: false
 const ScreenTransitionWrapper = dynamic(
-  () => import('./ScreenTransitionWrapper').then((mod) => mod.ScreenTransitionWrapper),
+  () => import('./ScreenTransitionWrapper').then((mod) => mod.default), // Changed to mod.default
   { 
     ssr: false,
     loading: () => (
