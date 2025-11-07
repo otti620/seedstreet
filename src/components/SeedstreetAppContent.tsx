@@ -153,7 +153,7 @@ interface SeedstreetAppContentProps {
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
   currentScreen: string;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chat?: Chat, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void;
   onboardingComplete: () => void;
   // Props from useAppData
   userProfile: Profile | null;
@@ -203,7 +203,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
   const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined);
   const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
-  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(undefined);
+  // selectedChatId state removed
 
   const userRole = userProfile?.role || null;
 
@@ -219,15 +219,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   }, [selectedStartupId, startups]);
 
-  // Effect to update selectedChat when selectedChatId or chats change
-  useEffect(() => {
-    if (selectedChatId && chats.length > 0) {
-      setSelectedChat(chats.find(c => c.id === selectedChatId) || null);
-    } else if (!selectedChatId) {
-      setSelectedChat(null);
-    }
-  }, [selectedChatId, chats]);
-
+  // Removed: Effect to update selectedChat when selectedChatId or chats change
+  // selectedChat is now set directly when navigating to 'chat' screen
 
   // Update screen history when currentScreen prop changes
   useEffect(() => {
@@ -239,7 +232,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     });
   }, [currentScreen]);
 
-  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => {
+  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chat?: Chat, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => {
     setCurrentScreen(screen, params);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
@@ -257,11 +250,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedCommunityPostId(undefined);
     }
-    if (params?.chatId) {
-      setSelectedChatId(params.chatId);
-      // setSelectedChat is now handled by the useEffect
-    } else {
-      setSelectedChatId(undefined);
+    if (params?.chat) { // Directly set selectedChat if a chat object is provided
+      setSelectedChat(params.chat);
+    } else { // If navigating away from chat or no chat provided
+      setSelectedChat(null);
     }
     if (params?.authActionType) {
       setAuthActionType(params.authActionType);
@@ -273,7 +265,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedStartupRoomId(undefined);
     }
-  }, [setCurrentScreen, chats, startups]);
+  }, [setCurrentScreen, startups]); // Removed 'chats' dependency as selectedChat is set directly
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
@@ -544,7 +536,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
     if (chatToOpen) {
       setSelectedChat(chatToOpen);
-      handleSetCurrentScreen('chat', { chatId: chatToOpen.id });
+      handleSetCurrentScreen('chat', { chat: chatToOpen }); // Pass the full chat object
       setActiveTab('chats');
     }
   };

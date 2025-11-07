@@ -1,320 +1,276 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { ArrowLeft, Search, MessageCircle, User, Rocket } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Search, MessageCircle, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarUrl } from '@/lib/default-avatars';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
 interface Profile {
   id: string;
-  name: string | null;
-  email: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_id: number | null;
+  email: string | null;
+  name: string | null;
+  role: 'investor' | 'founder' | 'admin' | null;
+  onboarding_complete: boolean;
+  bookmarked_startups: string[];
+  interested_startups: string[];
+  bio: string | null;
+  location: string | null;
+  phone: string | null;
+  last_seen: string | null;
+  show_welcome_flyer: boolean;
+  total_committed: number;
 }
 
 interface Startup {
   id: string;
   name: string;
   logo: string;
-  founder_id: string;
+  tagline: string;
+  pitch: string;
+  description: string | null;
+  category: string;
+  room_members: number;
+  active_chats: number;
+  interests: number;
   founder_name: string;
-  active_chats: number; // Added for update
-  room_members: number; // Added for update
+  location: string;
+  founder_id: string;
+  amount_sought: number | null;
+  currency: string | null;
+  funding_stage: string | null;
+  ai_risk_score: number | null;
+  market_trend_analysis: string | null;
+  amount_raised: number;
+}
+
+interface Chat {
+  id: string;
+  startup_id: string;
+  startup_name: string;
+  startup_logo: string;
+  last_message_text: string;
+  last_message_timestamp: string;
+  unread_count: number;
+  investor_id: string;
+  founder_id: string;
+  user_ids: string[];
+  unread_counts: { [key: string]: number };
 }
 
 interface NewChatScreenProps {
-  setCurrentScreen: (screen: string, params?: { chatId?: string }) => void;
-  userProfile: Profile | null;
-  logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
+  setCurrentScreen: (screen: string, params?: { chat?: Chat }) => void; // Updated param type
+  userProfile: Profile;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
 }
 
 const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userProfile, logActivity }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<(Profile | Startup)[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const handleSearch = async (term: string) => {
-    if (!term.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setLoading(true);
-    const lowerCaseTerm = term.toLowerCase();
-
-    // Search for profiles (founders/investors)
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name, email, role, avatar_id')
-      .or(`name.ilike.%${lowerCaseTerm}%,email.ilike.%${lowerCaseTerm}%`)
-      .neq('id', userProfile?.id); // Exclude current user
-
-    // Search for startups
-    const { data: startupsData, error: startupsError } = await supabase
-      .from('startups')
-      .select('id, name, logo, founder_id, founder_name, active_chats, room_members') // Select active_chats and room_members
-      .ilike('name', `%${lowerCaseTerm}%`)
-      .eq('status', 'Approved'); // Only show approved startups
-
-    if (profilesError) console.error("Error searching profiles:", profilesError);
-    if (startupsError) console.error("Error searching startups:", startupsError);
-
-    const combinedResults: (Profile | Startup)[] = [];
-
-    if (profilesData) {
-      profilesData.forEach(profile => {
-        // Only add if they are a founder or investor, and not the current user
-        if ((profile.role === 'founder' || profile.role === 'investor') && profile.id !== userProfile?.id) {
-          combinedResults.push(profile as Profile);
-        }
-      });
-    }
-
-    if (startupsData) {
-      startupsData.forEach(startup => {
-        // Only add if the current user is not the founder of this startup
-        if (startup.founder_id !== userProfile?.id) {
-          combinedResults.push(startup as Startup);
-        }
-      });
-    }
-
-    setSearchResults(combinedResults);
-    setLoading(false);
-  };
+  const [startups, setStartups] = useState<Startup[]>([]);
+  const [loadingStartups, setLoadingStartups] = useState(true);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      handleSearch(searchTerm);
-    }, 300); // Debounce search
-
-    return () => {
-      clearTimeout(handler);
+    const fetchStartups = async () => {
+      setLoadingStartups(true);
+      const { data, error } = await supabase
+        .from('startups')
+        .select('*')
+        .neq('founder_id', userProfile.id); // Exclude own startups
+      if (error) {
+        console.error("Error fetching startups:", error);
+        toast.error("Failed to load startups.");
+      } else {
+        setStartups(data || []);
+      }
+      setLoadingStartups(false);
     };
-  }, [searchTerm]);
 
-  const handleStartChat = async (target: Profile | Startup) => {
-    if (!userProfile?.id || !userProfile?.name) {
-      toast.error("Your profile information is incomplete. Cannot start chat.");
-      return;
-    }
+    fetchStartups();
+  }, [userProfile.id]);
 
-    let targetUserId: string;
-    let targetUserName: string;
-    let targetUserRole: string | null = null;
-    let startupId: string | null = null;
-    let startupName: string | null = null;
-    let startupLogo: string | null = null;
-    let founderId: string | null = null;
-    let investorId: string | null = null;
-    let currentActiveChats = 0; // For startup metrics
-    let currentRoomMembers = 0; // For startup metrics
+  const filteredStartups = startups.filter(startup =>
+    startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    startup.founder_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    startup.tagline.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    if ('role' in target) { // It's a Profile
-      targetUserId = target.id;
-      targetUserName = target.name || target.email?.split('@')[0] || 'User';
-      targetUserRole = target.role;
-
-      if (userProfile.role === 'investor' && targetUserRole === 'founder') {
-        investorId = userProfile.id;
-        founderId = targetUserId;
-      } else if (userProfile.role === 'founder' && targetUserRole === 'investor') {
-        investorId = targetUserId;
-        founderId = userProfile.id;
-      } else {
-        toast.error("You can only start a chat with an investor if you are a founder, or with a founder if you are an investor.");
-        return;
+  const { mutate: startNewChat, loading: creatingChat } = useSupabaseMutation(
+    async (startup: Startup) => {
+      if (!userProfile.id || !userProfile.name) {
+        throw new Error("Your profile information is incomplete. Cannot start chat.");
       }
-    } else { // It's a Startup
-      startupId = target.id;
-      startupName = target.name;
-      startupLogo = target.logo;
-      founderId = target.founder_id;
-      targetUserId = target.founder_id; // Chat with the founder of the startup
-      targetUserName = target.founder_name;
-      currentActiveChats = target.active_chats; // Get current values
-      currentRoomMembers = target.room_members; // Get current values
 
-      if (userProfile.role === 'investor') {
-        investorId = userProfile.id;
-      } else {
-        toast.error("Only investors can initiate chats with startups.");
-        return;
+      // Check for existing chat
+      const { data: existingChats, error: fetchChatError } = await supabase
+        .from('chats')
+        .select('*')
+        .eq('investor_id', userProfile.id)
+        .eq('founder_id', startup.founder_id)
+        .eq('startup_id', startup.id)
+        .single();
+
+      if (fetchChatError && fetchChatError.code !== 'PGRST116') {
+        throw fetchChatError;
       }
-    }
 
-    // Check for existing chat
-    const { data: existingChats, error: fetchChatError } = await supabase
-      .from('chats')
-      .select('*')
-      .contains('user_ids', [userProfile.id, targetUserId])
-      .eq('startup_id', startupId) // Important for distinguishing chats about different startups
-      .single();
+      if (existingChats) {
+        toast.info("Continuing existing chat.");
+        return existingChats as Chat;
+      }
 
-    if (fetchChatError && fetchChatError.code !== 'PGRST116') {
-      toast.error("Failed to check for existing chat: " + fetchChatError.message);
-      console.error("Error checking existing chat:", fetchChatError);
-      return;
-    }
+      // Fetch founder profile to get their name
+      const { data: founderProfile, error: founderError } = await supabase
+        .from('profiles')
+        .select('name, email, role')
+        .eq('id', startup.founder_id)
+        .single();
 
-    let chatToOpenId: string;
+      if (founderError || !founderProfile) {
+        throw new Error("Failed to get founder details. Cannot start chat.");
+      }
 
-    if (existingChats) {
-      chatToOpenId = existingChats.id;
-      toast.info("Continuing existing chat.");
-    } else {
+      if (founderProfile.role !== 'founder') {
+        throw new Error(`Cannot start chat: ${founderProfile.name || founderProfile.email?.split('@')[0] || 'This user'} is not registered as a founder.`);
+      }
+
+      const founderName = founderProfile.name || founderProfile.email?.split('@')[0] || 'Founder';
+
       const initialUnreadCounts = {
         [userProfile.id]: 0,
-        [targetUserId]: 1, // Mark as unread for the recipient
+        [startup.founder_id]: 1,
       };
 
       const { data: newChat, error: createChatError } = await supabase
         .from('chats')
         .insert({
-          user_ids: [userProfile.id, targetUserId],
-          investor_id: investorId,
-          investor_name: investorId === userProfile.id ? userProfile.name : targetUserName,
-          founder_id: founderId,
-          founder_name: founderId === userProfile.id ? userProfile.name : targetUserName,
-          startup_id: startupId,
-          startup_name: startupName,
-          startup_logo: startupLogo,
+          user_ids: [userProfile.id, startup.founder_id],
+          investor_id: userProfile.id,
+          investor_name: userProfile.name,
+          founder_id: startup.founder_id,
+          founder_name: founderName,
+          startup_id: startup.id,
+          startup_name: startup.name,
+          startup_logo: startup.logo,
           last_message_text: 'Chat initiated!',
           last_message_timestamp: new Date().toISOString(),
           unread_counts: initialUnreadCounts,
         })
-        .select('id')
+        .select()
         .single();
 
       if (createChatError) {
-        toast.error("Failed to start new chat: " + createChatError.message);
-        console.error("Error creating new chat:", createChatError);
-        return;
-      }
-      chatToOpenId = newChat.id;
-      toast.success("New chat started!");
-      logActivity('chat_started', `Started a chat with ${targetUserName} about ${startupName || 'general'}`, chatToOpenId, 'MessageCircle');
-
-      // Increment active_chats and room_members for the startup if it's a startup chat
-      if (startupId) {
-        const { data: updatedStartup, error: updateStartupError } = await supabase
-          .from('startups')
-          .update({
-            active_chats: currentActiveChats + 1,
-            room_members: currentRoomMembers + 1, // Assuming starting a chat also means joining the room
-          })
-          .eq('id', startupId)
-          .select('active_chats, room_members')
-          .single();
-
-        if (updateStartupError) {
-          console.error("Error updating startup chat metrics:", updateStartupError);
-          toast.error("Failed to update startup chat metrics.");
-        } else {
-          console.log("Startup chat metrics updated:", updatedStartup);
-        }
+        throw createChatError;
       }
 
-      // Send notification to the other user
+      // Increment active_chats and room_members for the startup
+      const { data: updatedStartup, error: updateStartupError } = await supabase
+        .from('startups')
+        .update({
+          active_chats: startup.active_chats + 1,
+          room_members: startup.room_members + 1,
+        })
+        .eq('id', startup.id)
+        .select('active_chats, room_members')
+        .single();
+
+      if (updateStartupError) {
+        console.error("Error updating startup chat metrics:", updateStartupError);
+        // Don't throw, as chat was already created
+      }
+
       await supabase.from('notifications').insert({
-        user_id: targetUserId,
+        user_id: startup.founder_id,
         type: 'new_chat',
-        message: `${userProfile.name || userProfile.email} started a chat with you about ${startupName || 'general'}!`,
-        link: `/chat/${chatToOpenId}`,
-        related_entity_id: chatToOpenId,
+        message: `${userProfile.name || userProfile.email} started a chat with you about ${startup.name}!`,
+        link: `/chat/${newChat.id}`,
+        related_entity_id: newChat.id,
       });
-    }
 
-    setCurrentScreen('chat', { chatId: chatToOpenId });
-  };
+      return newChat as Chat;
+    },
+    {
+      onSuccess: (newChat) => {
+        toast.success("New chat started!");
+        logActivity('chat_started', `Started a chat with ${newChat.founder_name} about ${newChat.startup_name}`, newChat.id, 'MessageCircle');
+
+        setCurrentScreen('chat', { chat: newChat }); // Pass the full chat object
+      },
+      onError: (error) => {
+        toast.error(`Failed to start chat: ${error.message}`);
+        console.error("Error starting new chat:", error);
+      },
+      errorMessage: "Failed to start new chat.",
+    }
+  );
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button onClick={() => setCurrentScreen('home', { chatId: undefined })} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to chats">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">New Chat</h2>
         </div>
-      </div>
-
-      {/* Search Input */}
-      <div className="bg-white px-4 py-3 border-b border-gray-100 dark:bg-gray-900 dark:border-gray-800">
-        <div className="relative">
+        <div className="relative mt-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <Input
             type="text"
-            placeholder="Search users or startups..."
-            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+            placeholder="Search startups to chat with..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 border-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-800 dark:text-gray-50 dark:placeholder-gray-400"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search for users or startups to chat with"
           />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={() => setSearchTerm('')}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Search Results */}
+      {/* Startup List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-              <Skeleton className="w-10 h-10 rounded-full" />
-              <div className="flex-1 space-y-1">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-              <Skeleton className="w-16 h-8 rounded-lg" />
-            </div>
-          ))
-        ) : searchResults.length > 0 ? (
-          searchResults.map((result) => (
-            <div
-              key={result.id}
-              className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl font-bold text-gray-700 relative overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                {'logo' in result && result.logo ? (
-                  result.logo.startsWith('http') ? (
-                    <Image src={result.logo} alt={`${result.name} logo`} layout="fill" objectFit="cover" className="rounded-full" />
-                  ) : (
-                    result.logo
-                  )
-                ) : 'avatar_id' in result && result.avatar_id ? (
-                  <Image src={getAvatarUrl(result.avatar_id)} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
-                ) : (
-                  ('name' in result ? result.name?.[0] : result.email?.[0]?.toUpperCase()) || '?'
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900 dark:text-gray-50">
-                  {'name' in result ? result.name : result.email}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {'role' in result ? result.role : 'Startup'}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => handleStartChat(result)}
-                className="bg-gradient-to-r from-purple-700 to-teal-600 text-white"
-                aria-label={`Start chat with ${'name' in result ? result.name : result.email || result.id}`}
-              >
-                <MessageCircle className="w-4 h-4 mr-1" /> Chat
-              </Button>
-            </div>
-          ))
-        ) : searchTerm.trim() ? (
-          <div className="text-center text-gray-500 py-4 dark:text-gray-400">No results found for "{searchTerm}".</div>
+        {loadingStartups ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading startups...</div>
+        ) : filteredStartups.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+            {searchTerm ? "No matching startups found." : "No startups available to chat with."}
+          </div>
         ) : (
-          <div className="text-center text-gray-500 py-4 dark:text-gray-400">Start typing to find users or startups.</div>
+          filteredStartups.map((startup) => (
+            <button
+              key={startup.id}
+              className="flex items-center w-full p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700"
+              onClick={() => startNewChat(startup)}
+              disabled={creatingChat}
+            >
+              <Avatar className="w-12 h-12 mr-3">
+                <AvatarImage src={startup.logo || getAvatarUrl(1)} alt={startup.name} />
+                <AvatarFallback>{startup.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50">{startup.name}</h3>
+                <p className="text-sm text-gray-600 truncate dark:text-gray-300">{startup.tagline}</p>
+              </div>
+              <div className="ml-2">
+                <MessageCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </div>
+            </button>
+          ))
         )}
       </div>
     </div>

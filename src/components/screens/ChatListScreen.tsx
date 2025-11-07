@@ -1,13 +1,14 @@
 "use client";
 
-import React from 'react';
-import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, MessageCircle, Search, Plus } from 'lucide-react';
-import BottomNav from '../BottomNav';
-import { motion } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, MessageCircle, Plus, Search, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getAvatarUrl } from '@/lib/default-avatars';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
   id: string;
   startup_id: string;
@@ -16,7 +17,6 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -25,11 +25,11 @@ interface Chat {
 
 interface ChatListScreenProps {
   chats: Chat[];
-  setCurrentScreen: (screen: string, params?: { chatId?: string }) => void;
-  setSelectedChat: (chat: Chat) => void;
+  setCurrentScreen: (screen: string, params?: { chat?: Chat }) => void; // Updated param type
+  setSelectedChat: (chat: Chat | null) => void;
   setActiveTab: (tab: string) => void;
   activeTab: string;
-  userRole: string | null;
+  userRole: 'investor' | 'founder' | 'admin' | null;
 }
 
 const ChatListScreen: React.FC<ChatListScreenProps> = ({
@@ -40,89 +40,100 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   activeTab,
   userRole,
 }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false); // State for loading indicator
+
+  const filteredChats = chats.filter(chat =>
+    chat.startup_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chat.last_message_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chat.founder_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chat.investor_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleChatClick = (chat: Chat) => {
     setSelectedChat(chat);
-    setCurrentScreen('chat');
+    // Mark messages as read for this chat
+    setCurrentScreen('chat', { chat: chat }); // Pass the full chat object
+  };
+
+  const handleNewChatClick = () => {
+    setCurrentScreen('newChat');
   };
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 dark:bg-gray-900 dark:border-gray-800">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Chats</h1>
-            <p className="text-sm text-gray-500">Your conversations</p>
-          </div>
-          <button onClick={() => setCurrentScreen('newChat')} className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center dark:bg-purple-900 dark:hover:bg-purple-800" aria-label="Start new chat">
-            <Plus className="w-5 h-5 text-purple-700 dark:text-purple-300" />
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setActiveTab('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Chats</h2>
+          {userRole === 'investor' && (
+            <Button variant="ghost" size="icon" onClick={handleNewChatClick} className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Plus className="w-5 h-5" />
+            </Button>
+          )}
         </div>
-      </div>
-
-      {/* Search (Optional, could add later) */}
-      {/* <div className="bg-white px-6 py-4 border-b border-gray-100">
-        <div className="relative">
+        <div className="relative mt-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+          <Input
             type="text"
             placeholder="Search chats..."
-            className="w-full h-11 pl-10 pr-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 border-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-800 dark:text-gray-50 dark:placeholder-gray-400"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
-      </div> */}
-
-      {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-24">
-        {chats.length > 0 ? (
-          chats.map(chat => (
-            <motion.div
-              key={chat.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => handleChatClick(chat)}
-              className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={() => setSearchTerm('')}
             >
-              <div className="relative w-14 h-14 flex-shrink-0">
-                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold text-gray-700 relative overflow-hidden dark:bg-gray-700 dark:text-gray-50">
-                  {chat.startup_logo.startsWith('http') ? (
-                    <Image src={chat.startup_logo} alt={`${chat.startup_name} logo`} layout="fill" objectFit="cover" className="rounded-full" />
-                  ) : (
-                    chat.startup_name?.[0] || 'S'
-                  )}
-                </div>
-                {/* isOnline removed */}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                  <h3 className="font-semibold text-gray-900 truncate dark:text-gray-50">{chat.startup_name}</h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(chat.last_message_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-                <p className="text-sm text-gray-600 truncate dark:text-gray-300">{chat.last_message_text}</p>
-              </div>
-              {chat.unread_counts && chat.unread_counts[userRole === 'investor' ? chat.investor_id : chat.founder_id] > 0 && (
-                <Badge className="bg-purple-600 text-white rounded-full px-2 py-0.5 text-xs font-bold flex-shrink-0">
-                  {chat.unread_counts[userRole === 'investor' ? chat.investor_id : chat.founder_id]}
-                </Badge>
-              )}
-            </motion.div>
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">
-              💬
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-gray-50">No chats yet</h3>
-            <p className="text-gray-600 mb-6 dark:text-gray-400">Start a conversation with a startup or founder.</p>
-            <button onClick={() => setActiveTab('home')} className="bg-gradient-to-r from-purple-700 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all">
-              Discover Startups
-            </button>
-          </div>
-        )}
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
+      {/* Chat List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {loading ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading chats...</div>
+        ) : filteredChats.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+            {searchTerm ? "No matching chats found." : "You don't have any chats yet."}
+          </div>
+        ) : (
+          filteredChats.map((chat) => (
+            <button
+              key={chat.id}
+              className="flex items-center w-full p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700"
+              onClick={() => handleChatClick(chat)}
+            >
+              <Avatar className="w-12 h-12 mr-3">
+                <AvatarImage src={chat.startup_logo || getAvatarUrl(1)} alt={chat.startup_name} />
+                <AvatarFallback>{chat.startup_name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50">{chat.startup_name}</h3>
+                <p className="text-sm text-gray-600 truncate dark:text-gray-300">{chat.last_message_text}</p>
+              </div>
+              <div className="flex flex-col items-end ml-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(chat.last_message_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {chat.unread_counts && chat.unread_counts[supabase.auth.user?.()?.id || ''] > 0 && (
+                  <span className="mt-1 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {chat.unread_counts[supabase.auth.user?.()?.id || '']}
+                  </span>
+                )}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 };
