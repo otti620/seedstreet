@@ -246,7 +246,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                </motion.div>
               </motion.div>
 
               {!isSignUp && (
