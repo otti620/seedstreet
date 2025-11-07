@@ -7,7 +7,7 @@ import {
   LogOut, Bell, Filter, Sparkles, DollarSign, Eye,
   MoreVertical, Check, ChevronRight, X, Menu, Home
 } from 'lucide-react';
-import dynamic from 'next/dynamic';
+// Removed dynamic from next/dynamic as it's no longer needed for ScreenTransitionWrapper
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen';
@@ -33,30 +33,17 @@ import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen';
-// import FramerMotionWrapper from './FramerMotionWrapper'; // Removed direct import
 import WelcomeFlyer from './WelcomeFlyer';
-import CommitmentDialog from './CommitmentDialog'; // Import CommitmentDialog
-import StartupRoomScreen from './screens/StartupRoomScreen'; // Import StartupRoomScreen
-import AuthActionScreen from './screens/AuthActionScreen'; // Import AuthActionScreen
-import NewChatScreen from './screens/NewChatScreen'; // Import NewChatScreen
+import CommitmentDialog from './CommitmentDialog';
+import StartupRoomScreen from './screens/StartupRoomScreen';
+import AuthActionScreen from './screens/AuthActionScreen';
+import NewChatScreen from './screens/NewChatScreen';
+import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Direct import
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
-
-// Dynamically import ScreenTransitionWrapper with ssr: false
-const ScreenTransitionWrapper = dynamic(
-  () => import('./ScreenTransitionWrapper').then((mod) => mod.default), // Changed to mod.default
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-950 text-gray-500">
-        Loading application...
-      </div>
-    ),
-  }
-);
 
 // Define TypeScript interfaces for data structures (copied from use-app-data.tsx for consistency)
 interface Profile {
@@ -75,7 +62,7 @@ interface Profile {
   phone: string | null;
   last_seen: string | null;
   show_welcome_flyer: boolean;
-  total_committed: number; // Add total_committed
+  total_committed: number;
 }
 
 interface Startup {
@@ -97,7 +84,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
-  amount_raised: number; // Add amount_raised
+  amount_raised: number;
 }
 
 interface Chat {
@@ -108,7 +95,6 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -135,7 +121,7 @@ interface CommunityPost {
   created_at: string;
   likes: string[];
   comments_count: number;
-  is_hidden: boolean; // Add is_hidden
+  is_hidden: boolean;
 }
 
 interface Notification {
@@ -166,7 +152,7 @@ interface SeedstreetAppContentProps {
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
   currentScreen: string;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void; // Updated to accept authActionType and startupRoomId
+  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void;
   onboardingComplete: () => void;
   // Props from useAppData
   userProfile: Profile | null;
@@ -181,8 +167,8 @@ interface SeedstreetAppContentProps {
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
   fetchUserProfile: () => Promise<void>;
-  investorCount: number; // New prop
-  founderCount: number; // New prop
+  investorCount: number;
+  founderCount: number;
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -207,8 +193,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchCommunityPosts,
   fetchNotifications,
   fetchUserProfile,
-  investorCount, // Destructure new prop
-  founderCount, // Destructure new prop
+  investorCount,
+  founderCount,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
@@ -218,8 +204,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
   const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
-  const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined); // New state for AuthActionScreen
-  const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined); // New state for StartupRoomScreen
+  const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined);
+  const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
 
   const userRole = userProfile?.role || null;
 
@@ -234,7 +220,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   }, [currentScreen]);
 
   const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chatId?: string, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => {
-    setCurrentScreen(screen, params); // Call the parent's setter
+    setCurrentScreen(screen, params);
     if (params?.startupId) {
       setSelectedStartupId(params.startupId);
       setSelectedStartup(startups.find(s => s.id === params.startupId) || null);
@@ -273,13 +259,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedStartupRoomId(undefined);
     }
-  }, [setCurrentScreen, startups, chats]); // Added startups to dependencies
+  }, [setCurrentScreen, startups, chats]);
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
-        handleSetCurrentScreen(newHistory[newHistory.length - 1]); // Use the local handler
+        handleSetCurrentScreen(newHistory[newHistory.length - 1]);
         return newHistory;
       }
       return prev;
@@ -641,13 +627,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           handleStartChat={handleStartChat}
           logActivity={logActivity}
           fetchUserProfile={fetchUserProfile}
-          userProfile={userProfile} {/* Pass userProfile here */}
+          userProfile={userProfile}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
         <ChatConversationScreen
           selectedChat={selectedChat}
-          messages={messages} // Use messages from props
+          messages={messages}
           setCurrentScreen={handleSetCurrentScreen}
           setActiveTab={setActiveTab}
           userProfile={userProfile}
@@ -680,7 +666,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       )}
       {currentScreen === 'notifications' && userProfile && (
         <NotificationsScreen
-          notifications={notifications} // Use notifications from props
+          notifications={notifications}
           setCurrentScreen={handleSetCurrentScreen}
           fetchNotifications={fetchNotifications}
         />
