@@ -61,7 +61,7 @@ const SeedstreetApp: React.FC = () => {
   }, [fetchAppSettings]);
 
   // Callback to fetch/refresh user profile, managed by SeedstreetApp
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  const fetchUserProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -70,9 +70,12 @@ const SeedstreetApp: React.FC = () => {
     if (error) {
       console.error("Error fetching user profile:", error);
       setUserProfile(null);
+      return null;
     } else if (data) {
       setUserProfile(data);
+      return data as Profile;
     }
+    return null;
   }, []);
 
   // useAppData hook for fetching *other* data
@@ -111,35 +114,16 @@ const SeedstreetApp: React.FC = () => {
       if (session) {
         console.log("DEBUG: Session found for user:", session.user.id);
         setIsLoggedIn(true);
-        // Fetch user profile immediately after session is found
-        await fetchUserProfile(session.user.id); // Use the new fetchUserProfile callback
         
-        // After fetching profile, determine next screen
-        // Use a temporary variable for profile to ensure it's the latest state
-        const { data: currentProfile, error: profileFetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Fetch user profile and use the returned value immediately
+        const fetchedProfile = await fetchUserProfile(session.user.id); 
 
-        if (profileFetchError && profileFetchError.code !== 'PGRST116') {
-          console.error("DEBUG: Error fetching user profile for session user (second check):", profileFetchError);
-          setIsLoggedIn(false);
-          if (!onboardingSeenLocally) {
-            setCurrentScreen('onboarding');
-          } else {
-            setCurrentScreen('auth');
-          }
-          setLoadingSession(false);
-          return;
-        }
-
-        if (currentProfile) {
-          console.log("DEBUG: User profile found (second check):", currentProfile);
-          if (!currentProfile.role) {
+        if (fetchedProfile) {
+          console.log("DEBUG: User profile found:", fetchedProfile);
+          if (!fetchedProfile.role) {
             setCurrentScreen('roleSelector');
             console.log("DEBUG: Profile has no role -> 'roleSelector'");
-          } else if (!currentProfile.onboarding_complete) {
+          } else if (!fetchedProfile.onboarding_complete) {
             setCurrentScreen('onboarding');
             console.log("DEBUG: Profile has role but onboarding not complete -> 'onboarding'");
           } else {
@@ -147,8 +131,10 @@ const SeedstreetApp: React.FC = () => {
             console.log("DEBUG: Profile has role and onboarding complete -> 'home'");
           }
         } else {
+          // This case should ideally not happen if fetchUserProfile sets userProfile correctly
+          // but it handles scenarios where profile might not be found despite a session
           setCurrentScreen('roleSelector');
-          console.log("DEBUG: Session found, but no profile in DB (second check) -> 'roleSelector'");
+          console.log("DEBUG: Session found, but no profile in DB after fetchUserProfile -> 'roleSelector'");
         }
       } else { // No session (not logged in)
         console.log("DEBUG: No active session found.");
@@ -165,7 +151,7 @@ const SeedstreetApp: React.FC = () => {
     };
 
     checkSessionAndDetermineScreen();
-  }, [splashTimerComplete, currentScreen, fetchUserProfile]); // Add fetchUserProfile to dependencies
+  }, [splashTimerComplete, currentScreen, fetchUserProfile]); // fetchUserProfile is a dependency
 
   // Effect to periodically update user's last_active timestamp
   useEffect(() => {
