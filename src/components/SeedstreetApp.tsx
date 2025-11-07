@@ -7,6 +7,7 @@ import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
+import { ThemeProviderWrapper } from '@/components/ThemeProviderWrapper'; // Added import
 
 // Define Profile interface here or import from a shared type file
 interface Profile {
