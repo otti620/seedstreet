@@ -79,7 +79,7 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
   }, [selectedStartup.id, selectedStartup.name, logActivity]);
 
   return (
-    <> {/* Wrap in React.Fragment */}
+    <React.Fragment> {/* Wrap in React.Fragment */}
       <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
         {/* Header */}
         <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
@@ -243,23 +243,24 @@ const StartupDetailScreen: React.FC<StartupDetailScreenProps> = ({
             </Button>
           </div>
         </div>
+      </div> {/* Closing div for the main screen content */}
 
-        {isCommitmentDialogOpen && userRole === 'investor' && userProfile && (
-          <CommitmentDialog
-            isOpen={isCommitmentDialogOpen}
-            onClose={() => setIsCommitmentDialogOpen(false)}
-            startupId={selectedStartup.id}
-            startupName={selectedStartup.name}
-            startupLogo={selectedStartup.logo}
-            founderId={selectedStartup.founder_id}
-            founderName={selectedStartup.founder_name}
-            investorId={userProfile.id} {/* Corrected to use userProfile.id */}
-            investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'} {/* Corrected to use userProfile.name */}
-            logActivity={logActivity}
-            fetchUserProfile={fetchUserProfile}
-          />
-        )}
-    </>
+      {isCommitmentDialogOpen && userRole === 'investor' && userProfile && (
+        <CommitmentDialog
+          isOpen={isCommitmentDialogOpen}
+          onClose={() => setIsCommitmentDialogOpen(false)}
+          startupId={selectedStartup.id}
+          startupName={selectedStartup.name}
+          startupLogo={selectedStartup.logo}
+          founderId={selectedStartup.founder_id}
+          founderName={selectedStartup.founder_name}
+          investorId={userProfile.id} {/* Corrected to use userProfile.id */}
+          investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'} {/* Corrected to use userProfile.name */}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
+        />
+      )}
+    </React.Fragment>
   );
 };
 
