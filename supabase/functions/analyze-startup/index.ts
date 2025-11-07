@@ -33,10 +33,11 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    const geminiApiKey = 'AIzaSyA1sBEnueJ6xeiy0DkU3pw4Z5OphB2cVjQ'; 
+    // Fetch Gemini API key from Supabase secrets
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY'); 
 
-    if (!geminiApiKey || geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-      return new Response('Gemini API Key not configured or is placeholder. Please replace "YOUR_GEMINI_API_KEY_HERE" with your actual key.', { status: 500, headers: corsHeaders })
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ error: "Gemini API Key not configured. Please set 'GEMINI_API_KEY' in Supabase secrets." }), { status: 500, headers: corsHeaders })
     }
 
     const prompt = `Analyze the following startup data for its market trend and potential risks. Provide a market trend analysis (around 2-3 sentences) and an AI risk score (a number between 0 and 100, where 0 is low risk and 100 is high risk). Format the output as a JSON object with 'marketTrendAnalysis' (string) and 'aiRiskScore' (number).
@@ -69,13 +70,11 @@ Example Output:
       })
     });
 
-    // --- Added logging for Gemini API response ---
     console.log("Gemini API Response Status:", geminiResponse.status);
     const geminiRawText = await geminiResponse.text();
     console.log("Gemini API Raw Response Body:", geminiRawText);
-    // --- End added logging ---
 
-    const geminiResult = JSON.parse(geminiRawText); // Parse the raw text
+    const geminiResult = JSON.parse(geminiRawText);
 
     if (geminiResult.error) {
       console.error("Gemini API Error:", geminiResult.error);
@@ -94,10 +93,8 @@ Example Output:
       });
     }
 
-    // Attempt to parse the JSON from the text response
     let parsedAnalysis;
     try {
-      // Gemini might wrap JSON in markdown, so try to extract it
       const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/);
       if (jsonMatch && jsonMatch[1]) {
         parsedAnalysis = JSON.parse(jsonMatch[1]);
