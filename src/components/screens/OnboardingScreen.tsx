@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion'; // Import motion
+import localforage from 'localforage'; // Import localforage
 
 interface OnboardingScreenProps {
   setCurrentScreen: (screen: string) => void;
@@ -32,9 +33,15 @@ const slides = [
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, onOnboardingComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const handleGetStarted = async () => {
+    await localforage.setItem('hasSeenOnboarding', true); // Mark as seen locally
+    onOnboardingComplete?.(); // Call the prop handler (updates profile if logged in)
+    setCurrentScreen('auth'); // Navigate to auth screen
+  };
+
   return (
-    <div className="bg-gray-50 flex flex-col w-full h-full dark:bg-gray-950"> {/* Removed fixed inset-0 */}
-      <button onClick={() => { onOnboardingComplete?.(); setCurrentScreen('auth'); }} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
+    <div className="bg-gray-50 flex flex-col w-full h-full dark:bg-gray-950">
+      <button onClick={handleGetStarted} className="absolute top-6 right-6 z-20 text-gray-500 text-sm font-medium dark:text-gray-400" aria-label="Skip onboarding">Skip</button>
       
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md text-center space-y-12">
@@ -75,8 +82,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, o
         <button 
           onClick={() => {
             if (currentSlide === slides.length - 1) {
-              onOnboardingComplete?.(); // Use optional chaining here
-              setCurrentScreen('auth');
+              handleGetStarted();
             } else {
               setCurrentSlide(currentSlide + 1);
             }

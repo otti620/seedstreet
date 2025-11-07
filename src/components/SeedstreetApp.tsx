@@ -7,7 +7,7 @@ import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
-import { ThemeProviderWrapper } from '@/components/ThemeProviderWrapper'; // Added import
+import { ThemeProviderWrapper } from '@/components/ThemeProviderWrapper';
 
 // Define Profile interface here or import from a shared type file
 interface Profile {
@@ -35,8 +35,8 @@ const SeedstreetApp: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
   const [maintenanceMode, setMaintenanceMode] = useState({ enabled: false, message: '' });
   const [splashTimerComplete, setSplashTimerComplete] = useState(false);
-  const [userProfile, setUserProfile] = useState<Profile | null>(null); // Manage userProfile here
-  const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false); // New state
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false);
 
   // 1. Splash screen timer: Ensures splash screen shows for a minimum duration
   useEffect(() => {
@@ -70,21 +70,22 @@ const SeedstreetApp: React.FC = () => {
   // 3. Session check and initial screen determination
   useEffect(() => {
     const checkSessionAndDetermineScreen = async () => {
-      // Only proceed if the splash timer is complete and we are still on the splash screen
-      // This prevents premature redirection before the splash screen has been shown.
       if (!splashTimerComplete || currentScreen !== 'splash') {
-        console.log("Skipping initial screen determination:", { splashTimerComplete, currentScreen });
         return;
       }
 
       setLoadingSession(true);
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
 
       if (sessionError) {
         console.error("Error getting session:", sessionError);
         setIsLoggedIn(false);
-        setCurrentScreen('auth');
-        console.log("Setting currentScreen to 'auth' due to session error.");
+        if (!onboardingSeenLocally) {
+          setCurrentScreen('onboarding');
+        } else {
+          setCurrentScreen('auth');
+        }
         setLoadingSession(false);
         return;
       }
@@ -97,11 +98,14 @@ const SeedstreetApp: React.FC = () => {
           .eq('id', session.user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+        if (profileError && profileError.code !== 'PGRST116') {
           console.error("Error fetching user profile:", profileError);
           setIsLoggedIn(false);
-          setCurrentScreen('auth');
-          console.log("Setting currentScreen to 'auth' due to profile fetch error.");
+          if (!onboardingSeenLocally) {
+            setCurrentScreen('onboarding');
+          } else {
+            setCurrentScreen('auth');
+          }
           setLoadingSession(false);
           return;
         }
@@ -110,37 +114,35 @@ const SeedstreetApp: React.FC = () => {
           setUserProfile(profile);
           if (!profile.role) {
             setCurrentScreen('roleSelector');
-            console.log("Setting currentScreen to 'roleSelector' (no role).");
-          } else if (!profile.onboarding_complete) {
+          } else if (!profile.onboarding_complete) { // Still check for logged-in users who might have skipped
             setCurrentScreen('onboarding');
-            console.log("Setting currentScreen to 'onboarding' (onboarding not complete).");
-          } else {
+          }
+          else {
             setCurrentScreen('home');
-            console.log("Setting currentScreen to 'home' (all set).");
           }
         } else {
-          // User logged in but no profile (e.g., new signup via email link)
           setCurrentScreen('roleSelector');
-          console.log("Setting currentScreen to 'roleSelector' (no profile found for logged-in user).");
         }
-      } else {
+      } else { // No session (not logged in)
         setIsLoggedIn(false);
-        setCurrentScreen('auth');
-        console.log("Setting currentScreen to 'auth' (no session).");
+        if (!onboardingSeenLocally) {
+          setCurrentScreen('onboarding');
+        } else {
+          setCurrentScreen('auth');
+        }
       }
       setLoadingSession(false);
     };
 
     checkSessionAndDetermineScreen();
-  }, [splashTimerComplete, currentScreen]); // Dependencies: re-run when splash timer completes or currentScreen changes (if still 'splash')
+  }, [splashTimerComplete, currentScreen]);
 
   // Effect to control global loading indicator based on useAppData's loadingData
-  // This runs whenever loadingData or currentScreen changes, but only *after* splash.
   useEffect(() => {
-    if (currentScreen !== 'splash' && !loadingSession) { // Only show if not on splash and session is done loading
+    if (currentScreen !== 'splash' && !loadingSession) {
       setShowGlobalLoadingIndicator(loadingData);
     } else {
-      setShowGlobalLoadingIndicator(false); // Hide during splash and initial session loading
+      setShowGlobalLoadingIndicator(false);
     }
   }, [loadingData, currentScreen, loadingSession]);
 
@@ -149,32 +151,29 @@ const SeedstreetApp: React.FC = () => {
     setCurrentScreen(screen);
   }, []);
 
-  const handleOnboardingComplete = useCallback(() => {
+  const handleOnboardingComplete = useCallback(async () => {
+    await localforage.setItem('hasSeenOnboarding', true); // Mark as seen locally
+
     if (userProfile?.id) {
-      supabase.from('profiles')
+      const { error } = await supabase.from('profiles')
         .update({ onboarding_complete: true })
-        .eq('id', userProfile.id)
-        .then(({ error }) => {
-          if (error) {
-            console.error("Error updating onboarding status:", error);
-            toast.error("Failed to save onboarding status.");
-          } else {
-            setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
-            setCurrentScreen('home');
-            toast.success("Onboarding complete! Welcome to Seedstreet.");
-          }
-        });
-    } else {
-      setCurrentScreen('home');
+        .eq('id', userProfile.id);
+
+      if (error) {
+        console.error("Error updating onboarding status:", error);
+        toast.error("Failed to save onboarding status.");
+      } else {
+        setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
+        toast.success("Onboarding complete! Welcome to Seedstreet.");
+      }
     }
+    setCurrentScreen('auth'); // Always go to auth after onboarding
   }, [userProfile, setCurrentScreen]);
 
   if (maintenanceMode.enabled) {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
   }
 
-  // If splash timer is not complete, or session is still loading, show splash screen
-  // This ensures the splash screen is visible for the minimum duration
   if (!splashTimerComplete || loadingSession) {
     return (
       <ThemeProviderWrapper
@@ -182,7 +181,7 @@ const SeedstreetApp: React.FC = () => {
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange
-        showGlobalLoadingIndicator={false} // No global indicator during splash/initial session load
+        showGlobalLoadingIndicator={false}
       >
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
@@ -193,14 +192,13 @@ const SeedstreetApp: React.FC = () => {
     );
   }
 
-  // Once splash is done and initial screen determined, render the actual app content
   return (
     <ThemeProviderWrapper
       attribute="class"
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
-      showGlobalLoadingIndicator={showGlobalLoadingIndicator} // Pass the state
+      showGlobalLoadingIndicator={showGlobalLoadingIndicator}
     >
       <SeedstreetAppContent
         isLoggedIn={isLoggedIn}
