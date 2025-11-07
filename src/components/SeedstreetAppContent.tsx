@@ -33,7 +33,7 @@ import SavedStartupsScreen from './screens/SavedStartupsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen';
-import FramerMotionWrapper from './FramerMotionWrapper';
+// import FramerMotionWrapper from './FramerMotionWrapper'; // Removed direct import
 import WelcomeFlyer from './WelcomeFlyer';
 import CommitmentDialog from './CommitmentDialog'; // Import CommitmentDialog
 import StartupRoomScreen from './screens/StartupRoomScreen'; // Import StartupRoomScreen
@@ -44,6 +44,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
+
+// Dynamically import FramerMotionWrapper with ssr: false
+const FramerMotionWrapper = dynamic(() => import('./FramerMotionWrapper'), { ssr: false });
 
 // Define TypeScript interfaces for data structures (copied from use-app-data.tsx for consistency)
 interface Profile {
