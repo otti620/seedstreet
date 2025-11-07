@@ -23,10 +23,19 @@ interface Chat {
   unread_counts: { [key: string]: number };
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: Chat;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface ChatListScreenProps {
   chats: Chat[];
-  setCurrentScreen: (screen: string, params?: { chat?: Chat }) => void; // Updated param type
-  setSelectedChat: (chat: Chat | null) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated param type
+  // Removed setSelectedChat prop
   setActiveTab: (tab: string) => void;
   activeTab: string;
   userRole: 'investor' | 'founder' | 'admin' | null;
@@ -35,7 +44,7 @@ interface ChatListScreenProps {
 const ChatListScreen: React.FC<ChatListScreenProps> = ({
   chats,
   setCurrentScreen,
-  setSelectedChat,
+  // Removed setSelectedChat from destructuring
   setActiveTab,
   activeTab,
   userRole,
@@ -51,8 +60,6 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   );
 
   const handleChatClick = (chat: Chat) => {
-    setSelectedChat(chat);
-    // Mark messages as read for this chat
     setCurrentScreen('chat', { chat: chat }); // Pass the full chat object
   };
 

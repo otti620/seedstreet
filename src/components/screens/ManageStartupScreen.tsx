@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { motion } from 'framer-motion';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -45,8 +46,17 @@ interface Startup {
   market_trend_analysis: string | null; // Added for AI analysis
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface ManageStartupScreenProps {
-  setCurrentScreen: (screen: string, params?: { startupName?: string }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   userProfileId: string;
   userProfileName: string;
   userProfileEmail: string;
@@ -241,7 +251,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
         setCurrentScreen('startupListingCelebration', { startupName: values.name });
       } else {
         logActivity('startup_updated', `Updated startup: ${values.name}`, newStartupId, 'Rocket');
-        setCurrentScreen('home');
+        setCurrentScreen('home'); // Return to home (FounderDashboard) after update
       }
     }
     setLoading(false);
@@ -297,221 +307,281 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Form {...form}>
           <form id="startup-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Startup Name</FormLabel>
-                  <div className="relative">
-                    <Input
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.05 }}
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Startup Name</FormLabel>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="What's your startup's name?"
+                        className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Startup name"
+                      />
+                      <Rocket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <FormField
+                control={form.control}
+                name="logo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Logo (Emoji)</FormLabel>
+                    <div className="relative flex items-center gap-3">
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="Pick a vibe! Your startup's emoji logo."
+                        maxLength={2}
+                        className="peer flex-1 h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Startup logo emoji"
+                      />
+                      <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                      {field.value && (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-2xl dark:bg-gray-700">
+                          {field.value}
+                        </div>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
+            >
+              <FormField
+                control={form.control}
+                name="tagline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Tagline</FormLabel>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="Your startup's one-liner. Make it catchy!"
+                        className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Startup tagline"
+                      />
+                      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <FormField
+                control={form.control}
+                name="pitch"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Your Elevator Pitch (Required)</FormLabel>
+                    <Textarea
                       {...field}
-                      type="text"
-                      placeholder="What's your startup's name?"
-                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      aria-label="Startup name"
+                      placeholder="What problem are you solving and how? Keep it concise and impactful!"
+                      className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Startup pitch"
                     />
-                    <Rocket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="logo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Logo (Emoji)</FormLabel>
-                  <div className="relative flex items-center gap-3">
-                    <Input
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.25 }}
+            >
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Full Description (Optional)</FormLabel>
+                    <Textarea
                       {...field}
-                      type="text"
-                      placeholder="Pick a vibe! Your startup's emoji logo."
-                      maxLength={2}
-                      className="peer flex-1 h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      aria-label="Startup logo emoji"
+                      placeholder="Dive deeper! Tell us more about your vision, team, market, and what makes you unique."
+                      className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      aria-label="Startup description"
                     />
-                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                    {field.value && (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-2xl dark:bg-gray-700">
-                        {field.value}
-                      </div>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="tagline"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Tagline</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder="Your startup's one-liner. Make it catchy!"
-                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      aria-label="Startup tagline"
-                    />
-                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select startup category">
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
+                          <SelectValue placeholder="What industry are you disrupting?" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {startupCategories.map(category => (
+                          <SelectItem key={category} value={category} className="dark:text-gray-50">{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="pitch"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Your Elevator Pitch (Required)</FormLabel>
-                  <Textarea
-                    {...field}
-                    placeholder="What problem are you solving and how? Keep it concise and impactful!"
-                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                    aria-label="Startup pitch"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.35 }}
+            >
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Location</FormLabel>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="Where are you building the future?"
+                        className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        aria-label="Startup location"
+                      />
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Full Description (Optional)</FormLabel>
-                  <Textarea
-                    {...field}
-                    placeholder="Dive deeper! Tell us more about your vision, team, market, and what makes you unique."
-                    className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                    aria-label="Startup description"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+            >
+              <FormField
+                control={form.control}
+                name="amount_sought"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Amount to be Raised</FormLabel>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type="number"
+                        placeholder="How much capital are you seeking? (e.g., 500000)"
+                        className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                        onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                        value={field.value === null ? '' : field.value}
+                        aria-label="Amount to be raised"
+                      />
+                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select startup category">
-                    <FormControl>
-                      <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="What industry are you disrupting?" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      {startupCategories.map(category => (
-                        <SelectItem key={category} value={category} className="dark:text-gray-50">{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.45 }}
+            >
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Currency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select currency">
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
+                          <SelectValue placeholder="What currency are you raising in?" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {currencies.map(currency => (
+                          <SelectItem key={currency} value={currency} className="dark:text-gray-50">{currency}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
 
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Location</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder="Where are you building the future?"
-                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      aria-label="Startup location"
-                    />
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="amount_sought"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Amount to be Raised</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      type="number"
-                      placeholder="How much capital are you seeking? (e.g., 500000)"
-                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
-                      value={field.value === null ? '' : field.value}
-                      aria-label="Amount to be raised"
-                    />
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="currency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Currency</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select currency">
-                    <FormControl>
-                      <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="What currency are you raising in?" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      {currencies.map(currency => (
-                        <SelectItem key={currency} value={currency} className="dark:text-gray-50">{currency}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="funding_stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="dark:text-gray-50">Funding Stage</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select funding stage">
-                    <FormControl>
-                      <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="What's your current funding stage?" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      {fundingStages.map(stage => (
-                        <SelectItem key={stage} value={stage} className="dark:text-gray-50">{stage}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+            >
+              <FormField
+                control={form.control}
+                name="funding_stage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-50">Funding Stage</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select funding stage">
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
+                          <SelectValue placeholder="What's your current funding stage?" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {fundingStages.map(stage => (
+                          <SelectItem key={stage} value={stage} className="dark:text-gray-50">{stage}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
           </form>
         </Form>
       </div>

@@ -15,7 +15,6 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
 import HomeScreen from '@/components/screens/HomeScreen';
-import StartupDetailScreen from './screens/StartupDetailScreen';
 import ChatListScreen from './screens/ChatListScreen';
 import ChatConversationScreen from './screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -598,7 +597,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             <ChatListScreen
               chats={chats}
               setCurrentScreen={handleSetCurrentScreen}
-              setSelectedChat={(chat) => handleSetCurrentScreen('chat', { chat })}
+              // Removed setSelectedChat prop
               setActiveTab={setActiveTab}
               activeTab={activeTab}
               userRole={userRole}
