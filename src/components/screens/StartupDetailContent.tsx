@@ -233,7 +233,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
               {isInterested ? 'Interest Signaled' : 'Signal Interest'}
             </Button>
             <Button
-              onClick={() => setCurrentScreen('startupRoom', { startupId: selectedStartup.id })}
+              onClick={() => setCurrentScreen('startupRoom', { startupRoomId: selectedStartup.id })} {/* Corrected param name */}
               className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
               aria-label={`Join room for ${selectedStartup.name}`}
             >
