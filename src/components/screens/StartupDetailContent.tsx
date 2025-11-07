@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Heart, Bookmark, MessageCircle, DollarSign, Eye, MapPin, Users, TrendingUp, BrainCircuit } from 'lucide-react';
+import { ArrowLeft, Heart, Bookmark, MessageCircle, DollarSign, Eye, MapPin, Users, TrendingUp, BrainCircuit, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
