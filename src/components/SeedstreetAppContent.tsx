@@ -39,6 +39,7 @@ import StartupRoomScreen from './screens/StartupRoomScreen';
 import AuthActionScreen from './screens/AuthActionScreen';
 import NewChatScreen from './screens/NewChatScreen';
 import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Direct import
+import { useNetworkStatus } from '@/hooks/use-network-status'; // Import the new hook
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -198,7 +199,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null); // Keep this state
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
   const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
@@ -206,9 +207,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
   const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined);
   const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
-  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(undefined); // New state for selectedChatId
+  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(undefined);
 
   const userRole = userProfile?.role || null;
+
+  // Integrate network status hook
+  useNetworkStatus();
 
   // Effect to update selectedStartup when selectedStartupId or startups change
   useEffect(() => {
@@ -258,7 +262,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       setSelectedCommunityPostId(undefined);
     }
     if (params?.chatId) {
-      setSelectedChatId(params.chatId); // Set selectedChatId here
+      setSelectedChatId(params.chatId);
       // setSelectedChat is now handled by the useEffect
     } else {
       setSelectedChatId(undefined);
@@ -273,7 +277,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     } else {
       setSelectedStartupRoomId(undefined);
     }
-  }, [setCurrentScreen, chats, startups]); // Added startups to dependencies for completeness
+  }, [setCurrentScreen, chats, startups]);
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
@@ -526,7 +530,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
     if (chatToOpen) {
       setSelectedChat(chatToOpen);
-      handleSetCurrentScreen('chat', { chatId: chatToOpen.id }); // Pass chatId here
+      handleSetCurrentScreen('chat', { chatId: chatToOpen.id });
       setActiveTab('chats');
     }
   };

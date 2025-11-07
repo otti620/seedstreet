@@ -110,12 +110,27 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
       {/* Hero Section */}
       <div className="h-2/5 bg-gradient-to-br from-purple-700 to-teal-500 relative overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl opacity-30 animate-float" />
-          <div className="absolute bottom-20 right-20 w-48 h-48 bg-teal-400 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s" />
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0, rotate: -30 }}
+            animate={{ scale: 1, opacity: 0.2, rotate: 0 }}
+            transition={{ duration: 5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            className="absolute top-1/4 left-1/4 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl"
+          />
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0, rotate: 30 }}
+            animate={{ scale: 1, opacity: 0.2, rotate: 0 }}
+            transition={{ duration: 7, delay: 1, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-teal-400 rounded-full filter blur-3xl"
+          />
         </div>
         
         <div className="relative z-10 text-center text-white">
-          <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+          <motion.div
+            initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
+            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="w-24 h-24 mx-auto mb-4 bg-white rounded-2xl shadow-xl flex items-center justify-center"
+          >
             <svg viewBox="0 0 100 120" className="w-16 h-16">
               <defs>
                 <linearGradient id="sGrad" x1="0%" y1="0%" y2="100%">
@@ -125,7 +140,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
               </defs>
               <path d="M 70 35 C 70 25, 60 20, 50 20 C 40 20, 30 25, 30 35 C 30 45, 40 50, 50 55 C 60 60, 70 65, 70 75 C 70 85, 60 90, 50 90 C 40 90, 30 85, 30 75" fill="none" stroke="url(#sGrad)" strokeWidth="12" strokeLinecap="round" />
             </svg>
-          </div>
+          </motion.div>
           <h1 className="text-2xl font-bold">Seedstreet</h1>
           <p className="text-white/80 text-sm mt-2">Where startups meet believers</p>
         </div>
@@ -141,9 +156,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent mb-2">
-              {isSignUp ? 'Create your account' : 'Welcome back, legend'} 👋
+              {isSignUp ? 'Join the Future' : 'Welcome Back, Visionary!'} 👋
             </h2>
-            <p className="text-sm text-gray-500">Join 650+ investors and founders</p>
+            <p className="text-sm text-gray-500">Connect with 650+ innovators and investors</p>
           </div>
 
           <Form {...form}>
@@ -162,7 +177,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                           className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                           aria-label="Full name"
                         />
-                        <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Full name</Label>
+                        <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Your Full Name</Label>
                         <UserIcon className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                       </div>
                       <FormMessage />
@@ -184,7 +199,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                         className="peer w-full h-14 px-12 border-2 border-gray-200 rounded-2xl focus:border-purple-700 focus:ring-4 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                         aria-label="Email"
                       />
-                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Email</Label>
+                      <Label className="absolute left-12 top-4 text-gray-500 peer-focus:top-2 peer-focus:text-xs peer-focus:text-purple-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs transition-all dark:peer-focus:text-purple-500">Email Address</Label>
                       <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
                     </div>
                     <FormMessage />
@@ -220,7 +235,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
                   className="text-sm text-purple-700 hover:underline text-right block w-full dark:text-purple-400"
                   aria-label="Forgot password?"
                 >
-                  Forgot password?
+                  Forgot your password?
                 </button>
               )}
 
@@ -238,7 +253,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ setCurrentScreen, setIsLoggedIn
           </Form>
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
+            {isSignUp ? 'Already have an account?' : 'New here, fam?'}{' '}
           </p>
           <button 
             onClick={() => {
