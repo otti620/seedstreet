@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarUrl } from '@/lib/default-avatars';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion'; // Import motion for animations
 
 interface Chat {
   id: string;
@@ -35,7 +36,6 @@ interface ScreenParams {
 interface ChatListScreenProps {
   chats: Chat[];
   setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated param type
-  // Removed setSelectedChat prop
   setActiveTab: (tab: string) => void;
   activeTab: string;
   userRole: 'investor' | 'founder' | 'admin' | null;
@@ -44,7 +44,6 @@ interface ChatListScreenProps {
 const ChatListScreen: React.FC<ChatListScreenProps> = ({
   chats,
   setCurrentScreen,
-  // Removed setSelectedChat from destructuring
   setActiveTab,
   activeTab,
   userRole,
@@ -113,9 +112,12 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
             {searchTerm ? "No matching chats found." : "You don't have any chats yet."}
           </div>
         ) : (
-          filteredChats.map((chat) => (
-            <button
+          filteredChats.map((chat, index) => (
+            <motion.button
               key={chat.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
               className="flex items-center w-full p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700"
               onClick={() => handleChatClick(chat)}
             >
@@ -137,7 +139,7 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   </span>
                 )}
               </div>
-            </button>
+            </motion.button>
           ))
         )}
       </div>
