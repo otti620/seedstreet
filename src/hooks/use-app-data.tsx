@@ -240,7 +240,7 @@ export const useAppData = (
       const fetchData = async () => {
         setLoadingData(true);
         await Promise.all([
-          fetchUserProfile(), // This will update the userProfile state passed from SeedstreetApp
+          // Removed fetchUserProfile() from here to prevent re-render loop
           fetchStartups(),
           fetchChats(),
           fetchCommunityPosts(),
@@ -264,7 +264,7 @@ export const useAppData = (
       setFounderCount(0);
       setLoadingData(false);
     }
-  }, [isLoggedIn, userProfile?.id, currentScreen, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
+  }, [isLoggedIn, userProfile?.id, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
 
   return {
     userProfile, // userProfile is now managed by SeedstreetApp, but returned for consistency

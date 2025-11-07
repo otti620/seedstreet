@@ -24,7 +24,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   phone: string | null;
-  last_seen: string | null;
+  last_seen: string | null; // Assuming this is the field for last activity
   show_welcome_flyer: boolean;
   total_committed: number;
 }
@@ -151,6 +151,30 @@ const SeedstreetApp: React.FC = () => {
 
     checkSessionAndDetermineScreen();
   }, [splashTimerComplete, currentScreen]);
+
+  // Effect to periodically update user's last_active timestamp
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoggedIn && userProfile?.id) {
+      const updateLastActive = async () => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ last_active: new Date().toISOString() })
+          .eq('id', userProfile.id);
+        if (error) {
+          console.error("Error updating last_active:", error);
+        }
+      };
+
+      // Update immediately on login/profile load, then every 30 seconds
+      updateLastActive();
+      interval = setInterval(updateLastActive, 30 * 1000); // Every 30 seconds
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLoggedIn, userProfile?.id]); // Only re-run if login status or user ID changes
 
   // Effect to control global loading indicator based on useAppData's loadingData
   useEffect(() => {
