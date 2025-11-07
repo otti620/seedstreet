@@ -278,7 +278,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">
-            {startupId ? 'Edit Startup' : 'List Your Startup'}
+            {startupId ? 'Edit Your Startup' : 'List Your Startup'}
           </h2>
           <Button type="submit" form="startup-form" disabled={loading} size="sm" className="bg-gradient-to-r from-purple-700 to-teal-600 text-white" aria-label={startupId ? 'Save changes' : 'Submit listing'}>
             {loading ? (
@@ -287,7 +287,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              startupId ? 'Save Changes' : 'Submit Listing'
+              startupId ? 'Save Changes' : 'Launch Startup'
             )}
           </Button>
         </div>
@@ -307,8 +307,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <Input
                       {...field}
                       type="text"
-                      placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      placeholder="What's your startup's name?"
+                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup name"
                     />
                     <Rocket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -324,16 +324,21 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="dark:text-gray-50">Logo (Emoji)</FormLabel>
-                  <div className="relative">
+                  <div className="relative flex items-center gap-3">
                     <Input
                       {...field}
                       type="text"
-                      placeholder=" "
+                      placeholder="Pick a vibe! Your startup's emoji logo."
                       maxLength={2}
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      className="peer flex-1 h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup logo emoji"
                     />
                     <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
+                    {field.value && (
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-2xl dark:bg-gray-700">
+                        {field.value}
+                      </div>
+                    )}
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -350,8 +355,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <Input
                       {...field}
                       type="text"
-                      placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      placeholder="Your startup's one-liner. Make it catchy!"
+                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup tagline"
                     />
                     <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -366,10 +371,10 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
               name="pitch"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="dark:text-gray-50">Pitch (Required)</FormLabel>
+                  <FormLabel className="dark:text-gray-50">Your Elevator Pitch (Required)</FormLabel>
                   <Textarea
                     {...field}
-                    placeholder="Give us your elevator pitch! What problem are you solving and how?"
+                    placeholder="What problem are you solving and how? Keep it concise and impactful!"
                     className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                     aria-label="Startup pitch"
                   />
@@ -386,7 +391,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                   <FormLabel className="dark:text-gray-50">Full Description (Optional)</FormLabel>
                   <Textarea
                     {...field}
-                    placeholder="Tell us more about your startup, team, vision, etc."
+                    placeholder="Dive deeper! Tell us more about your vision, team, market, and what makes you unique."
                     className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                     aria-label="Startup description"
                   />
@@ -404,7 +409,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                   <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select startup category">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder="What industry are you disrupting?" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
@@ -428,8 +433,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <Input
                       {...field}
                       type="text"
-                      placeholder=" "
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      placeholder="Where are you building the future?"
+                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup location"
                     />
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -449,8 +454,8 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <Input
                       {...field}
                       type="number"
-                      placeholder="e.g., 500000"
-                      className="peer w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
+                      placeholder="How much capital are you seeking? (e.g., 500000)"
+                      className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                       value={field.value === null ? '' : field.value}
                       aria-label="Amount to be raised"
@@ -471,7 +476,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                   <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select currency">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="Select currency" />
+                        <SelectValue placeholder="What currency are you raising in?" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
@@ -494,7 +499,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                   <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select funding stage">
                     <FormControl>
                       <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
-                        <SelectValue placeholder="Select funding stage" />
+                        <SelectValue placeholder="What's your current funding stage?" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
