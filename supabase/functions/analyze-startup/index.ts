@@ -33,12 +33,10 @@ serve(async (req) => {
   try {
     const { startupData } = await req.json()
 
-    // Fetch Gemini API key from Supabase secrets
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY'); 
-
-    if (!geminiApiKey) {
-      return new Response(JSON.stringify({ error: "Gemini API Key not configured. Please set 'GEMINI_API_KEY' in Supabase secrets." }), { status: 500, headers: corsHeaders })
-    }
+    // Hardcoding Gemini API key for now as requested.
+    // IMPORTANT: Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API key.
+    // For production, this should be stored as a Supabase secret.
+    const geminiApiKey = "YOUR_GEMINI_API_KEY_HERE"; 
 
     const prompt = `Analyze the following startup data for its market trend and potential risks. Provide a market trend analysis (around 2-3 sentences) and an AI risk score (a number between 0 and 100, where 0 is low risk and 100 is high risk). Format the output as a JSON object with 'marketTrendAnalysis' (string) and 'aiRiskScore' (number).
 
