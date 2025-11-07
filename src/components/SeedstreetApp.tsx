@@ -80,80 +80,75 @@ const SeedstreetApp: React.FC = () => {
 
   // useAppData hook for fetching *other* data
   const {
-    startups, chats, communityPosts, messages, notifications, recentActivities,
-    loadingData, investorCount, founderCount
+    startups, chats, communityPosts, notifications, recentActivities,
+    loadingData, investorCount, founderCount, fetchCommunityPosts, fetchNotifications
   } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen); // Pass userId directly
 
-  // 3. Session check and initial screen determination
+  // 3. Initial Session check and FIRST screen determination (after splash)
   useEffect(() => {
-    const checkSessionAndDetermineScreen = async () => {
-      if (!splashTimerComplete || currentScreen !== 'splash') {
-        console.log("DEBUG: Skipping initial screen determination (splash not complete or not on splash screen).", { splashTimerComplete, currentScreen });
-        return;
+    const checkInitialSession = async () => {
+      if (!splashTimerComplete) {
+        return; // Wait for splash screen to complete
       }
 
       setLoadingSession(true);
-      console.log("DEBUG: Starting session check...");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
 
-      if (sessionError) {
-        console.error("DEBUG: Error getting session:", sessionError);
+      if (sessionError || !session) {
         setIsLoggedIn(false);
         if (!onboardingSeenLocally) {
           setCurrentScreen('onboarding');
-          console.log("DEBUG: No session, onboarding not seen locally -> 'onboarding'");
         } else {
           setCurrentScreen('auth');
-          console.log("DEBUG: No session, onboarding seen locally -> 'auth'");
         }
-        setLoadingSession(false);
-        return;
-      }
-
-      if (session) {
-        console.log("DEBUG: Session found for user:", session.user.id);
+      } else {
         setIsLoggedIn(true);
-        
-        // Fetch user profile and use the returned value immediately
-        const fetchedProfile = await fetchUserProfile(session.user.id); 
-
+        const fetchedProfile = await fetchUserProfile(session.user.id);
         if (fetchedProfile) {
-          console.log("DEBUG: User profile found:", fetchedProfile);
           if (!fetchedProfile.role) {
             setCurrentScreen('roleSelector');
-            console.log("DEBUG: Profile has no role -> 'roleSelector'");
           } else if (!fetchedProfile.onboarding_complete) {
             setCurrentScreen('onboarding');
-            console.log("DEBUG: Profile has role but onboarding not complete -> 'onboarding'");
           } else {
             setCurrentScreen('home');
-            console.log("DEBUG: Profile has role and onboarding complete -> 'home'");
           }
         } else {
-          // This case should ideally not happen if fetchUserProfile sets userProfile correctly
-          // but it handles scenarios where profile might not be found despite a session
+          // This case should ideally not happen if handle_new_user works, but fallback
           setCurrentScreen('roleSelector');
-          console.log("DEBUG: Session found, but no profile in DB after fetchUserProfile -> 'roleSelector'");
-        }
-      } else { // No session (not logged in)
-        console.log("DEBUG: No active session found.");
-        setIsLoggedIn(false);
-        if (!onboardingSeenLocally) {
-          setCurrentScreen('onboarding');
-          console.log("DEBUG: No session, onboarding not seen locally -> 'onboarding'");
-        } else {
-          setCurrentScreen('auth');
-          console.log("DEBUG: No session, onboarding seen locally -> 'auth'");
         }
       }
       setLoadingSession(false);
     };
 
-    checkSessionAndDetermineScreen();
-  }, [splashTimerComplete, currentScreen, fetchUserProfile]); // fetchUserProfile is a dependency
+    // Only run this effect once after splash is complete and if we are still on the splash screen
+    // to prevent re-running if user navigates away and comes back.
+    if (splashTimerComplete && currentScreen === 'splash') {
+      checkInitialSession();
+    }
+  }, [splashTimerComplete, currentScreen, fetchUserProfile]);
 
-  // Effect to periodically update user's last_active timestamp
+  // 4. Navigation logic for subsequent state changes (after initial screen is set)
+  useEffect(() => {
+    if (!loadingSession) { // Ensure initial session check is complete
+      if (isLoggedIn && userProfile) {
+        // User is logged in and profile is loaded, navigate based on profile status
+        if (!userProfile.role) {
+          if (currentScreen !== 'roleSelector') setCurrentScreen('roleSelector');
+        } else if (!userProfile.onboarding_complete) {
+          if (currentScreen !== 'onboarding') setCurrentScreen('onboarding');
+        } else {
+          if (currentScreen !== 'home') setCurrentScreen('home');
+        }
+      } else if (!isLoggedIn && currentScreen !== 'auth' && currentScreen !== 'onboarding' && currentScreen !== 'splash') {
+        // User logged out or session expired, and not on onboarding/splash/auth already
+        setCurrentScreen('auth');
+      }
+    }
+  }, [isLoggedIn, userProfile, loadingSession, currentScreen, setCurrentScreen]);
+
+
+  // 5. Effect to periodically update user's last_active timestamp
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isLoggedIn && userProfile?.id) {
@@ -177,7 +172,7 @@ const SeedstreetApp: React.FC = () => {
     };
   }, [isLoggedIn, userProfile?.id]); // Only re-run if login status or user ID changes
 
-  // Effect to control global loading indicator based on useAppData's loadingData
+  // 6. Effect to control global loading indicator based on useAppData's loadingData
   useEffect(() => {
     if (currentScreen !== 'splash' && !loadingSession) {
       setShowGlobalLoadingIndicator(loadingData);
@@ -203,14 +198,15 @@ const SeedstreetApp: React.FC = () => {
         console.error("Error updating onboarding status:", error);
         toast.error("Failed to save onboarding status.");
       } else {
+        // Update local userProfile state and trigger re-evaluation of navigation
         setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
         toast.success("Onboarding complete! Welcome to Seedstreet.");
-        setCurrentScreen('home'); // Redirect to home for logged-in users
+        // The new navigation useEffect will now handle setting currentScreen to 'home'
       }
     } else {
       setCurrentScreen('auth'); // Redirect to auth for unauthenticated users
     }
-  }, [userProfile, setCurrentScreen]);
+  }, [userProfile, setCurrentScreen, setUserProfile]); // Added setUserProfile to dependencies
 
   if (maintenanceMode.enabled) {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
@@ -227,8 +223,8 @@ const SeedstreetApp: React.FC = () => {
       >
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
-          userProfile, setUserProfile, startups, chats, communityPosts, messages, notifications, recentActivities,
-          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount // Pass fetchUserProfile
+          userProfile, setUserProfile, startups, chats, communityPosts, notifications, recentActivities,
+          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications // Pass fetch functions
         }} />
       </ThemeProviderWrapper>
     );
@@ -256,13 +252,14 @@ const SeedstreetApp: React.FC = () => {
         startups={startups}
         chats={chats}
         communityPosts={communityPosts}
-        messages={messages}
         notifications={notifications}
         recentActivities={recentActivities}
         loadingData={loadingData}
-        fetchUserProfile={fetchUserProfile} // Pass fetchUserProfile
+        fetchUserProfile={fetchUserProfile}
         investorCount={investorCount}
         founderCount={founderCount}
+        fetchCommunityPosts={fetchCommunityPosts} // Pass fetch functions
+        fetchNotifications={fetchNotifications} // Pass fetch functions
       />
       <Toaster richColors position="top-center" />
     </ThemeProviderWrapper>

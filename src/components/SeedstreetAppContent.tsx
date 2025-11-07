@@ -168,6 +168,8 @@ interface SeedstreetAppContentProps {
   fetchUserProfile: (userId: string) => Promise<Profile | null>; // Now receives userId
   investorCount: number;
   founderCount: number;
+  fetchCommunityPosts: () => Promise<void>; // New prop
+  fetchNotifications: () => Promise<void>; // New prop
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -192,6 +194,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchUserProfile, // Now passed as a prop
   investorCount,
   founderCount,
+  fetchCommunityPosts, // Destructure fetchCommunityPosts
+  fetchNotifications, // Destructure fetchNotifications
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
