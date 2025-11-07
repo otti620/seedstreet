@@ -1,33 +1,30 @@
 "use client";
 
 import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion'; // Import directly from framer-motion
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FramerMotionWrapperProps {
+  children: React.ReactNode;
   currentScreen: string;
   screenVariants: {
     initial: { opacity: number; x: number };
     in: { opacity: number; x: number };
     out: { opacity: number; x: number };
   };
-  children: React.ReactNode;
+  key: string; // Add key prop to satisfy React's list rendering requirements if used in a list, or for AnimatePresence
 }
 
-const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({
-  currentScreen,
-  screenVariants,
-  children,
-}) => {
+const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants, key }) => {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={currentScreen}
-        variants={screenVariants}
+        key={currentScreen} // Use currentScreen as the key for motion.div to trigger exit/enter animations
         initial="initial"
         animate="in"
         exit="out"
-        transition={{ type: "tween", duration: 0.2 }}
-        className="fixed inset-0"
+        variants={screenVariants}
+        transition={{ type: 'tween', duration: 0.3 }}
+        className="w-full h-full absolute top-0 left-0" // Ensure it covers the full area
       >
         {children}
       </motion.div>
