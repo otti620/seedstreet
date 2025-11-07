@@ -8,8 +8,8 @@ import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppData } from '@/hooks/use-app-data';
-import { AuthChangeEvent, Session } from '@supabase/supabase-js'; // Import AuthChangeEvent and Session
-import localforage from 'localforage'; // Import localforage
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import localforage from 'localforage';
 
 // Dynamically import SeedstreetAppContent with ssr: false
 const SeedstreetAppContent = dynamic(() => import('./SeedstreetAppContent'), { ssr: false });
@@ -19,7 +19,7 @@ const SeedstreetApp = () => {
   const [loadingSession, setLoadingSession] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentScreen, setCurrentScreenState] = useState('splash');
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null); // null means not yet loaded from localforage
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   // Centralized useAppData call
   const appData = useAppData({
@@ -43,6 +43,8 @@ const SeedstreetApp = () => {
     fetchCommunityPosts,
     fetchNotifications,
     fetchUserProfile,
+    investorCount = 0, // Provide default value
+    founderCount = 0,  // Provide default value
   } = appData;
 
   const userRole = userProfile?.role || null;
@@ -114,7 +116,7 @@ const SeedstreetApp = () => {
 
   const handleOnboardingComplete = useCallback(async () => {
     await localforage.setItem('hasSeenOnboarding', true);
-    setHasSeenOnboarding(true); // Update local state as well
+    setHasSeenOnboarding(true);
   }, []);
 
   if (currentScreen === 'splash') {
@@ -134,7 +136,7 @@ const SeedstreetApp = () => {
       fetchAppSettings={fetchAppSettings}
       currentScreen={currentScreen}
       setCurrentScreen={setCurrentScreenState}
-      onboardingComplete={handleOnboardingComplete} // Pass the new callback
+      onboardingComplete={handleOnboardingComplete}
       // Pass all appData states and setters as props
       userProfile={userProfile}
       setUserProfile={setUserProfile}
@@ -148,6 +150,8 @@ const SeedstreetApp = () => {
       fetchCommunityPosts={fetchCommunityPosts}
       fetchNotifications={fetchNotifications}
       fetchUserProfile={fetchUserProfile}
+      investorCount={investorCount}
+      founderCount={founderCount}
     />
   );
 };
