@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, Send, Paperclip, MoreVertical, Flag, Rocket } from 'lucide-react'; // Added Flag and Rocket
+import Image from 'next/image';
+import { ArrowLeft, Send, Paperclip, MoreVertical, Flag, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import { getAvatarUrl } from '@/lib/default-avatars';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
+} from '@/components/ui/dropdown-menu';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Chat {
@@ -26,7 +26,6 @@ interface Chat {
   last_message_text: string;
   last_message_timestamp: string;
   unread_count: number;
-  // isOnline: boolean; // Removed as per simplification
   investor_id: string;
   founder_id: string;
   user_ids: string[];
@@ -46,7 +45,7 @@ interface Message {
 interface Profile {
   id: string;
   name: string | null;
-  avatar_id: number | null; // Changed from avatar_url
+  avatar_id: number | null;
   email: string | null;
 }
 
@@ -69,7 +68,13 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>(messages); // Local state for optimistic updates
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync optimisticMessages with the 'messages' prop when it changes (from real-time updates)
+  useEffect(() => {
+    setOptimisticMessages(messages);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,7 +82,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [optimisticMessages]); // Scroll to bottom when optimisticMessages update
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !userProfile?.id || !userProfile?.name) return;
@@ -86,18 +91,18 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     const messageText = newMessage.trim();
     setNewMessage(''); // Clear input immediately
 
-    // Optimistic UI update (optional, but good for chat)
+    // Optimistic UI update: Add message to local state immediately
     const tempMessage: Message = {
-      id: `temp-${Date.now()}`,
+      id: `temp-${Date.now()}`, // Temporary ID
       chat_id: selectedChat.id,
       sender_id: userProfile.id,
       sender_name: userProfile.name,
       text: messageText,
       created_at: new Date().toISOString(),
-      read: true, // Assume sender has read their own message
+      read: true,
     };
-    // This would typically be handled by the real-time subscription in useAppData
-    // For now, we'll let the subscription re-fetch the full list.
+    setOptimisticMessages(prevMessages => [...prevMessages, tempMessage]);
+    scrollToBottom(); // Scroll to new message immediately
 
     const { data, error } = await supabase.from('messages').insert({
       chat_id: selectedChat.id,
@@ -109,7 +114,8 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     if (error) {
       toast.error("Failed to send message: " + error.message);
       console.error("Error sending message:", error);
-      // Revert optimistic update if implemented
+      // Revert optimistic update on error
+      setOptimisticMessages(prevMessages => prevMessages.filter(msg => msg.id !== tempMessage.id));
     } else {
       // Update chat's last message and unread counts
       const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
@@ -205,7 +211,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
               ) : (
                 selectedChat.startup_name?.[0] || 'S'
               )}
-              {/* isOnline removed */}
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">{selectedChat.startup_name}</h2>
           </div>
@@ -229,7 +234,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => {
+        {optimisticMessages.map((message, index) => {
           const isMyMessage = message.sender_id === userProfile?.id;
           const senderAvatar = getSenderAvatar(message.sender_id);
           const senderInitials = getSenderInitials(message.sender_id);
@@ -287,7 +292,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             <Paperclip className="w-5 h-5" />
           </button>
           <Textarea
-            key={selectedChat.id} // Added key prop here
+            key={selectedChat.id}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {
