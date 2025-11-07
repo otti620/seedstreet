@@ -165,7 +165,7 @@ interface SeedstreetAppContentProps {
   notifications: Notification[];
   recentActivities: ActivityLog[];
   loadingData: boolean;
-  fetchUserProfile: (userId: string) => Promise<void>; // Now receives userId
+  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Now receives userId
   investorCount: number;
   founderCount: number;
 }
