@@ -45,9 +45,9 @@ import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
-// Dynamically import FramerMotionWrapper with ssr: false
-const DynamicFramerMotionWrapper = dynamic( // Renamed to DynamicFramerMotionWrapper
-  () => import('./FramerMotionWrapper').then((mod) => mod.FramerMotionWrapper), // Changed to mod.FramerMotionWrapper
+// Dynamically import ScreenTransitionWrapper with ssr: false
+const ScreenTransitionWrapper = dynamic(
+  () => import('./ScreenTransitionWrapper').then((mod) => mod.ScreenTransitionWrapper),
   { 
     ssr: false,
     loading: () => (
@@ -559,7 +559,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const startupForRoom = selectedStartupRoomId ? startups.find(s => s.id === selectedStartupRoomId) : null;
 
   return (
-    <DynamicFramerMotionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+    <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />}
       {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
       {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
@@ -785,7 +785,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           Error: Unknown Screen "{currentScreen}"
         </div>
       )}
-    </DynamicFramerMotionWrapper>
+    </ScreenTransitionWrapper>
   );
 };
 

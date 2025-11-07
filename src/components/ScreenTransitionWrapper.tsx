@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface FramerMotionWrapperProps {
+interface ScreenTransitionWrapperProps {
   children: React.ReactNode;
   currentScreen: string;
   screenVariants: {
@@ -13,17 +13,17 @@ interface FramerMotionWrapperProps {
   };
 }
 
-export const FramerMotionWrapper: React.FC<FramerMotionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
+export const ScreenTransitionWrapper: React.FC<ScreenTransitionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={currentScreen} // This key is for AnimatePresence to track children, which is correct.
+        key={currentScreen}
         initial="initial"
         animate="in"
         exit="out"
         variants={screenVariants}
         transition={{ type: 'tween', duration: 0.3 }}
-        className="w-full h-full absolute top-0 left-0" // Ensure it covers the full area
+        className="w-full h-full absolute top-0 left-0"
       >
         {children}
       </motion.div>
