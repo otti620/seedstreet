@@ -32,9 +32,12 @@ interface Profile {
   name: string | null;
   role: 'investor' | 'founder' | 'admin' | null;
   onboarding_complete: boolean;
+  bookmarked_startups: string[];
+  interested_startups: string[];
   bio: string | null;
   location: string | null;
   phone: string | null;
+  total_committed: number;
 }
 
 interface EditProfileScreenProps {
@@ -42,6 +45,7 @@ interface EditProfileScreenProps {
   userProfile: Profile;
   setUserProfile: (profile: Profile | null) => void;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity
+  fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
 }
 
 const formSchema = z.object({
@@ -59,6 +63,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   userProfile,
   setUserProfile,
   logActivity, // Destructure logActivity
+  fetchUserProfile, // Destructure fetchUserProfile
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -102,11 +107,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     } else {
       toast.success("Profile updated successfully!");
       // Update local userProfile state
-      setUserProfile({
-        ...userProfile,
-        ...values,
-        name: `${values.first_name} ${values.last_name}`,
-      });
+      await fetchUserProfile(userProfile.id); // Re-fetch user profile to ensure all data is fresh
       logActivity('profile_updated', `Updated profile details`, userProfile.id, 'User'); // Log activity
       setCurrentScreen('home'); // Go back to profile dashboard
     }

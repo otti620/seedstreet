@@ -35,7 +35,7 @@ const SeedstreetApp: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
   const [maintenanceMode, setMaintenanceMode] = useState({ enabled: false, message: '' });
   const [splashTimerComplete, setSplashTimerComplete] = useState(false);
-  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null); // SeedstreetApp owns userProfile state
   const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false);
 
   // 1. Splash screen timer: Ensures splash screen shows for a minimum duration
@@ -60,12 +60,26 @@ const SeedstreetApp: React.FC = () => {
     fetchAppSettings();
   }, [fetchAppSettings]);
 
-  // useAppData hook for fetching *other* data once logged in and initial screen is set
+  // Callback to fetch/refresh user profile, managed by SeedstreetApp
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (error) {
+      console.error("Error fetching user profile:", error);
+      setUserProfile(null);
+    } else if (data) {
+      setUserProfile(data);
+    }
+  }, []);
+
+  // useAppData hook for fetching *other* data
   const {
     startups, chats, communityPosts, messages, notifications, recentActivities,
-    loadingData, fetchUserProfile, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications,
-    fetchRecentActivities, investorCount, founderCount
-  } = useAppData(isLoggedIn, userProfile, setUserProfile, currentScreen);
+    loadingData, investorCount, founderCount
+  } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen); // Pass userId directly
 
   // 3. Session check and initial screen determination
   useEffect(() => {
@@ -97,33 +111,35 @@ const SeedstreetApp: React.FC = () => {
       if (session) {
         console.log("DEBUG: Session found for user:", session.user.id);
         setIsLoggedIn(true);
-        const { data: profile, error: profileError } = await supabase
+        // Fetch user profile immediately after session is found
+        await fetchUserProfile(session.user.id); // Use the new fetchUserProfile callback
+        
+        // After fetching profile, determine next screen
+        // Use a temporary variable for profile to ensure it's the latest state
+        const { data: currentProfile, error: profileFetchError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
-          console.error("DEBUG: Error fetching user profile for session user:", profileError);
+        if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+          console.error("DEBUG: Error fetching user profile for session user (second check):", profileFetchError);
           setIsLoggedIn(false);
           if (!onboardingSeenLocally) {
             setCurrentScreen('onboarding');
-            console.log("DEBUG: Profile fetch error, onboarding not seen locally -> 'onboarding'");
           } else {
             setCurrentScreen('auth');
-            console.log("DEBUG: Profile fetch error, onboarding seen locally -> 'auth'");
           }
           setLoadingSession(false);
           return;
         }
 
-        if (profile) {
-          console.log("DEBUG: User profile found:", profile);
-          setUserProfile(profile);
-          if (!profile.role) {
+        if (currentProfile) {
+          console.log("DEBUG: User profile found (second check):", currentProfile);
+          if (!currentProfile.role) {
             setCurrentScreen('roleSelector');
             console.log("DEBUG: Profile has no role -> 'roleSelector'");
-          } else if (!profile.onboarding_complete) {
+          } else if (!currentProfile.onboarding_complete) {
             setCurrentScreen('onboarding');
             console.log("DEBUG: Profile has role but onboarding not complete -> 'onboarding'");
           } else {
@@ -131,9 +147,8 @@ const SeedstreetApp: React.FC = () => {
             console.log("DEBUG: Profile has role and onboarding complete -> 'home'");
           }
         } else {
-          // User logged in but no profile (e.g., new signup via email link, or profile creation failed)
           setCurrentScreen('roleSelector');
-          console.log("DEBUG: Session found, but no profile in DB -> 'roleSelector'");
+          console.log("DEBUG: Session found, but no profile in DB (second check) -> 'roleSelector'");
         }
       } else { // No session (not logged in)
         console.log("DEBUG: No active session found.");
@@ -150,7 +165,7 @@ const SeedstreetApp: React.FC = () => {
     };
 
     checkSessionAndDetermineScreen();
-  }, [splashTimerComplete, currentScreen]);
+  }, [splashTimerComplete, currentScreen, fetchUserProfile]); // Add fetchUserProfile to dependencies
 
   // Effect to periodically update user's last_active timestamp
   useEffect(() => {
@@ -227,7 +242,7 @@ const SeedstreetApp: React.FC = () => {
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
           userProfile, setUserProfile, startups, chats, communityPosts, messages, notifications, recentActivities,
-          loadingData, fetchCommunityPosts, fetchNotifications, fetchUserProfile, investorCount, founderCount
+          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount // Pass fetchUserProfile
         }} />
       </ThemeProviderWrapper>
     );
@@ -259,9 +274,7 @@ const SeedstreetApp: React.FC = () => {
         notifications={notifications}
         recentActivities={recentActivities}
         loadingData={loadingData}
-        fetchCommunityPosts={fetchCommunityPosts}
-        fetchNotifications={fetchNotifications}
-        fetchUserProfile={fetchUserProfile}
+        fetchUserProfile={fetchUserProfile} // Pass fetchUserProfile
         investorCount={investorCount}
         founderCount={founderCount}
       />

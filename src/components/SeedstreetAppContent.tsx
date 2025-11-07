@@ -165,9 +165,7 @@ interface SeedstreetAppContentProps {
   notifications: Notification[];
   recentActivities: ActivityLog[];
   loadingData: boolean;
-  fetchCommunityPosts: () => Promise<void>;
-  fetchNotifications: () => Promise<void>;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<void>; // Now receives userId
   investorCount: number;
   founderCount: number;
 }
@@ -191,9 +189,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   notifications,
   recentActivities,
   loadingData,
-  fetchCommunityPosts,
-  fetchNotifications,
-  fetchUserProfile,
+  fetchUserProfile, // Now passed as a prop
   investorCount,
   founderCount,
 }) => {
@@ -392,7 +388,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       onSuccess: (data, variables) => {
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
-        logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Added' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
+        logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
       },
       onError: (error) => {
         console.error("Error updating interest:", error);

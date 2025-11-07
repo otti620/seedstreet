@@ -106,8 +106,7 @@ interface ActivityLog {
 
 export const useAppData = (
   isLoggedIn: boolean,
-  userProfile: Profile | null, // Now passed in from SeedstreetApp
-  setUserProfile: (profile: Profile | null) => void, // Now passed in from SeedstreetApp
+  userId: string | null, // Now receives userId directly
   currentScreen: string, // To decide when to fetch
 ) => {
   const [startups, setStartups] = useState<Startup[]>([]);
@@ -121,20 +120,7 @@ export const useAppData = (
   const [founderCount, setFounderCount] = useState(0);
 
   // Memoized fetch functions
-  const fetchUserProfile = useCallback(async () => {
-    if (!userProfile?.id) return;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userProfile.id)
-      .single();
-    if (error) {
-      console.error("Error fetching user profile:", error);
-    } else if (data) {
-      setUserProfile(data); // This updates the userProfile state in SeedstreetApp
-    }
-  }, [userProfile?.id, setUserProfile]);
-
+  // These now depend on userId directly, not userProfile object
   const fetchStartups = useCallback(async () => {
     const { data, error } = await supabase.from('startups').select('*');
     if (error) {
@@ -142,21 +128,21 @@ export const useAppData = (
     } else {
       setStartups(data || []);
     }
-  }, []);
+  }, []); // No dependency on userId here, as startups are public
 
   const fetchChats = useCallback(async () => {
-    if (!userProfile?.id) return;
+    if (!userId) return;
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .contains('user_ids', [userProfile.id])
+      .contains('user_ids', [userId])
       .order('last_message_timestamp', { ascending: false });
     if (error) {
       console.error("Error fetching chats:", error);
     } else {
       setChats(data || []);
     }
-  }, [userProfile?.id]);
+  }, [userId]); // Depends on userId
 
   const fetchCommunityPosts = useCallback(async () => {
     const { data, error } = await supabase
@@ -168,7 +154,7 @@ export const useAppData = (
     } else {
       setCommunityPosts(data || []);
     }
-  }, []);
+  }, []); // No dependency on userId here, as community posts are public
 
   const fetchMessages = useCallback(async () => {
     // This should ideally fetch messages for the currently selected chat, not all messages
@@ -188,28 +174,28 @@ export const useAppData = (
     } else {
       setMessages(data || []);
     }
-  }, [chats]);
+  }, [chats]); // Depends on chats
 
   const fetchNotifications = useCallback(async () => {
-    if (!userProfile?.id) return;
+    if (!userId) return;
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', userProfile.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
       console.error("Error fetching notifications:", error);
     } else {
       setNotifications(data || []);
     }
-  }, [userProfile?.id]);
+  }, [userId]); // Depends on userId
 
   const fetchRecentActivities = useCallback(async () => {
-    if (!userProfile?.id) return;
+    if (!userId) return;
     const { data, error } = await supabase
       .from('activity_log')
       .select('*')
-      .eq('user_id', userProfile.id)
+      .eq('user_id', userId)
       .order('timestamp', { ascending: false })
       .limit(5);
     if (error) {
@@ -217,7 +203,7 @@ export const useAppData = (
     } else {
       setRecentActivities(data || []);
     }
-  }, [userProfile?.id]);
+  }, [userId]); // Depends on userId
 
   const fetchUserCounts = useCallback(async () => {
     const { count: investors, error: investorError } = await supabase
@@ -233,14 +219,13 @@ export const useAppData = (
     if (!founderError) setFounderCount(founders || 0);
   }, []);
 
-  // Effect for fetching ALL data when logged in and profile is available
+  // Main effect for fetching ALL data when logged in and userId is available
   useEffect(() => {
-    // Only fetch data if logged in, profile is available, and not on initial screens
-    if (isLoggedIn && userProfile?.id && !['splash', 'auth', 'roleSelector', 'onboarding'].includes(currentScreen)) {
+    // Only fetch data if logged in, userId is available, and not on initial screens
+    if (isLoggedIn && userId && !['splash', 'auth', 'roleSelector', 'onboarding'].includes(currentScreen)) {
       const fetchData = async () => {
         setLoadingData(true);
         await Promise.all([
-          // Removed fetchUserProfile() from here to prevent re-render loop
           fetchStartups(),
           fetchChats(),
           fetchCommunityPosts(),
@@ -264,11 +249,9 @@ export const useAppData = (
       setFounderCount(0);
       setLoadingData(false);
     }
-  }, [isLoggedIn, userProfile?.id, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
+  }, [isLoggedIn, userId, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchMessages, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
 
   return {
-    userProfile, // userProfile is now managed by SeedstreetApp, but returned for consistency
-    setUserProfile, // setUserProfile is now managed by SeedstreetApp, but returned for consistency
     startups,
     chats,
     communityPosts,
@@ -276,13 +259,6 @@ export const useAppData = (
     notifications,
     recentActivities,
     loadingData,
-    fetchUserProfile,
-    fetchStartups,
-    fetchChats,
-    fetchCommunityPosts,
-    fetchMessages,
-    fetchNotifications,
-    fetchRecentActivities,
     investorCount,
     founderCount,
   };

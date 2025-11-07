@@ -30,7 +30,7 @@ interface CommitmentDialogProps {
   investorId: string;
   investorName: string;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
 }
 
 const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
@@ -122,7 +122,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
       await logActivity('commitment_made', `Committed $${commitmentAmount.toLocaleString()} to ${startupName}`, startupId, '💰');
       
       // 6. Re-fetch user profile to update 'committed' count
-      await fetchUserProfile();
+      await fetchUserProfile(investorId); // Pass investorId to fetchUserProfile
 
       return newCommitment;
     },

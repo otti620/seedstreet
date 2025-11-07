@@ -9,7 +9,7 @@ interface RoleSelectorScreenProps {
   setCurrentScreen: (screen: string) => void;
   setActiveTab: (tab: string) => void;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: () => Promise<void>; // Added fetchUserProfile
+  fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
   investorCount: number; // New prop
   founderCount: number; // New prop
 }
@@ -29,7 +29,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
       } else {
         toast.success(`Welcome, ${role}!`);
         logActivity('role_selected', `Selected role: ${role}`, user.id, role === 'investor' ? '💰' : '💡'); // Log activity
-        await fetchUserProfile(); // Call fetchUserProfile to refresh the user profile state
+        await fetchUserProfile(user.id); // Call fetchUserProfile to refresh the user profile state
         setCurrentScreen('home');
         setActiveTab('home');
       }
