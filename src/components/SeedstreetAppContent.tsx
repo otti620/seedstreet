@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Rocket, Users, MessageCircle, User, Search, TrendingUp,
   Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
@@ -38,8 +38,8 @@ import CommitmentDialog from './CommitmentDialog';
 import StartupRoomScreen from './screens/StartupRoomScreen';
 import AuthActionScreen from './screens/AuthActionScreen';
 import NewChatScreen from './screens/NewChatScreen';
-import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Direct import
-import { useNetworkStatus } from '@/hooks/use-network-status'; // Import the new hook
+import ScreenTransitionWrapper from './ScreenTransitionWrapper';
+import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -146,6 +146,16 @@ interface ActivityLog {
   icon: string | null;
 }
 
+// Define a type for screen parameters for better type safety
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: Chat;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface SeedstreetAppContentProps {
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
@@ -153,23 +163,22 @@ interface SeedstreetAppContentProps {
   maintenanceMode: { enabled: boolean; message: string };
   fetchAppSettings: () => void;
   currentScreen: string;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chat?: Chat, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated type for params
+  currentScreenParams: ScreenParams; // NEW: Prop for current screen parameters
   onboardingComplete: () => void;
-  // Props from useAppData
   userProfile: Profile | null;
   setUserProfile: (profile: Profile | null) => void;
   startups: Startup[];
   chats: Chat[];
   communityPosts: CommunityPost[];
-  // Removed messages from props
   notifications: Notification[];
   recentActivities: ActivityLog[];
   loadingData: boolean;
-  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Now receives userId
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
   investorCount: number;
   founderCount: number;
-  fetchCommunityPosts: () => Promise<void>; // New prop
-  fetchNotifications: () => Promise<void>; // New prop
+  fetchCommunityPosts: () => Promise<void>;
+  fetchNotifications: () => Promise<void>;
 }
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -180,51 +189,45 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchAppSettings,
   currentScreen,
   setCurrentScreen,
+  currentScreenParams, // NEW: Destructure currentScreenParams
   onboardingComplete,
-  // Destructure all props from useAppData
   userProfile,
   setUserProfile,
   startups,
   chats,
   communityPosts,
-  // Removed messages from destructuring
   notifications,
   recentActivities,
   loadingData,
-  fetchUserProfile, // Now passed as a prop
+  fetchUserProfile,
   investorCount,
   founderCount,
-  fetchCommunityPosts, // Destructure fetchCommunityPosts
-  fetchNotifications, // Destructure fetchNotifications
+  fetchCommunityPosts,
+  fetchNotifications,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
-  const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [activeTab, setActiveTab] = useState('home');
-
-  const [selectedStartupId, setSelectedStartupId] = useState<string | undefined>(undefined);
-  const [listedStartupName, setListedStartupName] = useState<string | undefined>(undefined);
-  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState<string | undefined>(undefined);
-  const [authActionType, setAuthActionType] = useState<'forgotPassword' | 'changePassword' | undefined>(undefined);
-  const [selectedStartupRoomId, setSelectedStartupRoomId] = useState<string | undefined>(undefined);
-  // selectedChatId state removed
 
   const userRole = userProfile?.role || null;
 
   // Integrate network status hook
   useNetworkStatus();
 
-  // Effect to update selectedStartup when selectedStartupId or startups change
-  useEffect(() => {
-    if (selectedStartupId && startups.length > 0) {
-      setSelectedStartup(startups.find(s => s.id === selectedStartupId) || null);
-    } else if (!selectedStartupId) {
-      setSelectedStartup(null);
-    }
-  }, [selectedStartupId, startups]);
+  // NEW: Derive values directly from currentScreenParams
+  const selectedStartupId = currentScreenParams.startupId;
+  const listedStartupName = currentScreenParams.startupName;
+  const selectedCommunityPostId = currentScreenParams.postId;
+  const selectedChat = currentScreenParams.chat; // Directly use the chat object
+  const authActionType = currentScreenParams.authActionType;
+  const selectedStartupRoomId = currentScreenParams.startupRoomId;
 
-  // Removed: Effect to update selectedChat when selectedChatId or chats change
-  // selectedChat is now set directly when navigating to 'chat' screen
+  // NEW: Derive selectedStartup from startups array and selectedStartupId using useMemo
+  const selectedStartup = useMemo(() => {
+    if (selectedStartupId && startups.length > 0) {
+      return startups.find(s => s.id === selectedStartupId) || null;
+    }
+    return null;
+  }, [selectedStartupId, startups]);
 
   // Update screen history when currentScreen prop changes
   useEffect(() => {
@@ -236,46 +239,17 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     });
   }, [currentScreen]);
 
-  const handleSetCurrentScreen = useCallback((screen: string, params?: { startupId?: string, startupName?: string, postId?: string, chat?: Chat, authActionType?: 'forgotPassword' | 'changePassword', startupRoomId?: string }) => {
-    setCurrentScreen(screen, params);
-    if (params?.startupId) {
-      setSelectedStartupId(params.startupId);
-      // setSelectedStartup is now handled by the useEffect
-    } else {
-      setSelectedStartupId(undefined);
-    }
-    if (params?.startupName) {
-      setListedStartupName(params.startupName);
-    } else {
-      setListedStartupName(undefined);
-    }
-    if (params?.postId) {
-      setSelectedCommunityPostId(params.postId);
-    } else {
-      setSelectedCommunityPostId(undefined);
-    }
-    if (params?.chat) { // Directly set selectedChat if a chat object is provided
-      setSelectedChat(params.chat);
-    } else { // If navigating away from chat or no chat provided
-      setSelectedChat(null);
-    }
-    if (params?.authActionType) {
-      setAuthActionType(params.authActionType);
-    } else {
-      setAuthActionType(undefined);
-    }
-    if (params?.startupRoomId) {
-      setSelectedStartupRoomId(params.startupRoomId);
-    } else {
-      setSelectedStartupRoomId(undefined);
-    }
-  }, [setCurrentScreen, startups]); // Removed 'chats' dependency as selectedChat is set directly
+  // Modified handleSetCurrentScreen to simply call the parent's setCurrentScreen
+  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
+    setCurrentScreen(screen, params); // Pass both screen and params to the parent handler
+  }, [setCurrentScreen]); // Dependency on parent's setCurrentScreen
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
-        handleSetCurrentScreen(newHistory[newHistory.length - 1]);
+        // When going back, we don't have specific params, so pass an empty object
+        handleSetCurrentScreen(newHistory[newHistory.length - 1], {});
         return newHistory;
       }
       return prev;
@@ -539,7 +513,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
 
     if (chatToOpen) {
-      setSelectedChat(chatToOpen);
       handleSetCurrentScreen('chat', { chat: chatToOpen }); // Pass the full chat object
       setActiveTab('chats');
     }
@@ -569,9 +542,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   const showWelcomeFlyer = userProfile?.show_welcome_flyer && currentScreen === 'home';
 
-  // Find the selected startup for the room screen
-  const startupForRoom = selectedStartupRoomId ? startups.find(s => s.id === selectedStartupRoomId) : null;
-
   const fetchMessagesForChat = useCallback(async (chatId: string): Promise<Message[] | null> => {
     const { data, error } = await supabase
       .from('messages')
@@ -589,7 +559,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   return (
     <>
       {currentScreen === 'splash' && <SplashScreen />}
-      {/* All other screens remain inside ScreenTransitionWrapper */}
       {currentScreen !== 'splash' && (
         <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
           {currentScreen === 'onboarding' && (
@@ -606,8 +575,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
                 interestedStartups={interestedStartups}
                 toggleBookmark={toggleBookmark}
                 toggleInterest={toggleInterest}
-                setSelectedStartup={setSelectedStartup}
-                setSelectedChat={setSelectedChat}
+                // Removed setSelectedStartup and setSelectedChat props
                 setCurrentScreen={handleSetCurrentScreen}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -630,7 +598,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             <ChatListScreen
               chats={chats}
               setCurrentScreen={handleSetCurrentScreen}
-              setSelectedChat={setSelectedChat}
+              setSelectedChat={(chat) => handleSetCurrentScreen('chat', { chat })}
               setActiveTab={setActiveTab}
               activeTab={activeTab}
               userRole={userRole}
@@ -668,7 +636,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               toggleBookmark={toggleBookmark}
               toggleInterest={toggleInterest}
               setCurrentScreen={handleSetCurrentScreen}
-              setSelectedChat={setSelectedChat}
+              // Removed setSelectedChat prop
               activeTab={activeTab}
               userRole={userRole}
               setActiveTab={setActiveTab}
@@ -681,12 +649,11 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           {currentScreen === 'chat' && selectedChat && (
             <ChatConversationScreen
               selectedChat={selectedChat}
-              // messages prop removed
               setCurrentScreen={handleSetCurrentScreen}
               setActiveTab={setActiveTab}
               userProfile={userProfile}
               logActivity={logActivity}
-              fetchMessagesForChat={fetchMessagesForChat} // New prop
+              fetchMessagesForChat={fetchMessagesForChat}
             />
           )}
           {currentScreen === 'editProfile' && userProfile && (
@@ -694,6 +661,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               userProfile={userProfile}
               setCurrentScreen={handleSetCurrentScreen}
               setUserProfile={setUserProfile}
+              logActivity={logActivity}
+              fetchUserProfile={fetchUserProfile}
             />
           )}
           {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
@@ -758,7 +727,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               bookmarkedStartups={bookmarkedStartups}
               toggleBookmark={toggleBookmark}
               toggleInterest={toggleInterest}
-              setSelectedStartup={setSelectedStartup}
+              // Removed setSelectedStartup prop
               handleStartChat={handleStartChat}
               interestedStartups={interestedStartups}
             />
@@ -773,10 +742,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
-          {currentScreen === 'startupRoom' && startupForRoom && (
+          {currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup && (
             <StartupRoomScreen
               setCurrentScreen={handleSetCurrentScreen}
-              selectedStartup={startupForRoom}
+              selectedStartup={selectedStartup}
             />
           )}
           {currentScreen === 'authAction' && authActionType && (
@@ -813,7 +782,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             savedStartups: currentScreen === 'savedStartups' && userProfile,
             settings: currentScreen === 'settings',
             termsAndPrivacy: currentScreen === 'termsAndPrivacy',
-            startupRoom: currentScreen === 'startupRoom' && startupForRoom,
+            startupRoom: currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup,
             authAction: currentScreen === 'authAction' && authActionType,
             newChat: currentScreen === 'newChat' && userProfile,
           }).some(Boolean) && (

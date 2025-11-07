@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import Image from next/image
+import Image from 'next/image';
 import { ArrowLeft, Bookmark, Eye, MessageCircle, Rocket, Search, Filter, BrainCircuit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,14 +30,23 @@ interface Startup {
   market_trend_analysis: string | null;
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface SavedStartupsScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   userProfileId: string;
   bookmarkedStartupIds: string[];
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setSelectedStartup: (startup: Startup) => void;
+  // Removed setSelectedStartup prop
   handleStartChat: (startup: Startup) => Promise<void>;
 }
 
@@ -48,7 +57,7 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
   interestedStartups,
   toggleBookmark,
   toggleInterest,
-  setSelectedStartup,
+  // Removed setSelectedStartup from destructuring
   handleStartChat,
 }) => {
   const [savedStartups, setSavedStartups] = useState<Startup[]>([]);
@@ -231,8 +240,7 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
                     Slide in 💬
                   </button>
                   <button onClick={() => {
-                    setSelectedStartup(startup);
-                    setCurrentScreen('startupDetail');
+                    setCurrentScreen('startupDetail', { startupId: startup.id }); // Use setCurrentScreen
                   }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`View details for ${startup.name}`}>
                     <Rocket className="w-4 h-4" />
                     Join room 🚀

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CommitmentDialog from '../CommitmentDialog';
-import { Progress } from '@/components/ui/progress'; // Import Progress component
+import { Progress } from '@/components/ui/progress';
 
 // Define TypeScript interfaces for data structures
 interface Startup {
@@ -29,7 +29,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
-  amount_raised: number; // Ensure amount_raised is part of the interface
+  amount_raised: number;
 }
 
 interface Profile {
@@ -38,20 +38,29 @@ interface Profile {
   email: string | null;
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface StartupDetailContentProps {
   selectedStartup: Startup;
   bookmarkedStartups: string[];
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupRoomId?: string }) => void;
-  setSelectedChat: (chat: any) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  // Removed setSelectedChat prop
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
   handleStartChat: (startup: Startup) => Promise<void>;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<void>;
   userProfile: Profile | null;
 }
 
@@ -62,7 +71,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
   toggleBookmark,
   toggleInterest,
   setCurrentScreen,
-  setSelectedChat,
+  // Removed setSelectedChat from destructuring
   activeTab,
   userRole,
   setActiveTab,

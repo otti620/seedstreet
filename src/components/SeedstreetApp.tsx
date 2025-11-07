@@ -29,13 +29,24 @@ interface Profile {
   total_committed: number;
 }
 
+// Define a type for screen parameters for better type safety
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any; // Using 'any' for chat for now, can be refined
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 const SeedstreetApp: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
   const [currentScreen, setCurrentScreen] = useState('splash');
+  const [currentScreenParams, setCurrentScreenParams] = useState<ScreenParams>({}); // NEW: State for screen parameters
   const [maintenanceMode, setMaintenanceMode] = useState({ enabled: false, message: '' });
   const [splashTimerComplete, setSplashTimerComplete] = useState(false);
-  const [userProfile, setUserProfile] = useState<Profile | null>(null); // SeedstreetApp owns userProfile state
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false);
 
   // 1. Splash screen timer: Ensures splash screen shows for a minimum duration
@@ -52,7 +63,7 @@ const SeedstreetApp: React.FC = () => {
     if (error) {
       console.error("Error fetching app settings:", error);
     } else if (data) {
-      setMaintenanceMode({ enabled: data.maintenance_mode_enabled, message: data.maintenance_mode_message || '' });
+      setMaintenanceMode({ enabled: data.setting_value.enabled, message: data.setting_value.message || '' });
     }
   }, []);
 
@@ -99,8 +110,10 @@ const SeedstreetApp: React.FC = () => {
         setIsLoggedIn(false);
         if (!onboardingSeenLocally) {
           setCurrentScreen('onboarding');
+          setCurrentScreenParams({});
         } else {
           setCurrentScreen('auth');
+          setCurrentScreenParams({});
         }
       } else {
         setIsLoggedIn(true);
@@ -108,14 +121,18 @@ const SeedstreetApp: React.FC = () => {
         if (fetchedProfile) {
           if (!fetchedProfile.role) {
             setCurrentScreen('roleSelector');
+            setCurrentScreenParams({});
           } else if (!fetchedProfile.onboarding_complete) {
             setCurrentScreen('onboarding');
+            setCurrentScreenParams({});
           } else {
             setCurrentScreen('home');
+            setCurrentScreenParams({});
           }
         } else {
           // This case should ideally not happen if handle_new_user works, but fallback
           setCurrentScreen('roleSelector');
+          setCurrentScreenParams({});
         }
       }
       setLoadingSession(false);
@@ -134,15 +151,25 @@ const SeedstreetApp: React.FC = () => {
       if (isLoggedIn && userProfile) {
         // User is logged in and profile is loaded, navigate based on profile status
         if (!userProfile.role) {
-          if (currentScreen !== 'roleSelector') setCurrentScreen('roleSelector');
+          if (currentScreen !== 'roleSelector') {
+            setCurrentScreen('roleSelector');
+            setCurrentScreenParams({});
+          }
         } else if (!userProfile.onboarding_complete) {
-          if (currentScreen !== 'onboarding') setCurrentScreen('onboarding');
+          if (currentScreen !== 'onboarding') {
+            setCurrentScreen('onboarding');
+            setCurrentScreenParams({});
+          }
         } else {
-          if (currentScreen !== 'home') setCurrentScreen('home');
+          if (currentScreen !== 'home') {
+            setCurrentScreen('home');
+            setCurrentScreenParams({});
+          }
         }
       } else if (!isLoggedIn && currentScreen !== 'auth' && currentScreen !== 'onboarding' && currentScreen !== 'splash') {
         // User logged out or session expired, and not on onboarding/splash/auth already
         setCurrentScreen('auth');
+        setCurrentScreenParams({});
       }
     }
   }, [isLoggedIn, userProfile, loadingSession, currentScreen, setCurrentScreen]);
@@ -182,8 +209,9 @@ const SeedstreetApp: React.FC = () => {
   }, [loadingData, currentScreen, loadingSession]);
 
   // Handle screen changes from child components
-  const handleSetCurrentScreen = useCallback((screen: string, params?: any) => {
+  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
     setCurrentScreen(screen);
+    setCurrentScreenParams(params || {}); // Store the parameters
   }, []);
 
   const handleOnboardingComplete = useCallback(async () => {
@@ -205,6 +233,7 @@ const SeedstreetApp: React.FC = () => {
       }
     } else {
       setCurrentScreen('auth'); // Redirect to auth for unauthenticated users
+      setCurrentScreenParams({});
     }
   }, [userProfile, setCurrentScreen, setUserProfile]); // Added setUserProfile to dependencies
 
@@ -221,10 +250,10 @@ const SeedstreetApp: React.FC = () => {
         disableTransitionOnChange
         showGlobalLoadingIndicator={false}
       >
-        <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} {...{
+        <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} currentScreenParams={currentScreenParams} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
           userProfile, setUserProfile, startups, chats, communityPosts, notifications, recentActivities,
-          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications // Pass fetch functions
+          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications
         }} />
       </ThemeProviderWrapper>
     );
@@ -246,6 +275,7 @@ const SeedstreetApp: React.FC = () => {
         fetchAppSettings={fetchAppSettings}
         currentScreen={currentScreen}
         setCurrentScreen={handleSetCurrentScreen}
+        currentScreenParams={currentScreenParams} // NEW: Pass currentScreenParams
         onboardingComplete={handleOnboardingComplete}
         userProfile={userProfile}
         setUserProfile={setUserProfile}
@@ -258,8 +288,8 @@ const SeedstreetApp: React.FC = () => {
         fetchUserProfile={fetchUserProfile}
         investorCount={investorCount}
         founderCount={founderCount}
-        fetchCommunityPosts={fetchCommunityPosts} // Pass fetch functions
-        fetchNotifications={fetchNotifications} // Pass fetch functions
+        fetchCommunityPosts={fetchCommunityPosts}
+        fetchNotifications={fetchNotifications}
       />
       <Toaster richColors position="top-center" />
     </ThemeProviderWrapper>

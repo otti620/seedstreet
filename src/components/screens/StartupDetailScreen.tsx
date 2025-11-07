@@ -24,6 +24,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
+  amount_raised: number;
 }
 
 interface Profile {
@@ -32,20 +33,29 @@ interface Profile {
   email: string | null;
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface StartupDetailScreenProps {
   selectedStartup: Startup;
   bookmarkedStartups: string[];
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setCurrentScreen: (screen: string, params?: { startupId?: string, startupRoomId?: string }) => void;
-  setSelectedChat: (chat: any) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  // Removed setSelectedChat prop
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
   handleStartChat: (startup: Startup) => Promise<void>;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<void>;
   userProfile: Profile | null;
 }
 

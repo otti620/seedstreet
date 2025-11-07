@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react'; // Import useRef
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit } from 'lucide-react'; // Import BrainCircuit
+import React, { useState, useEffect, useRef } from 'react';
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
-import { motion } from 'framer-motion'; // Import motion
-import { Badge } from '@/components/ui/badge'; // Import Badge
+} from '@/components/ui/dropdown-menu';
+import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -24,22 +24,30 @@ interface Startup {
   active_chats: number;
   interests: number;
   founder_name: string;
-  location: string; // Reverted to original type
+  location: string;
   founder_id: string;
   amount_sought: number | null;
   currency: string | null;
   funding_stage: string | null;
-  ai_risk_score: number | null; // Added for AI analysis
-  market_trend_analysis: string | null; // Added for AI analysis
+  ai_risk_score: number | null;
+  market_trend_analysis: string | null;
+}
+
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
 }
 
 interface InvestorFeedProps {
   startups: Startup[];
   bookmarkedStartups: string[];
   toggleBookmark: (startupId: string) => void;
-  setSelectedStartup: (startup: Startup) => void;
-  setCurrentScreen: (screen: string) => void;
-  setSelectedChat: (chat: any) => void;
+  // Removed setSelectedStartup and setSelectedChat props
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   loading: boolean;
   handleStartChat: (startup: Startup) => Promise<void>;
 }
@@ -54,21 +62,19 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
   startups,
   bookmarkedStartups,
   toggleBookmark,
-  setSelectedStartup,
+  // Removed setSelectedStartup and setSelectedChat from destructuring
   setCurrentScreen,
-  setSelectedChat,
   loading,
   handleStartChat,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(''); // New state for debounced term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Debounce effect for search term
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms debounce delay
+    }, 300);
 
     return () => {
       clearTimeout(timerId);
@@ -77,7 +83,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
 
   const filteredStartups = startups.filter(startup => {
     const matchesSearch =
-      startup.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || // Use debounced term
+      startup.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       startup.tagline.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       startup.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       startup.location.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
@@ -239,8 +245,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                     Slide in 💬
                   </button>
                   <button onClick={() => {
-                    setSelectedStartup(startup);
-                    setCurrentScreen('startupDetail');
+                    setCurrentScreen('startupDetail', { startupId: startup.id }); // Use setCurrentScreen
                   }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`View details for ${startup.name}`}>
                     <Rocket className="w-4 h-4" />
                     Join room 🚀

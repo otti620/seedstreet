@@ -3,7 +3,7 @@
 import React from 'react';
 import InvestorFeed from './home/InvestorFeed';
 import FounderDashboard from './home/FounderDashboard';
-import BottomNav from '../BottomNav'; // Corrected path
+import BottomNav from '../BottomNav';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -43,6 +43,15 @@ interface ActivityLog { // New interface for activity log entries
   icon: string | null; // Lucide icon name or emoji
 }
 
+interface ScreenParams {
+  startupId?: string;
+  startupName?: string;
+  postId?: string;
+  chat?: any;
+  authActionType?: 'forgotPassword' | 'changePassword';
+  startupRoomId?: string;
+}
+
 interface HomeScreenProps {
   userRole: string | null;
   startups: Startup[];
@@ -50,9 +59,8 @@ interface HomeScreenProps {
   interestedStartups: string[]; // Changed to string[]
   toggleBookmark: (startupId: string) => void; // Changed to string
   toggleInterest: (startupId: string) => void; // Changed to string
-  setSelectedStartup: (startup: Startup) => void;
-  setSelectedChat: (chat: any) => void; // Still 'any' for now
-  setCurrentScreen: (screen: string, params?: { startupId?: string }) => void; // Updated to accept params
+  // Removed setSelectedStartup and setSelectedChat props
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   activeTab: string;
   setActiveTab: (tab: string) => void;
   loading: boolean; // New prop for loading state
@@ -70,8 +78,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   interestedStartups,
   toggleBookmark,
   toggleInterest,
-  setSelectedStartup,
-  setSelectedChat,
+  // Removed setSelectedStartup and setSelectedChat from destructuring
   setCurrentScreen,
   activeTab,
   setActiveTab,
@@ -80,7 +87,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   userProfileName,
   userProfileEmail,
   handleStartChat,
-  recentActivities, // Destructure recentActivities
+  recentActivities,
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -89,9 +96,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           startups={startups}
           bookmarkedStartups={bookmarkedStartups}
           toggleBookmark={toggleBookmark}
-          setSelectedStartup={setSelectedStartup}
+          // Removed setSelectedStartup and setSelectedChat props
           setCurrentScreen={setCurrentScreen}
-          setSelectedChat={setSelectedChat}
           loading={loading}
           handleStartChat={handleStartChat}
         />
@@ -99,9 +105,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <FounderDashboard
           setActiveTab={setActiveTab}
           setCurrentScreen={setCurrentScreen}
-          userProfileId={userProfileId || ''} // Pass userProfileId
+          userProfileId={userProfileId || ''}
           loading={loading}
-          recentActivities={recentActivities} // Pass recent activities to FounderDashboard
+          recentActivities={recentActivities}
         />
       )}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} />
