@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner'; // Import Toaster directly
+import { ThemeProvider as NextThemesProvider } from "next-themes"; // Import ThemeProvider directly
+import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator directly
 import SeedstreetAppContent from './SeedstreetAppContent';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
-import { ThemeProviderWrapper } from '@/components/ThemeProviderWrapper';
+// Removed ThemeProviderWrapper import as it will be simplified
 
 // Define Profile interface here or import from a shared type file
 interface Profile {
@@ -240,31 +242,32 @@ const SeedstreetApp: React.FC = () => {
 
   if (!splashTimerComplete || loadingSession) {
     return (
-      <ThemeProviderWrapper
+      <NextThemesProvider
         attribute="class"
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange
-        showGlobalLoadingIndicator={false}
       >
+        <GlobalLoadingIndicator loading={false} />
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} currentScreenParams={currentScreenParams} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
           userProfile, setUserProfile, startups, chats, communityPosts, notifications, recentActivities,
           loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications,
           fetchStartups
         }} />
-      </ThemeProviderWrapper>
+        <Toaster richColors position="top-center" />
+      </NextThemesProvider>
     );
   }
 
   return (
-    <ThemeProviderWrapper
+    <NextThemesProvider
       attribute="class"
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
-      showGlobalLoadingIndicator={showGlobalLoadingIndicator}
     >
+      <GlobalLoadingIndicator loading={showGlobalLoadingIndicator} />
       <SeedstreetAppContent
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={setIsLoggedIn}
@@ -292,7 +295,7 @@ const SeedstreetApp: React.FC = () => {
         fetchStartups={fetchStartups}
       />
       <Toaster richColors position="top-center" />
-    </ThemeProviderWrapper>
+    </NextThemesProvider>
   );
 };
 

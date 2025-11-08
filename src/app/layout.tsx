@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
 import "./globals.css";
 // Removed direct import of Toaster and ThemeProvider
-import { Suspense } from "react"; // Import Suspense for potential future use
+import { Suspense } from "react"; // Import Suspense
 // Removed dynamic import of GlobalLoadingIndicator as it's now in ThemeProviderWrapper
 
 import { ThemeProviderWrapper } from "@/components/ThemeProviderWrapper"; // Import the new wrapper
