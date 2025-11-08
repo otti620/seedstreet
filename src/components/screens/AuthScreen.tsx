@@ -47,7 +47,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 type SignUpFormInputs = z.infer<typeof signUpSchema>;
 type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>;
 
-function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps): JSX.Element {
+function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) { // Removed explicit : JSX.Element
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
