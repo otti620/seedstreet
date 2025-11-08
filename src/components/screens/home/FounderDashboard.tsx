@@ -74,14 +74,17 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 
   // Effect for rotating recent activities
   useEffect(() => {
-    if (recentActivities.length > 1) {
-      const timer = setInterval(() => {
-        setCurrentActivityIndex(prevIndex =>
-          (prevIndex + 1) % recentActivities.length
-        );
-      }, 5000); // Change activity every 5 seconds
-      return () => clearInterval(timer);
+    // Add a defensive check here to ensure recentActivities is an array and has more than one item
+    if (!recentActivities || recentActivities.length <= 1) {
+      return;
     }
+
+    const timer = setInterval(() => {
+      setCurrentActivityIndex(prevIndex =>
+        (prevIndex + 1) % recentActivities.length
+      );
+    }, 5000); // Change activity every 5 seconds
+    return () => clearInterval(timer);
   }, [recentActivities]);
 
   const renderFounderStatsSkeleton = () => (
@@ -257,7 +260,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <div className="flex gap-3">
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Use actual views */}
-                    <div className="text-xs text-gray-500">Total Views</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.amount_raised?.toLocaleString() || '0'}</div>
+                    <div className="text-xs text-gray-500">Amount Raised</div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.valuation?.toLocaleString() || 'N/A'}</div> {/* Display valuation */}
