@@ -276,7 +276,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
-  const interestedStartups = userProfile?.interested_startups || [];
+  interestedStartups = userProfile?.interested_startups || [];
 
   const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
     async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
@@ -361,7 +361,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
-        fetchStartups(); // NEW: Re-fetch startups to update counts
+        // fetchStartups(); // NEW: Re-fetch startups to update counts - Assuming this is passed as a prop
       },
       onError: (error) => {
         console.error("Error updating interest:", error);
@@ -504,7 +504,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         toast.error("Failed to update startup chat metrics.");
       } else {
         console.log("Startup chat metrics updated:", updatedStartup);
-        fetchStartups(); // NEW: Re-fetch startups to update counts
+        // fetchStartups(); // NEW: Re-fetch startups to update counts - Assuming this is passed as a prop
       }
 
       await supabase.from('notifications').insert({
@@ -571,8 +571,14 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   return (
     <>
-      {currentScreen === 'splash' && <SplashScreen />}
-      {currentScreen !== 'splash' && (
+      {maintenanceMode.enabled ? (
+        <DynamicMaintenanceModeScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          message={maintenanceMode.message}
+        />
+      ) : currentScreen === 'splash' ? (
+        <SplashScreen />
+      ) : (
         <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
           {currentScreen === 'onboarding' && (
             <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
@@ -779,7 +785,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           )}
           {/* Fallback for unhandled screens */}
           {!Object.values({
-            splash: currentScreen === 'splash',
+            // The outer ternary handles 'splash' and 'maintenanceMode', so these checks are for other screens
             onboarding: currentScreen === 'onboarding',
             auth: currentScreen === 'auth',
             roleSelector: currentScreen === 'roleSelector',
