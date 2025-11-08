@@ -69,6 +69,7 @@ interface HomeScreenProps {
   userProfileEmail: string | null;
   handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
   recentActivities: ActivityLog[]; // New prop for recent activities
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -88,6 +89,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   userProfileEmail,
   handleStartChat,
   recentActivities,
+  fetchStartups, // NEW: Destructure fetchStartups
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -95,11 +97,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <InvestorFeed
           startups={startups}
           bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups} // NEW: Pass interestedStartups
           toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest} // NEW: Pass toggleInterest
           // Removed setSelectedStartup and setSelectedChat props
           setCurrentScreen={setCurrentScreen}
           loading={loading}
           handleStartChat={handleStartChat}
+          fetchStartups={fetchStartups} // NEW: Pass fetchStartups
         />
       ) : (
         <FounderDashboard

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit } from 'lucide-react';
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye } from 'lucide-react'; // Import Eye icon
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -45,11 +45,14 @@ interface ScreenParams {
 interface InvestorFeedProps {
   startups: Startup[];
   bookmarkedStartups: string[];
+  interestedStartups: string[]; // NEW: Add interestedStartups prop
   toggleBookmark: (startupId: string) => void;
+  toggleInterest: (startupId: string) => void; // NEW: Add toggleInterest prop
   // Removed setSelectedStartup and setSelectedChat props
   setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   loading: boolean;
   handleStartChat: (startup: Startup) => Promise<void>;
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 const startupCategories = [
@@ -61,11 +64,14 @@ const startupCategories = [
 const InvestorFeed: React.FC<InvestorFeedProps> = ({
   startups,
   bookmarkedStartups,
+  interestedStartups, // NEW: Destructure interestedStartups
   toggleBookmark,
+  toggleInterest, // NEW: Destructure toggleInterest
   // Removed setSelectedStartup and setSelectedChat from destructuring
   setCurrentScreen,
   loading,
   handleStartChat,
+  fetchStartups, // NEW: Destructure fetchStartups
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -185,74 +191,79 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
           Array.from({ length: 3 }).map((_, i) => <React.Fragment key={i}>{renderStartupCardSkeleton()}</React.Fragment>)
         ) : (
           filteredStartups.length > 0 ? (
-            filteredStartups.map(startup => (
-              <motion.div
-                key={startup.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-2xl shadow-lg">
-                    {startup.logo}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-gray-900 dark:text-gray-50">{startup.name}</h3>
-                      <Check className="w-4 h-4 text-teal-600" />
-                      {startup.ai_risk_score !== null && (
-                        <Badge
-                          variant="secondary"
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            startup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                            startup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                            'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                          }`}
-                        >
-                          <BrainCircuit className="w-3 h-3" />
-                          Risk: {startup.ai_risk_score}
-                        </Badge>
-                      )}
+            filteredStartups.map(startup => {
+              const isBookmarked = bookmarkedStartups.includes(startup.id);
+              const isInterested = interestedStartups.includes(startup.id); // NEW: Check if interested
+
+              return (
+                <motion.div
+                  key={startup.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-2xl shadow-lg">
+                      {startup.logo}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-gray-900 dark:text-gray-50">{startup.name}</h3>
+                        <Check className="w-4 h-4 text-teal-600" />
+                        {startup.ai_risk_score !== null && (
+                          <Badge
+                            variant="secondary"
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              startup.ai_risk_score < 30 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                              startup.ai_risk_score < 70 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                              'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                            }`}
+                          >
+                            <BrainCircuit className="w-3 h-3" />
+                            Risk: {startup.ai_risk_score}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
+                    </div>
+                    <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
+                      <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
+                    </button>
                   </div>
-                  <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${bookmarkedStartups.includes(startup.id) ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={bookmarkedStartups.includes(startup.id) ? "Remove bookmark" : "Bookmark startup"}>
-                    <Bookmark className="w-5 h-5" fill={bookmarkedStartups.includes(startup.id) ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
 
-                <p className="text-sm text-gray-700 mb-4 line-clamp-2 dark:text-gray-200">{startup.description}</p>
+                  <p className="text-sm text-gray-700 mb-4 line-clamp-2 dark:text-gray-200">{startup.description}</p>
 
-                <div className="flex gap-4 mb-4 p-3 bg-gradient-to-r from-purple-50 to-teal-50 rounded-xl dark:from-gray-700 dark:to-gray-700">
-                  <div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.room_members}</div>
-                    <div className="text-xs text-gray-500 uppercase">Members</div>
+                  <div className="flex gap-4 mb-4 p-3 bg-gradient-to-r from-purple-50 to-teal-50 rounded-xl dark:from-gray-700 dark:to-gray-700">
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.room_members}</div>
+                      <div className="text-xs text-gray-500 uppercase">Members</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.active_chats}</div>
+                      <div className="text-xs text-gray-500 uppercase">Active Chats</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.interests}</div>
+                      <div className="text-xs text-gray-500 uppercase">Interested</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.active_chats}</div>
-                    <div className="text-xs text-gray-500 uppercase">Active Chats</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.interests}</div>
-                    <div className="text-xs text-gray-500 uppercase">Interested</div>
-                  </div>
-                </div>
 
-                <div className="flex gap-2">
-                  <button onClick={() => handleStartChat(startup)} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`Start chat with ${startup.founder_name}`}>
-                    <MessageCircle className="w-4 h-4" />
-                    Slide in 💬
-                  </button>
-                  <button onClick={() => {
-                    setCurrentScreen('startupDetail', { startupId: startup.id }); // Use setCurrentScreen
-                  }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`View details for ${startup.name}`}>
-                    <Rocket className="w-4 h-4" />
-                    Join room 🚀
-                  </button>
-                </div>
-              </motion.div>
-            ))
+                  <div className="flex gap-2">
+                    <button onClick={() => handleStartChat(startup)} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`Start chat with ${startup.founder_name}`}>
+                      <MessageCircle className="w-4 h-4" />
+                      Slide in 💬
+                    </button>
+                    <button onClick={() => {
+                      setCurrentScreen('startupDetail', { startupId: startup.id }); // Use setCurrentScreen
+                    }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`View details for ${startup.name}`}>
+                      <Rocket className="w-4 h-4" />
+                      Join room 🚀
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })
           ) : (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl dark:bg-gray-800">

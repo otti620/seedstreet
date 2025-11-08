@@ -57,6 +57,7 @@ interface StartupDetailScreenProps {
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
   fetchUserProfile: (userId: string) => Promise<void>;
   userProfile: Profile | null;
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 // Dynamically import the content component

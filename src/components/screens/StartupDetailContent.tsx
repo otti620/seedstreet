@@ -62,6 +62,7 @@ interface StartupDetailContentProps {
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
   fetchUserProfile: (userId: string) => Promise<void>;
   userProfile: Profile | null;
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
@@ -79,6 +80,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
   logActivity,
   fetchUserProfile,
   userProfile,
+  fetchStartups, // NEW: Destructure fetchStartups
 }) => {
   const isBookmarked = bookmarkedStartups.includes(selectedStartup.id);
   const isInterested = interestedStartups.includes(selectedStartup.id);
@@ -298,6 +300,7 @@ const StartupDetailContent: React.FC<StartupDetailContentProps> = ({
           investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'}
           logActivity={logActivity}
           fetchUserProfile={fetchUserProfile}
+          fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
         />
       )}
     </div>

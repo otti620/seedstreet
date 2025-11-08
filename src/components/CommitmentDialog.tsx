@@ -32,6 +32,7 @@ interface CommitmentDialogProps {
   investorName: string;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
   fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
@@ -46,6 +47,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
   investorName,
   logActivity,
   fetchUserProfile,
+  fetchStartups, // NEW: Destructure fetchStartups
 }) => {
   const [amount, setAmount] = useState<number | ''>('');
 
@@ -124,6 +126,9 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
       
       // 6. Re-fetch user profile to update 'committed' count
       await fetchUserProfile(investorId); // Pass investorId to fetchUserProfile
+      
+      // 7. Re-fetch startups to update amount_raised on the detail screen
+      await fetchStartups(); // NEW: Call fetchStartups here
 
       return newCommitment;
     },

@@ -598,6 +598,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
                 userProfileEmail={userProfile?.email || null}
                 handleStartChat={handleStartChat}
                 recentActivities={recentActivities}
+                fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
               />
               {showWelcomeFlyer && (
                 <DynamicWelcomeFlyer
@@ -657,6 +658,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               logActivity={logActivity}
               fetchUserProfile={fetchUserProfile}
               userProfile={userProfile}
+              fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
             />
           )}
           {currentScreen === 'chat' && selectedChat && (
@@ -743,6 +745,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
               // Removed setSelectedStartup prop
               handleStartChat={handleStartChat}
               interestedStartups={interestedStartups}
+              fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
             />
           )}
           {currentScreen === 'settings' && (
