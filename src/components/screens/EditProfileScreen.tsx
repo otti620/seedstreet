@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAvatarUrl, DEFAULT_AVATAR_COUNT } from '@/lib/default-avatars'; // Import getAvatarUrl and DEFAULT_AVATAR_COUNT
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea component
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
