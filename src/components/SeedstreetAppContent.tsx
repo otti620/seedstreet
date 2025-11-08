@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
-// import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Removed direct import
+import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Reverted to direct import
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -183,8 +183,8 @@ const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { 
 const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
 const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
 
-// Dynamic import for ScreenTransitionWrapper
-const DynamicScreenTransitionWrapper = dynamic(() => import('./ScreenTransitionWrapper'), { ssr: false });
+// Removed dynamic import for ScreenTransitionWrapper
+// const DynamicScreenTransitionWrapper = dynamic(() => import('./ScreenTransitionWrapper'), { ssr: false });
 
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -615,7 +615,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   }
 
   return (
-    <DynamicScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+    <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && (
         <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
       )}
@@ -850,7 +850,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           Error: Unknown Screen "{currentScreen}"
         </div>
       )}
-    </DynamicScreenTransitionWrapper>
+    </ScreenTransitionWrapper>
   );
 };
 
