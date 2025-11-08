@@ -59,11 +59,14 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   const [startupLoading, setStartupLoading] = useState(true);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0); // State for rotating activities
 
-  // Ensure recentActivities is always an array here, even if propRecentActivities is null/undefined
-  // This line is where the error is reported, so we need to inspect propRecentActivities right before it.
+  // Initialize recentActivities as an empty array, then conditionally update it.
+  // This is the most robust way to ensure it's always an array.
+  let recentActivities: ActivityLog[] = [];
+  if (Array.isArray(propRecentActivities)) {
+    recentActivities = propRecentActivities;
+  }
   console.log("FounderDashboard: propRecentActivities received (before local assignment):", propRecentActivities);
-  const recentActivities = Array.isArray(propRecentActivities) ? propRecentActivities : [];
-  console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // NEW: Log after assignment
+  console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // Log after assignment
 
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state
@@ -88,9 +91,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
 
     const timer = setInterval(() => {
-      // Inside setInterval, recentActivities is still the same reference from the outer scope.
-      // It's already guaranteed to be an array.
-      // The length check here is primarily for when the array becomes empty after the interval starts.
+      // The local `recentActivities` variable is guaranteed to be an array.
+      // We only need to check its length.
       if (recentActivities.length === 0) {
         clearInterval(timer);
         setCurrentActivityIndex(0);
