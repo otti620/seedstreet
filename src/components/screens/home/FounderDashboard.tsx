@@ -78,6 +78,15 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 
   // Effect for rotating recent activities
   useEffect(() => {
+    // Log for debugging: What is recentActivities right before the potential error?
+    console.log("FounderDashboard: recentActivities in useEffect:", recentActivities);
+
+    // Explicitly check for null/undefined as a final safeguard
+    if (recentActivities === undefined || recentActivities === null) {
+      console.warn("FounderDashboard: recentActivities is undefined/null, skipping activity rotation.");
+      return;
+    }
+
     // Now, recentActivities is guaranteed to be an array due to the local variable assignment above.
     // We only need to check its length.
     if (recentActivities.length <= 1) {
@@ -85,12 +94,10 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
 
     const timer = setInterval(() => {
-      // Inside setInterval, recentActivities is still the same reference from the outer scope.
-      // It's already guaranteed to be an array.
-      // The length check here is primarily for when the array becomes empty after the interval starts.
-      if (recentActivities.length === 0) {
-        clearInterval(timer);
-        setCurrentActivityIndex(0);
+      // Defensive check inside the interval callback as well
+      if (recentActivities === undefined || recentActivities === null || recentActivities.length === 0) {
+        clearInterval(timer); // Clear this specific timer
+        setCurrentActivityIndex(0); // Reset index if activities become invalid/empty
         return;
       }
       setCurrentActivityIndex(prevIndex =>
