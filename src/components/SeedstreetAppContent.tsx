@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
-import ScreenTransitionWrapper from './ScreenTransitionWrapper';
+// import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Removed direct import
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -182,6 +182,9 @@ const DynamicAuthActionScreen = dynamic(() => import('./screens/AuthActionScreen
 const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { ssr: false });
 const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
 const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
+
+// Dynamic import for ScreenTransitionWrapper
+const DynamicScreenTransitionWrapper = dynamic(() => import('./ScreenTransitionWrapper'), { ssr: false });
 
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -612,7 +615,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   }
 
   return (
-    <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+    <DynamicScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && (
         <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
       )}
@@ -638,6 +641,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             handleStartChat={handleStartChat}
             recentActivities={recentActivities}
             fetchStartups={fetchStartups}
+            handleJoinStartupRoom={handleJoinStartupRoom}
           />
           {showWelcomeFlyer && (
             <DynamicWelcomeFlyer
@@ -698,7 +702,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           fetchUserProfile={fetchUserProfile}
           userProfile={userProfile}
           fetchStartups={fetchStartups}
-          handleJoinStartupRoom={handleJoinStartupRoom} {/* NEW: Pass handleJoinStartupRoom */}
+          handleJoinStartupRoom={handleJoinStartupRoom}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
@@ -786,7 +790,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           handleStartChat={handleStartChat}
           interestedStartups={interestedStartups}
           fetchStartups={fetchStartups}
-          handleJoinStartupRoom={handleJoinStartupRoom} {/* NEW: Pass handleJoinStartupRoom */}
+          handleJoinStartupRoom={handleJoinStartupRoom}
         />
       )}
       {currentScreen === 'settings' && (
@@ -846,7 +850,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           Error: Unknown Screen "{currentScreen}"
         </div>
       )}
-    </ScreenTransitionWrapper>
+    </DynamicScreenTransitionWrapper>
   );
 };
 
