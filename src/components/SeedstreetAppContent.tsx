@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
-import ScreenTransitionWrapper from './ScreenTransitionWrapper';
+import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Updated to default import
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
