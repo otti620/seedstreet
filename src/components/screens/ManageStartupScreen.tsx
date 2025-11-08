@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea
 import { motion } from 'framer-motion';
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
