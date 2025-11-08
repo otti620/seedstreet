@@ -148,31 +148,34 @@ const SeedstreetApp: React.FC = () => {
   // 4. Navigation logic for subsequent state changes (after initial screen is set)
   useEffect(() => {
     if (!loadingSession) { // Ensure initial session check is complete
+      let targetScreen = currentScreen;
+      let targetParams: ScreenParams = {};
+
       if (isLoggedIn && userProfile) {
         // User is logged in and profile is loaded, navigate based on profile status
         if (!userProfile.role) {
-          if (currentScreen !== 'roleSelector') {
-            setCurrentScreen('roleSelector');
-            setCurrentScreenParams({});
-          }
+          targetScreen = 'roleSelector';
         } else if (!userProfile.onboarding_complete) {
-          if (currentScreen !== 'onboarding') {
-            setCurrentScreen('onboarding');
-            setCurrentScreenParams({});
-          }
+          targetScreen = 'onboarding';
         } else {
-          if (currentScreen !== 'home') {
-            setCurrentScreen('home');
-            setCurrentScreenParams({});
-          }
+          targetScreen = 'home';
         }
       } else if (!isLoggedIn && currentScreen !== 'auth' && currentScreen !== 'onboarding' && currentScreen !== 'splash') {
         // User logged out or session expired, and not on onboarding/splash/auth already
-        setCurrentScreen('auth');
-        setCurrentScreenParams({});
+        targetScreen = 'auth';
+      }
+
+      // Only update state if the target screen or params are actually different
+      const areParamsEqual = JSON.stringify(targetParams) === JSON.stringify(currentScreenParams);
+
+      if (targetScreen !== currentScreen) {
+        setCurrentScreen(targetScreen);
+        setCurrentScreenParams(targetParams); // Always update params when screen changes
+      } else if (!areParamsEqual) { // If screen is the same, but params are different, update params
+        setCurrentScreenParams(targetParams);
       }
     }
-  }, [isLoggedIn, userProfile, loadingSession, currentScreen, setCurrentScreen]);
+  }, [isLoggedIn, userProfile, loadingSession, currentScreen, currentScreenParams, setCurrentScreen, setCurrentScreenParams]);
 
 
   // 5. Effect to periodically update user's last_active timestamp
@@ -211,8 +214,15 @@ const SeedstreetApp: React.FC = () => {
   // Handle screen changes from child components
   const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
     setCurrentScreen(screen);
-    setCurrentScreenParams(params || {}); // Store the parameters
-  }, []);
+    setCurrentScreenParams(prevParams => {
+      const newParams = params || {};
+      // Deep compare to avoid unnecessary updates
+      if (JSON.stringify(prevParams) === JSON.stringify(newParams)) {
+        return prevParams; // Return old object if content is same
+      }
+      return newParams; // Return new object if content is different
+    });
+  }, [setCurrentScreen, setCurrentScreenParams]); // Dependencies for useCallback
 
   const handleOnboardingComplete = useCallback(async () => {
     await localforage.setItem('hasSeenOnboarding', true); // Mark as seen locally
@@ -235,7 +245,7 @@ const SeedstreetApp: React.FC = () => {
       setCurrentScreen('auth'); // Redirect to auth for unauthenticated users
       setCurrentScreenParams({});
     }
-  }, [userProfile, setCurrentScreen, setUserProfile]); // Added setUserProfile to dependencies
+  }, [userProfile, setCurrentScreen, setUserProfile, setCurrentScreenParams]); // Added setCurrentScreenParams to dependencies
 
   if (maintenanceMode.enabled) {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
