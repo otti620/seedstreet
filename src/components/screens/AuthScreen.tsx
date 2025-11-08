@@ -240,7 +240,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
                       <FormMessage />
                     </FormItem>
                   )}
-                </motion.div>
+                />
               </motion.div>
 
               <motion.div
@@ -267,7 +267,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
                       <FormMessage />
                     </FormItem>
                   )}
-                </motion.div>
+                />
               </motion.div>
 
               {!isSignUp && (
