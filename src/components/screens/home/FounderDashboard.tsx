@@ -25,6 +25,7 @@ interface Startup {
   founder_id: string;
   views: number; // Added views to the interface
   valuation: number | null; // Added valuation
+  amount_raised?: number; // Added amount_raised
 }
 
 interface ActivityLog { // New interface for activity log entries
@@ -74,12 +75,20 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 
   // Effect for rotating recent activities
   useEffect(() => {
-    // Add a defensive check here to ensure recentActivities is an array and has more than one item
-    if (!recentActivities || recentActivities.length <= 1) {
+    // Ensure recentActivities is a valid array with more than one item for setting up the interval
+    if (!Array.isArray(recentActivities) || recentActivities.length <= 1) {
       return;
     }
 
     const timer = setInterval(() => {
+      // Defensive check inside the interval callback as well
+      // If recentActivities somehow became invalid or empty while interval is running,
+      // clear the interval and stop further execution.
+      if (!Array.isArray(recentActivities) || recentActivities.length === 0) {
+        clearInterval(timer); // Clear this specific timer
+        setCurrentActivityIndex(0); // Reset index if activities become invalid/empty
+        return;
+      }
       setCurrentActivityIndex(prevIndex =>
         (prevIndex + 1) % recentActivities.length
       );
@@ -150,7 +159,10 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
   };
 
-  const currentActivity = recentActivities[currentActivityIndex];
+  // Ensure currentActivity is only accessed if recentActivities is a valid array and has items
+  const currentActivity = Array.isArray(recentActivities) && recentActivities.length > 0
+    ? recentActivities[currentActivityIndex]
+    : null;
 
   return (
     <>
@@ -288,7 +300,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Recent Activity</h3>
               <div className="space-y-3">
-                {recentActivities.length > 0 ? (
+                {Array.isArray(recentActivities) && recentActivities.length > 0 ? (
                   <AnimatePresence mode="wait">
                     {currentActivity && (
                       <motion.div
