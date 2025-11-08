@@ -53,7 +53,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   userProfileId,
   loading,
   recentActivities: propRecentActivities, // Keep it as propRecentActivities to inspect its raw value
-  startups, // Destructure global startups array
+  startups = [], // Add default empty array here
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
@@ -71,6 +71,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state
   useEffect(() => {
+    // With 'startups' defaulting to [], we only need to check its length.
     if (userProfileId && startups.length > 0) {
       const foundStartup = startups.find(s => s.founder_id === userProfileId);
       setFounderStartup(foundStartup || null);
