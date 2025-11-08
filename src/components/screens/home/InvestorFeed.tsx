@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye, DollarSign } from 'lucide-react'; // Import Eye and DollarSign icons
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye, DollarSign, Edit } from 'lucide-react'; // Import Eye, DollarSign, and Edit icons
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -57,6 +57,7 @@ interface InvestorFeedProps {
   handleStartChat: (startup: Startup) => Promise<void>;
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
   handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
+  userProfileId: string | null; // NEW: Add userProfileId prop
 }
 
 const startupCategories = [
@@ -77,6 +78,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
   handleStartChat,
   fetchStartups, // NEW: Destructure fetchStartups
   handleJoinStartupRoom, // NEW: Destructure handleJoinStartupRoom
+  userProfileId, // NEW: Destructure userProfileId
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -201,6 +203,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
             filteredStartups.map(startup => {
               const isBookmarked = bookmarkedStartups.includes(startup.id);
               const isInterested = interestedStartups.includes(startup.id); // NEW: Check if interested
+              const isMyStartup = userProfileId === startup.founder_id; // NEW: Check if it's the current user's startup
 
               return (
                 <motion.div
@@ -234,9 +237,11 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
                     </div>
-                    <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
-                      <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
-                    </button>
+                    {!isMyStartup && ( // Only show bookmark button if not my startup
+                      <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
+                        <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
+                      </button>
+                    )}
                   </div>
 
                   <p className="text-sm text-gray-700 mb-4 line-clamp-2 dark:text-gray-200">{startup.description}</p>
@@ -265,16 +270,29 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => setCurrentScreen('startupDetail', { startupId: startup.id })} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`View details for ${startup.name}`}>
-                      <Eye className="w-4 h-4" />
-                      View Details
-                    </button>
-                    <button onClick={() => {
-                      handleJoinStartupRoom(startup); // Updated to use handleJoinStartupRoom
-                    }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`Join room for ${startup.name}`}>
-                      <Rocket className="w-4 h-4" />
-                      Join room 🚀
-                    </button>
+                    {isMyStartup ? (
+                      <button
+                        onClick={() => setCurrentScreen('manageStartup', { startupId: startup.id })}
+                        className="flex-1 h-12 bg-purple-700 text-white rounded-xl font-semibold text-sm hover:bg-purple-800 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        aria-label={`Manage ${startup.name}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Manage Startup
+                      </button>
+                    ) : (
+                      <>
+                        <button onClick={() => setCurrentScreen('startupDetail', { startupId: startup.id })} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`View details for ${startup.name}`}>
+                          <Eye className="w-4 h-4" />
+                          View Details
+                        </button>
+                        <button onClick={() => {
+                          handleJoinStartupRoom(startup); // Updated to use handleJoinStartupRoom
+                        }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`Join room for ${startup.name}`}>
+                          <Rocket className="w-4 h-4" />
+                          Join room 🚀
+                        </button>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               );

@@ -313,6 +313,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
+    // Prevent founder from bookmarking their own startup
+    if (userProfile.id === startups.find(s => s.id === startupId)?.founder_id) {
+      toast.info("You cannot bookmark your own startup.");
+      return;
+    }
+
     const currentBookmarks = userProfile.bookmarked_startups || [];
     const isBookmarked = currentBookmarks.includes(startupId);
     const newBookmarks = isBookmarked
@@ -822,6 +828,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           interestedStartups={interestedStartups}
           fetchStartups={fetchStartups}
           handleJoinStartupRoom={handleJoinStartupRoom}
+          startups={startups} // Pass all startups to SavedStartupsScreen
+          userProfileId={userProfileId} // NEW: Pass userProfileId
         />
       )}
       {currentScreen === 'settings' && (
