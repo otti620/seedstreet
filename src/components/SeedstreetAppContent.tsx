@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
 import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
-import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Reverted to direct import
+import { ScreenTransitionWrapper } from './ScreenTransitionWrapper'; // Updated to named import
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -182,9 +182,6 @@ const DynamicAuthActionScreen = dynamic(() => import('./screens/AuthActionScreen
 const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { ssr: false });
 const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
 const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
-
-// Removed dynamic import for ScreenTransitionWrapper
-// const DynamicScreenTransitionWrapper = dynamic(() => import('./ScreenTransitionWrapper'), { ssr: false });
 
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({

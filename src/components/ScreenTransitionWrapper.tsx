@@ -13,7 +13,7 @@ interface ScreenTransitionWrapperProps {
   };
 }
 
-const ScreenTransitionWrapper: React.FC<ScreenTransitionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
+export const ScreenTransitionWrapper: React.FC<ScreenTransitionWrapperProps> = ({ children, currentScreen, screenVariants }) => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
@@ -31,4 +31,4 @@ const ScreenTransitionWrapper: React.FC<ScreenTransitionWrapperProps> = ({ child
   );
 };
 
-export default ScreenTransitionWrapper;
+// Removed default export
