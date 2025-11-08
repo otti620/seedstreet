@@ -239,6 +239,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   // Update screen history when currentScreen prop changes
   useEffect(() => {
+    console.log("SeedstreetAppContent: currentScreen changed to:", currentScreen);
     setScreenHistory(prev => {
       if (prev[prev.length - 1] !== currentScreen) {
         return [...prev, currentScreen];
@@ -249,6 +250,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   // Modified handleSetCurrentScreen to simply call the parent's setCurrentScreen
   const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
+    console.log("SeedstreetAppContent: handleSetCurrentScreen called with screen:", screen, "params:", params);
     setCurrentScreen(screen, params); // Pass both screen and params to the parent handler
   }, [setCurrentScreen]); // Dependency on parent's setCurrentScreen
 
@@ -428,6 +430,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const handleStartChat = async (startup: Startup) => {
+    console.log("handleStartChat called for startup:", startup);
     if (!userProfile || userProfile.role !== 'investor') {
       toast.error("Only investors can start chats with founders.");
       return;
@@ -514,24 +517,26 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       toast.success("New chat started!");
       logActivity('chat_started', `Started a chat with ${founderName} about ${startup.name}`, chatToOpen.id, 'MessageCircle');
 
-      // Increment active_chats and room_members for the startup
-      // This still has the RLS issue, but will be addressed if it causes an error.
-      const { data: updatedStartup, error: updateStartupError } = await supabase
-        .from('startups')
-        .update({
-          active_chats: startup.active_chats + 1,
-          room_members: startup.room_members + 1, // Assuming starting a chat also means joining the room
-        })
-        .eq('id', startup.id)
-        .select('active_chats, room_members')
-        .single();
+      // Increment active_chats and room_members for the startup using Edge Function
+      try {
+        const { data: updatedStartupMetrics, error: updateMetricsError } = await supabase.functions.invoke('update-startup-chat-metrics', {
+          body: {
+            startupId: startup.id,
+            activeChats: startup.active_chats + 1,
+            roomMembers: startup.room_members + 1,
+          },
+        });
 
-      if (updateStartupError) {
-        console.error("Error updating startup chat metrics:", updateStartupError);
-        toast.error("Failed to update startup chat metrics.");
-      } else {
-        console.log("Startup chat metrics updated:", updatedStartup);
-        fetchStartups(); // Re-fetch startups to update counts
+        if (updateMetricsError) {
+          console.error("Error invoking update-startup-chat-metrics function:", updateMetricsError);
+          toast.error("Failed to update startup chat metrics.");
+        } else {
+          console.log("Startup chat metrics updated via Edge Function:", updatedStartupMetrics);
+          fetchStartups(); // Re-fetch startups to update counts
+        }
+      } catch (invokeError: any) {
+        console.error("Unexpected error during update-startup-chat-metrics invocation:", invokeError);
+        toast.error("An unexpected error occurred while updating startup chat metrics.");
       }
 
       await supabase.from('notifications').insert({
@@ -629,8 +634,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   // If not logged in and on a protected screen, redirect to auth
   useEffect(() => {
+    console.log("SeedstreetAppContent: Checking protected screen. isLoggedIn:", isLoggedIn, "currentScreen:", currentScreen, "loadingSession:", loadingSession);
     const isProtectedScreen = !['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen);
     if (!isLoggedIn && isProtectedScreen && !loadingSession) {
+      console.log("SeedstreetAppContent: Redirecting to auth due to protected screen access.");
       setCurrentScreen('auth', {}); // Corrected: Use setCurrentScreen with empty params
     }
   }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
