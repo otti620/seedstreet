@@ -75,13 +75,18 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state
   useEffect(() => {
+    console.log("FounderDashboard useEffect: userProfileId:", userProfileId);
+    console.log("FounderDashboard useEffect: startups prop:", startups);
+
     // With 'startups' defaulting to [], we only need to check its length.
     if (userProfileId && startups.length > 0) {
       const foundStartup = startups.find(s => s.founder_id === userProfileId);
+      console.log("FounderDashboard useEffect: foundStartup:", foundStartup);
       setFounderStartup(foundStartup || null);
       setStartupLoading(false);
     } else if (userProfileId && startups.length === 0 && !loading) {
       // If no startups are loaded yet, or none found for this founder
+      console.log("FounderDashboard useEffect: No startups found for user or loading is complete.");
       setFounderStartup(null);
       setStartupLoading(false);
     }

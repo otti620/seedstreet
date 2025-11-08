@@ -803,7 +803,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           setCurrentScreen={handleSetCurrentScreen}
         />
       )}
-      {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
+  {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
         <DynamicCommunityPostDetailScreen
           setCurrentScreen={handleSetCurrentScreen}
           selectedCommunityPostId={selectedCommunityPostId}
