@@ -262,9 +262,9 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => handleStartChat(startup)} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`Start chat with ${startup.founder_name}`}>
-                      <MessageCircle className="w-4 h-4" />
-                      Slide in 💬
+                    <button onClick={() => setCurrentScreen('startupDetail', { startupId: startup.id })} className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" aria-label={`View details for ${startup.name}`}>
+                      <Eye className="w-4 h-4" />
+                      View Details
                     </button>
                     <button onClick={() => {
                       handleJoinStartupRoom(startup); // Updated to use handleJoinStartupRoom

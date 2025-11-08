@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings, LogOut, Trash2, User as UserIcon } from 'lucide-react'; // Import LogOut, Trash2, UserIcon
+import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings, LogOut, Trash2, User as UserIcon, DollarSign, Edit } from 'lucide-react'; // Import LogOut, Trash2, UserIcon, DollarSign, Edit
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,8 @@ interface Startup {
   status: 'Pending' | 'Approved' | 'Rejected';
   date_created: string;
   founder_id: string;
+  valuation: number | null; // Added valuation
+  currency: string | null; // Added currency
 }
 
 interface Profile {
@@ -105,6 +107,9 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'user' | 'startup' | 'post'; id: string; name: string } | null>(null);
+
+  const [editingValuationId, setEditingValuationId] = useState<string | null>(null);
+  const [newValuation, setNewValuation] = useState<number | ''>('');
 
   useEffect(() => {
     setMaintenanceMessage(maintenanceMode.message); // Sync local state with prop
@@ -223,6 +228,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     subscribeToTable('profiles', fetchAdminData);
     subscribeToTable('chats', fetchAdminData);
     subscribeToTable('community_posts', fetchAdminData);
+    subscribeToTable('app_settings', fetchAdminData); // Subscribe to app_settings for maintenance mode changes
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
@@ -395,6 +401,35 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       fetchAdminData(); // Re-fetch all data to update lists
     }
     setItemToDelete(null);
+  };
+
+  const handleEditValuation = (startup: Startup) => {
+    setEditingValuationId(startup.id);
+    setNewValuation(startup.valuation || '');
+  };
+
+  const handleSaveValuation = async (startupId: string) => {
+    if (newValuation === '' || Number(newValuation) < 0) {
+      toast.error("Please enter a valid non-negative valuation.");
+      return;
+    }
+
+    const valuationValue = Number(newValuation);
+
+    const { error } = await supabase
+      .from('startups')
+      .update({ valuation: valuationValue })
+      .eq('id', startupId);
+
+    if (error) {
+      toast.error(`Failed to update valuation: ${error.message}`);
+      console.error("Error updating valuation:", error);
+    } else {
+      toast.success("Valuation updated successfully!");
+      setEditingValuationId(null);
+      setNewValuation('');
+      fetchAdminData(); // Re-fetch to update the list
+    }
   };
 
   if (loading) {
@@ -593,8 +628,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                       >
                         <XCircle className="w-4 h-4 mr-1" /> Reject
                       </Button>
-                    </div
-                  ></motion.div>
+                    </div>
+                  </motion.div>
                 ))}
               </AnimatePresence>
             ) : (
@@ -757,25 +792,72 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="flex items-center gap-3 p-4 rounded-xl shadow-sm border bg-white border-gray-100 mb-3 dark:bg-gray-800 dark:border-gray-700"
+                    className="flex flex-col gap-3 p-4 rounded-xl shadow-sm border bg-white border-gray-100 mb-3 dark:bg-gray-800 dark:border-gray-700"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
-                      {startup.logo}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+                        {startup.logo}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 dark:text-gray-50">{startup.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
+                        <Badge variant="secondary" className="mt-1">{startup.status}</Badge>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => confirmDeleteItem('startup', startup.id, startup.name)}
+                        className="h-8 text-xs"
+                        aria-label={`Delete startup ${startup.name}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 dark:text-gray-50">{startup.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
-                      <Badge variant="secondary" className="mt-1">{startup.status}</Badge>
+                    <div className="flex items-center gap-2 mt-2">
+                      <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">
+                        Valuation: {startup.currency || '$'}{startup.valuation?.toLocaleString() || 'N/A'}
+                      </span>
+                      {editingValuationId === startup.id ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            type="number"
+                            value={newValuation}
+                            onChange={(e) => setNewValuation(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder="Set valuation"
+                            className="h-8 text-sm flex-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-50"
+                            aria-label={`Edit valuation for ${startup.name}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveValuation(startup.id)}
+                            className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                            aria-label="Save valuation"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setEditingValuationId(null); setNewValuation(''); }}
+                            className="h-8 text-xs dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                            aria-label="Cancel editing valuation"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditValuation(startup)}
+                          className="h-8 text-xs dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                          aria-label={`Edit valuation for ${startup.name}`}
+                        >
+                          <Edit className="w-4 h-4 mr-1" /> Edit
+                        </Button>
+                      )}
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => confirmDeleteItem('startup', startup.id, startup.name)}
-                      className="h-8 text-xs"
-                      aria-label={`Delete startup ${startup.name}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </motion.div>
                 ))}
               </AnimatePresence>
