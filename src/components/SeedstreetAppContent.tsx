@@ -363,7 +363,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
-        // fetchStartups(); // NEW: Re-fetch startups to update counts - Assuming this is passed as a prop
+        fetchStartups(); // NEW: Re-fetch startups to update counts
       },
       onError: (error) => {
         console.error("Error updating interest:", error);
@@ -506,7 +506,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         toast.error("Failed to update startup chat metrics.");
       } else {
         console.log("Startup chat metrics updated:", updatedStartup);
-        // fetchStartups(); // NEW: Re-fetch startups to update counts - Assuming this is passed as a prop
+        fetchStartups(); // Re-fetch startups to update counts
       }
 
       await supabase.from('notifications').insert({
@@ -521,6 +521,33 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     if (chatToOpen) {
       handleSetCurrentScreen('chat', { chat: chatToOpen }); // Pass the full chat object
       setActiveTab('chats');
+    }
+  };
+
+  const handleJoinStartupRoom = async (startup: Startup) => {
+    if (!userProfile) {
+      toast.error("Please log in to join a startup room.");
+      return;
+    }
+
+    // Check if user is already a member (optional, but good for idempotency)
+    // For simplicity, we'll just increment. A more robust solution might check `room_members` array.
+
+    const { data: updatedStartup, error: updateError } = await supabase
+      .from('startups')
+      .update({ room_members: startup.room_members + 1 })
+      .eq('id', startup.id)
+      .select('room_members')
+      .single();
+
+    if (updateError) {
+      toast.error("Failed to join room: " + updateError.message);
+      console.error("Error joining room:", updateError);
+    } else {
+      toast.success(`You've joined the ${startup.name} room!`);
+      logActivity('joined_room', `Joined startup room: ${startup.name}`, startup.id, 'Users');
+      fetchStartups(); // Re-fetch startups to update counts
+      handleSetCurrentScreen('startupRoom', { startupRoomId: startup.id });
     }
   };
 
@@ -671,6 +698,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           fetchUserProfile={fetchUserProfile}
           userProfile={userProfile}
           fetchStartups={fetchStartups}
+          handleJoinStartupRoom={handleJoinStartupRoom} {/* NEW: Pass handleJoinStartupRoom */}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
@@ -758,6 +786,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           handleStartChat={handleStartChat}
           interestedStartups={interestedStartups}
           fetchStartups={fetchStartups}
+          handleJoinStartupRoom={handleJoinStartupRoom} {/* NEW: Pass handleJoinStartupRoom */}
         />
       )}
       {currentScreen === 'settings' && (

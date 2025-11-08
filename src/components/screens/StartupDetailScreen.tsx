@@ -58,6 +58,7 @@ interface StartupDetailScreenProps {
   fetchUserProfile: (userId: string) => Promise<void>;
   userProfile: Profile | null;
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
 }
 
 // Dynamically import the content component

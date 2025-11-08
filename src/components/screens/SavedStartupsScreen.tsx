@@ -48,6 +48,8 @@ interface SavedStartupsScreenProps {
   toggleInterest: (startupId: string) => void;
   // Removed setSelectedStartup prop
   handleStartChat: (startup: Startup) => Promise<void>;
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
 }
 
 const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
@@ -59,6 +61,8 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
   toggleInterest,
   // Removed setSelectedStartup from destructuring
   handleStartChat,
+  fetchStartups, // NEW: Destructure fetchStartups
+  handleJoinStartupRoom, // NEW: Destructure handleJoinStartupRoom
 }) => {
   const [savedStartups, setSavedStartups] = useState<Startup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -240,8 +244,8 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
                     Slide in 💬
                   </button>
                   <button onClick={() => {
-                    setCurrentScreen('startupDetail', { startupId: startup.id }); // Use setCurrentScreen
-                  }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`View details for ${startup.name}`}>
+                    handleJoinStartupRoom(startup); // Updated to use handleJoinStartupRoom
+                  }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`Join room for ${startup.name}`}>
                     <Rocket className="w-4 h-4" />
                     Join room 🚀
                   </button>

@@ -70,6 +70,7 @@ interface HomeScreenProps {
   handleStartChat: (startup: Startup) => Promise<void>; // Added handleStartChat prop
   recentActivities: ActivityLog[]; // New prop for recent activities
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -90,6 +91,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   handleStartChat,
   recentActivities,
   fetchStartups, // NEW: Destructure fetchStartups
+  handleJoinStartupRoom, // NEW: Destructure handleJoinStartupRoom
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -105,6 +107,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           loading={loading}
           handleStartChat={handleStartChat}
           fetchStartups={fetchStartups} // NEW: Pass fetchStartups
+          handleJoinStartupRoom={handleJoinStartupRoom} // NEW: Pass handleJoinStartupRoom
         />
       ) : (
         <FounderDashboard
