@@ -123,12 +123,12 @@ export const useAppData = (
   // Memoized fetch functions
   // These now depend on userId directly, not userProfile object
   const fetchStartups = useCallback(async () => {
-    console.log("useAppData: fetchStartups called."); // Log when function is called
+    // Removed console.log("useAppData: fetchStartups called."); // Log when function is called
     const { data, error } = await supabase.from('startups').select('*');
     if (error) {
       console.error("Error fetching startups:", error);
     } else {
-      console.log("useAppData: Startups fetched successfully:", data); // Log fetched data
+      // Removed console.log("useAppData: Startups fetched successfully:", data); // Log fetched data
       setStartups(data || []);
     }
   }, []); // No dependency on userId here, as startups are public
@@ -289,7 +289,7 @@ export const useAppData = (
     };
   }, [userId, fetchStartups, fetchNotifications, fetchChats, fetchCommunityPosts]);
 
-  console.log("useAppData: recentActivities being returned:", recentActivities); // NEW: Log before return
+  // Removed console.log("useAppData: recentActivities being returned:", recentActivities); // NEW: Log before return
 
   return {
     startups,

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, MessageCircle, Bell, Rocket, Check, Bookmark, Eye } from 'lucide-react'; // Import Bookmark and Eye icons
 import BottomNav from '../../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } => '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
