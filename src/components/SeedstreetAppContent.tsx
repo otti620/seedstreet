@@ -329,7 +329,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const { mutate: toggleInterestMutation, loading: interestLoading } = useSupabaseMutation(
-    async ({ userId, newInterests, startupId, newInterestsCount, founderId, startupName, isInterested }: {
+    async ({ userId, newInterests, startupId, newInterestsCount, founderId, startupName, isInterested, investorName, investorEmail }: {
       userId: string;
       newInterests: string[];
       startupId: string;
@@ -337,6 +337,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       founderId: string;
       startupName: string;
       isInterested: boolean;
+      investorName: string | null;
+      investorEmail: string | null;
     }) => {
       const { error: profileError } = await supabase
         .from('profiles')
@@ -347,23 +349,21 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         throw profileError;
       }
 
-      const { error: startupUpdateError } = await supabase
-        .from('startups')
-        .update({ interests: newInterestsCount })
-        .eq('id', startupId);
+      // Call the Edge Function to update startup interests and send notification
+      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('update-startup-interest', {
+        body: {
+          startupId,
+          newInterestsCount,
+          founderId,
+          startupName,
+          isInterested, // Pass this to the edge function to determine if notification is needed
+          investorName,
+          investorEmail,
+        },
+      });
 
-      if (startupUpdateError) {
-        throw startupUpdateError;
-      }
-
-      if (!isInterested) {
-        await supabase.from('notifications').insert({
-          user_id: founderId,
-          type: 'new_interest',
-          message: `${userProfile?.name || userProfile?.email} is interested in your startup ${startupName}!`,
-          link: `/startup/${startupId}`,
-          related_entity_id: startupId,
-        });
+      if (edgeFunctionError) {
+        throw edgeFunctionError;
       }
 
       return { data: { newInterests, newInterestsCount }, error: null };
@@ -422,6 +422,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       founderId: startupData.founder_id,
       startupName: startupData.name,
       isInterested,
+      investorName: userProfile.name,
+      investorEmail: userProfile.email,
     });
   };
 
