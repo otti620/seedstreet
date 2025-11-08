@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, MessageCircle, Bell, Rocket, Check, Bookmark, Eye } from 'lucide-react'; // Import Bookmark and Eye icons
 import BottomNav from '../../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } => '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
@@ -47,6 +47,7 @@ interface FounderDashboardProps {
   loading: boolean;
   recentActivities: ActivityLog[]; // New prop for recent activities
   startups: Startup[]; // Pass the global startups array
+  userProfileProAccount: boolean; // NEW: Add pro_account prop
 }
 
 const FounderDashboard: React.FC<FounderDashboardProps> = ({
@@ -56,6 +57,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   loading,
   recentActivities: propRecentActivities, // Keep it as propRecentActivities to inspect its raw value
   startups = [], // Add default empty array here
+  userProfileProAccount, // NEW: Destructure pro_account
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
@@ -176,6 +178,16 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     ? recentActivities[currentActivityIndex]
     : null;
 
+  const handleManageStartupClick = () => {
+    if (founderStartup && !userProfileProAccount) {
+      // If founder already has a startup and is NOT Pro, prompt to upgrade
+      setCurrentScreen('upgradeToPro');
+    } else {
+      // Otherwise, proceed to manage/list startup
+      setCurrentScreen('manageStartup', { startupId: founderStartup?.id });
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -229,7 +241,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setCurrentScreen('manageStartup')}
+                onClick={handleManageStartupClick} // Use the new handler
                 className="h-24 bg-white rounded-2xl border-2 border-purple-700 text-purple-700 font-semibold hover:bg-purple-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-2 dark:bg-gray-800 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
                 aria-label={founderStartup ? 'Update startup listing' : 'List your startup'}
               >
@@ -259,7 +271,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900 dark:text-gray-50">Your Startup</h3>
                   <button
-                    onClick={() => setCurrentScreen('manageStartup', { startupId: founderStartup.id })}
+                    onClick={handleManageStartupClick} // Use the new handler
                     className="text-purple-700 text-sm font-medium hover:underline dark:text-purple-400"
                     aria-label={`Edit ${founderStartup.name}`}
                   >
@@ -303,7 +315,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">No Startup Listed Yet</h3>
                 <p className="text-gray-600 text-sm dark:text-gray-300">Get started by listing your amazing startup!</p>
                 <button
-                  onClick={() => setCurrentScreen('manageStartup')}
+                  onClick={handleManageStartupClick} // Use the new handler
                   className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all"
                   aria-label="List your startup now"
                 >

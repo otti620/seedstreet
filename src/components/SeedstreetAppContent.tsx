@@ -37,6 +37,7 @@ interface Profile {
   last_seen: string | null; // Assuming this is the field for last activity
   show_welcome_flyer: boolean;
   total_committed: number;
+  pro_account: boolean; // NEW: Add pro_account
 }
 
 interface Startup {
@@ -182,6 +183,7 @@ const DynamicAuthActionScreen = dynamic(() => import('./screens/AuthActionScreen
 const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { ssr: false });
 const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
 const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
+const DynamicUpgradeToProScreen = dynamic(() => import('./screens/UpgradeToProScreen'), { ssr: false }); // NEW: Dynamic import for UpgradeToProScreen
 
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
@@ -213,6 +215,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   const [activeTab, setActiveTab] = useState('home');
 
   const userRole = userProfile?.role || null;
+  const userProfileId = userProfile?.id || null; // Derive userProfileId here
+  const userProfileProAccount = userProfile?.pro_account || false; // NEW: Derive pro_account
 
   // Integrate network status hook
   useNetworkStatus();
@@ -378,6 +382,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
+    // Prevent founder from signaling interest in their own startup
+    if (userProfile.id === startups.find(s => s.id === startupId)?.founder_id) {
+      toast.info("You cannot signal interest in your own startup.");
+      return;
+    }
+
     const currentInterests = userProfile.interested_startups || [];
     const isInterested = currentInterests.includes(startupId);
     const newInterests = isInterested
@@ -416,6 +426,12 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
     if (!userProfile.id || !userProfile.name) {
       toast.error("Your profile information is incomplete. Cannot start chat.");
+      return;
+    }
+
+    // Prevent founder from starting chat with their own startup
+    if (userProfile.id === startup.founder_id) {
+      toast.info("You cannot start a chat with your own startup. Use the 'Manage Startup' option.");
       return;
     }
 
@@ -531,6 +547,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
+    // Prevent founder from joining their own startup room
+    if (userProfile.id === startup.founder_id) {
+      toast.info("You are the founder of this startup. You can manage it from your dashboard.");
+      handleSetCurrentScreen('manageStartup', { startupId: startup.id });
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('join-startup-room', {
         body: {
@@ -604,8 +627,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
 
-  // NEW: Console log to inspect recentActivities before passing to FounderDashboard
-  console.log("SeedstreetAppContent: recentActivities before passing to FounderDashboard:", recentActivities);
+  // Removed console.log("SeedstreetAppContent: recentActivities before passing to FounderDashboard:", recentActivities);
 
 
   if (maintenanceMode.enabled) {
@@ -642,7 +664,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             loading={loadingData || bookmarkLoading || interestLoading}
-            userProfileId={userProfile?.id || null}
+            userProfileId={userProfileId} // Pass userProfileId
             userProfileName={userProfile?.name || userProfile?.first_name || null}
             userProfileEmail={userProfile?.email || null}
             handleStartChat={handleStartChat}
@@ -675,7 +697,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
-          userProfileId={userProfile?.id || null}
+          userProfileId={userProfileId} // Pass userProfileId
           fetchCommunityPosts={fetchCommunityPosts}
         />
       )}
@@ -710,6 +732,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userProfile={userProfile}
           fetchStartups={fetchStartups}
           handleJoinStartupRoom={handleJoinStartupRoom}
+          userProfileId={userProfileId} // NEW: Pass userProfileId
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
@@ -739,6 +762,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userProfileEmail={userProfile.email}
           startupId={selectedStartupId}
           logActivity={logActivity}
+          userProfileProAccount={userProfileProAccount} // NEW: Pass pro_account
         />
       )}
       {currentScreen === 'createCommunityPost' && userProfile && (
@@ -829,6 +853,11 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           logActivity={logActivity}
         />
       )}
+      {currentScreen === 'upgradeToPro' && ( // NEW: Render UpgradeToProScreen
+        <DynamicUpgradeToProScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
       {/* Fallback for unhandled screens */}
       {!Object.values({
         onboarding: currentScreen === 'onboarding',
@@ -852,6 +881,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         startupRoom: currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup,
         authAction: currentScreen === 'authAction' && authActionType,
         newChat: currentScreen === 'newChat' && userProfile,
+        upgradeToPro: currentScreen === 'upgradeToPro', // NEW: Add upgradeToPro to handled screens
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

@@ -22,6 +22,7 @@ interface Profile {
   last_seen: string | null; // Assuming this is the field for last activity
   show_welcome_flyer: boolean;
   total_committed: number;
+  pro_account: boolean; // NEW: Add pro_account
 }
 
 interface Startup {

@@ -10,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -62,6 +61,7 @@ interface ManageStartupScreenProps {
   userProfileEmail: string;
   startupId?: string; // Optional prop for editing
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
+  userProfileProAccount: boolean; // NEW: Add pro_account prop
 }
 
 const startupCategories = [
@@ -96,9 +96,11 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   userProfileEmail,
   startupId,
   logActivity, // Destructure logActivity
+  userProfileProAccount, // NEW: Destructure pro_account
 }) => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [hasExistingStartup, setHasExistingStartup] = useState(false); // NEW: State to track if user has a startup
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -117,43 +119,73 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   });
 
   useEffect(() => {
-    if (startupId) {
-      const fetchStartup = async () => {
-        setInitialLoading(true);
-        const { data, error } = await supabase
+    const checkExistingStartup = async () => {
+      setInitialLoading(true);
+      const { data, error } = await supabase
+        .from('startups')
+        .select('id')
+        .eq('founder_id', userProfileId);
+
+      if (error) {
+        console.error("Error checking for existing startup:", error);
+        toast.error("Failed to check for existing startups.");
+        setInitialLoading(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setHasExistingStartup(true);
+        // If in create mode (no startupId) and already has a startup, redirect to upgrade
+        if (!startupId && !userProfileProAccount) {
+          setCurrentScreen('upgradeToPro');
+          return; // Prevent further loading/rendering of the form
+        }
+      } else {
+        setHasExistingStartup(false);
+      }
+
+      if (startupId) {
+        const { data: startupData, error: fetchError } = await supabase
           .from('startups')
           .select('*')
           .eq('id', startupId)
           .single();
 
-        if (error) {
-          toast.error("Failed to load startup data: " + error.message);
-          console.error("Error fetching startup:", error);
+        if (fetchError) {
+          toast.error("Failed to load startup data: " + fetchError.message);
+          console.error("Error fetching startup:", fetchError);
           setCurrentScreen('home');
-        } else if (data) {
+        } else if (startupData) {
           form.reset({
-            name: data.name,
-            logo: data.logo,
-            tagline: data.tagline,
-            pitch: data.pitch,
-            description: data.description || '',
-            category: data.category,
-            location: data.location,
-            amount_sought: data.amount_sought,
-            currency: data.currency,
-            funding_stage: data.funding_stage,
+            name: startupData.name,
+            logo: startupData.logo,
+            tagline: startupData.tagline,
+            pitch: startupData.pitch,
+            description: startupData.description || '',
+            category: startupData.category,
+            location: startupData.location,
+            amount_sought: startupData.amount_sought,
+            currency: startupData.currency,
+            funding_stage: startupData.funding_stage,
           });
         }
-        setInitialLoading(false);
-      };
-      fetchStartup();
-    } else {
+      }
       setInitialLoading(false);
-    }
-  }, [startupId, form, setCurrentScreen]);
+    };
+    checkExistingStartup();
+  }, [startupId, userProfileId, userProfileProAccount, setCurrentScreen, form]);
+
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
+
+    // NEW: Final check before submission for non-Pro users trying to list a second startup
+    if (!startupId && hasExistingStartup && !userProfileProAccount) {
+      toast.error("You can only list one startup with a free account. Please upgrade to Pro.");
+      setCurrentScreen('upgradeToPro');
+      setLoading(false);
+      return;
+    }
 
     const startupData = {
       name: values.name,
