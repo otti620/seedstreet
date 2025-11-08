@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CommitmentDialog from '../CommitmentDialog';
 import { Progress } from '@/components/ui/progress';
+import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
 
 // Define TypeScript interfaces for data structures
 interface Startup {
@@ -155,8 +156,8 @@ const StartupDetailContent = ({
               {selectedStartup.amount_sought && (
                 <div>
                   <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    <span>Raised: {selectedStartup.currency}{selectedStartup.amount_raised?.toLocaleString() || '0'}</span>
-                    <span>Target: {selectedStartup.currency}{selectedStartup.amount_sought?.toLocaleString()}</span>
+                    <span>Raised: {formatCurrency(selectedStartup.amount_raised || 0, selectedStartup.currency)}</span>
+                    <span>Target: {formatCurrency(selectedStartup.amount_sought, selectedStartup.currency)}</span>
                   </div>
                   <Progress value={fundingProgress} className="h-2 bg-gray-200 dark:bg-gray-700">
                     <div
@@ -212,7 +213,9 @@ const StartupDetailContent = ({
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
                   <div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.currency}{selectedStartup.amount_sought?.toLocaleString()}</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-50">
+                      {formatCurrency(selectedStartup.amount_sought, selectedStartup.currency)}
+                    </div>
                     <div className="text-sm text-gray-500">Amount Sought</div>
                   </div>
                 </div>
@@ -221,7 +224,9 @@ const StartupDetailContent = ({
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                   <div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.currency}{selectedStartup.valuation?.toLocaleString()}</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-50">
+                      {formatCurrency(selectedStartup.valuation, selectedStartup.currency, 'N/A')}
+                    </div>
                     <div className="text-sm text-gray-500">Valuation</div>
                   </div>
                 </div>

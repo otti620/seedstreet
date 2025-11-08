@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
+import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -26,6 +27,7 @@ interface Startup {
   views: number; // Added views to the interface
   valuation: number | null; // Added valuation
   amount_raised?: number; // Added amount_raised
+  currency: string | null; // Added currency
 }
 
 interface ActivityLog { // New interface for activity log entries
@@ -65,8 +67,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   if (Array.isArray(propRecentActivities)) {
     recentActivities = propRecentActivities;
   }
-  console.log("FounderDashboard: propRecentActivities received (before local assignment):", propRecentActivities);
-  console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // Log after assignment
+  // Removed console.log("FounderDashboard: propRecentActivities received (before local assignment):", propRecentActivities);
+  // Removed console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // Log after assignment
 
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state
@@ -282,11 +284,15 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <div className="flex gap-3">
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Use actual views */}
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.amount_raised?.toLocaleString() || '0'}</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+                      {formatCurrency(founderStartup.amount_raised || 0, founderStartup.currency)}
+                    </div>
                     <div className="text-xs text-gray-500">Amount Raised</div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.valuation?.toLocaleString() || 'N/A'}</div> {/* Display valuation */}
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+                      {formatCurrency(founderStartup.valuation, founderStartup.currency, 'N/A')}
+                    </div>
                     <div className="text-xs text-gray-500">Valuation</div>
                   </div>
                 </div>

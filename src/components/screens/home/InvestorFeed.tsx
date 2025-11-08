@@ -12,6 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import MarketCapDisplay from '@/components/MarketCapDisplay'; // Import the new MarketCapDisplay component
+import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -255,7 +256,9 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                     </div>
                     {startup.valuation !== null && (
                       <div>
-                        <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.currency}{startup.valuation?.toLocaleString()}</div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-gray-50">
+                          {formatCurrency(startup.valuation, startup.currency, 'N/A')}
+                        </div>
                         <div className="text-xs text-gray-500 uppercase">Valuation</div>
                       </div>
                     )}
