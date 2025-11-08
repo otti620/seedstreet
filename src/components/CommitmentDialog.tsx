@@ -57,7 +57,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
         throw new Error("Commitment amount must be positive.");
       }
 
-      // 1. Insert into commitments table with 'Approved' status for immediate visibility
+      -- 1. Insert into commitments table with 'Approved' status for immediate visibility
       const { data: newCommitment, error: commitmentError } = await supabase
         .from('commitments')
         .insert({
@@ -75,7 +75,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
 
       if (commitmentError) throw commitmentError;
 
-      // 2. Update startup's amount_raised
+      -- 2. Update startup's amount_raised
       const { data: startupData, error: fetchStartupError } = await supabase
         .from('startups')
         .select('amount_raised')
@@ -93,7 +93,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
 
       if (updateStartupError) throw updateStartupError;
 
-      // 3. Update investor's total_committed
+      -- 3. Update investor's total_committed
       const { data: investorProfileData, error: fetchInvestorProfileError } = await supabase
         .from('profiles')
         .select('total_committed')
@@ -112,22 +112,16 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
       if (updateInvestorProfileError) throw updateInvestorProfileError;
 
 
-      // 4. Send notification to founder
-      await supabase.from('notifications').insert({
-        user_id: founderId,
-        type: 'new_commitment',
-        message: `${investorName} made a commitment of $${commitmentAmount.toLocaleString()} to your startup ${startupName}!`,
-        link: `/startup/${startupId}`, // Link to startup detail or a commitments page
-        related_entity_id: startupId,
-      });
+      -- 4. Send notification to founder is now handled by a database trigger on the 'commitments' table.
+      -- No need for client-side notification insert here.
 
-      // 5. Log activity for investor
+      -- 5. Log activity for investor
       await logActivity('commitment_made', `Committed $${commitmentAmount.toLocaleString()} to ${startupName}`, startupId, '💰');
       
-      // 6. Re-fetch user profile to update 'committed' count
+      -- 6. Re-fetch user profile to update 'committed' count
       await fetchUserProfile(investorId); // Pass investorId to fetchUserProfile
       
-      // 7. Re-fetch startups to update amount_raised on the detail screen
+      -- 7. Re-fetch startups to update amount_raised on the detail screen
       await fetchStartups(); // NEW: Call fetchStartups here
 
       return newCommitment;

@@ -539,13 +539,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         toast.error("An unexpected error occurred while updating startup chat metrics.");
       }
 
-      await supabase.from('notifications').insert({
-        user_id: startup.founder_id,
-        type: 'new_chat',
-        message: `${userProfile.name || userProfile.email} started a chat with you about ${startup.name}!`,
-        link: `/chat/${chatToOpen.id}`,
-        related_entity_id: chatToOpen.id,
-      });
+      // Notification for new chat is now handled by a database trigger on the 'messages' table
+      // when the 'Chat initiated!' message is inserted.
+      // No need for client-side notification insert here.
     }
 
     if (chatToOpen) {

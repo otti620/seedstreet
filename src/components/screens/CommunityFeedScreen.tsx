@@ -84,16 +84,8 @@ const CommunityFeedScreen: React.FC<CommunityFeedScreenProps> = ({
       toast.error("Failed to update like: " + error.message);
       console.error("Error updating like:", error);
     } else {
-      // Notify post author of new like
-      if (!isLiked && post.author_id !== userProfileId) {
-        await supabase.from('notifications').insert({
-          user_id: post.author_id,
-          type: 'post_liked',
-          message: `${userProfileId} liked your post!`, // Use actual user name if available
-          link: `/communityPostDetail/${post.id}`,
-          related_entity_id: post.id,
-        });
-      }
+      // Notification for new like is now handled by a database trigger.
+      // No need for client-side notification insert here.
     }
   };
 

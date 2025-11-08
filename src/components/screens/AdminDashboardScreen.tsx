@@ -118,7 +118,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   const fetchAdminData = async () => {
     setLoading(true);
 
-    // Fetch analytics
+    -- Fetch analytics
     const { count: totalUsersCount, error: usersError } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { count: totalStartupsCount, error: startupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true });
     const { count: approvedStartupsCount, error: approvedStartupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true }).eq('status', 'Approved');
@@ -140,7 +140,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       toast.error("Failed to load analytics data.");
     }
 
-    // Fetch flagged items
+    -- Fetch flagged items
     const { data: flaggedData, error: flaggedError } = await supabase
       .from('flagged_messages')
       .select('*')
@@ -153,7 +153,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setFlaggedItems(flaggedData as FlaggedMessage[]);
     }
 
-    // Fetch pending startups
+    -- Fetch pending startups
     const { data: pendingStartupData, error: pendingStartupError } = await supabase
       .from('startups')
       .select('*')
@@ -167,7 +167,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setPendingStartups(pendingStartupData as Startup[]);
     }
 
-    // Fetch all users
+    -- Fetch all users
     const { data: allUsersData, error: allUsersError } = await supabase
       .from('profiles')
       .select('*')
@@ -180,7 +180,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setAllUsers(allUsersData as Profile[]);
     }
 
-    // Fetch all startups
+    -- Fetch all startups
     const { data: allStartupsData, error: allStartupsError } = await supabase
       .from('startups')
       .select('*')
@@ -193,7 +193,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setAllStartups(allStartupsData as Startup[]);
     }
 
-    // Fetch all community posts (including hidden ones for admin view)
+    -- Fetch all community posts (including hidden ones for admin view)
     const { data: allCommunityPostsData, error: allCommunityPostsError } = await supabase
       .from('community_posts')
       .select('*')
@@ -212,7 +212,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   useEffect(() => {
     fetchAdminData();
 
-    // Realtime subscriptions for all relevant tables
+    -- Realtime subscriptions for all relevant tables
     const channels: any[] = [];
 
     const subscribeToTable = (tableName: string, callback: () => void) => {
@@ -228,7 +228,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     subscribeToTable('profiles', fetchAdminData);
     subscribeToTable('chats', fetchAdminData);
     subscribeToTable('community_posts', fetchAdminData);
-    subscribeToTable('app_settings', fetchAdminData); // Subscribe to app_settings for maintenance mode changes
+    subscribeToTable('app_settings', fetchAdminData); -- Subscribe to app_settings for maintenance mode changes
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
@@ -251,18 +251,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   };
 
   const handleUpdateStartupStatus = async (startupId: string, newStatus: 'Approved' | 'Rejected') => {
-    const { data: startupToUpdate, error: fetchError } = await supabase
-      .from('startups')
-      .select('name, founder_id')
-      .eq('id', startupId)
-      .single();
-
-    if (fetchError || !startupToUpdate) {
-      toast.error("Failed to fetch startup details for notification: " + (fetchError?.message || "Unknown error"));
-      console.error("Error fetching startup for notification:", fetchError);
-      return;
-    }
-
+    -- The notification for startup status change is now handled by a database trigger.
+    -- We only need to update the status here.
     const { error } = await supabase
       .from('startups')
       .update({ status: newStatus })
@@ -274,14 +264,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     } else {
       toast.success(`Startup ${newStatus.toLowerCase()}!`);
       fetchAdminData();
-
-      await supabase.from('notifications').insert({
-        user_id: startupToUpdate.founder_id,
-        type: `startup_${newStatus.toLowerCase()}`,
-        message: `Your startup "${startupToUpdate.name}" has been ${newStatus.toLowerCase()}!`,
-        link: `/startup/${startupId}`,
-        related_entity_id: startupId,
-      });
     }
   };
 
@@ -289,7 +271,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     setUpdatingMaintenance(true);
     const { error } = await supabase
       .from('app_settings')
-      .update({ setting_value: { enabled: checked, message: maintenanceMessage } }) // Use local state for message
+      .update({ setting_value: { enabled: checked, message: maintenanceMessage } }) -- Use local state for message
       .eq('setting_key', 'maintenance_mode_enabled');
 
     if (error) {
@@ -330,7 +312,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       console.error(`Error toggling post visibility:`, error);
     } else {
       toast.success(`Post ${isHidden ? 'hidden' : 'unhidden'} successfully!`);
-      fetchAdminData(); // Re-fetch all data to update lists
+      fetchAdminData(); -- Re-fetch all data to update lists
     }
   };
 
@@ -367,7 +349,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
 
     switch (itemToDelete.type) {
       case 'user':
-        // Deleting a user from 'profiles' table. Supabase auth.users will cascade delete.
+        -- Deleting a user from 'profiles' table. Supabase auth.users will cascade delete.
         const { error: userDeleteError } = await supabase
           .from('profiles')
           .delete()
@@ -398,7 +380,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       console.error(`Error deleting ${itemToDelete.type}:`, error);
     } else {
       toast.success(`${itemToDelete.type} "${itemToDelete.name}" deleted successfully!`);
-      fetchAdminData(); // Re-fetch all data to update lists
+      fetchAdminData(); -- Re-fetch all data to update lists
     }
     setItemToDelete(null);
   };
@@ -428,7 +410,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       toast.success("Valuation updated successfully!");
       setEditingValuationId(null);
       setNewValuation('');
-      fetchAdminData(); // Re-fetch to update the list
+      fetchAdminData(); -- Re-fetch to update the list
     }
   };
 

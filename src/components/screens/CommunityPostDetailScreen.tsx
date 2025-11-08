@@ -174,16 +174,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       // Revert optimistic update on error
       setPost(prev => prev ? { ...prev, likes: originalLikes } : null);
     } else {
-      // Notify post author of new like
-      if (!isLiked && post.author_id !== userProfile.id) {
-        await supabase.from('notifications').insert({
-          user_id: post.author_id,
-          type: 'post_liked',
-          message: `${userProfile.name || userProfile.email?.split('@')[0]} liked your post!`,
-          link: `/communityPostDetail/${post.id}`,
-          related_entity_id: post.id,
-        });
-      }
+      // Notification for new like is now handled by a database trigger.
+      // No need for client-side notification insert here.
     }
   };
 
@@ -231,16 +223,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       setComments(prevComments =>
         prevComments.map(c => (c.id === tempComment.id ? (newCommentData as CommunityComment) : c))
       );
-      // Notify post author of new comment
-      if (post.author_id !== userProfile.id) {
-        await supabase.from('notifications').insert({
-          user_id: post.author_id,
-          type: 'new_comment',
-          message: `${userProfile.name || userProfile.email?.split('@')[0]} commented on your post!`,
-          link: `/communityPostDetail/${post.id}`,
-          related_entity_id: post.id,
-        });
-      }
+      // Notification for new comment is now handled by a database trigger.
+      // No need for client-side notification insert here.
     }
     setSubmittingComment(false);
   };
