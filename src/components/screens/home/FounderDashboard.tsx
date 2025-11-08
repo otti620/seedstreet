@@ -76,7 +76,10 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   // Effect for rotating recent activities
   useEffect(() => {
     // Ensure recentActivities is a valid array with more than one item for setting up the interval
-    if (!Array.isArray(recentActivities) || recentActivities.length <= 1) {
+    if (!Array.isArray(recentActivities)) {
+      return;
+    }
+    if (recentActivities.length <= 1) {
       return;
     }
 
@@ -84,9 +87,14 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
       // Defensive check inside the interval callback as well
       // If recentActivities somehow became invalid or empty while interval is running,
       // clear the interval and stop further execution.
-      if (!Array.isArray(recentActivities) || recentActivities.length === 0) {
+      if (!Array.isArray(recentActivities)) {
         clearInterval(timer); // Clear this specific timer
         setCurrentActivityIndex(0); // Reset index if activities become invalid/empty
+        return;
+      }
+      if (recentActivities.length === 0) {
+        clearInterval(timer);
+        setCurrentActivityIndex(0);
         return;
       }
       setCurrentActivityIndex(prevIndex =>
