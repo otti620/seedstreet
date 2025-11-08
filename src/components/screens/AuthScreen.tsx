@@ -47,7 +47,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 type SignUpFormInputs = z.infer<typeof signUpSchema>;
 type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>;
 
-function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) { // Removed explicit : JSX.Element
+function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -189,7 +189,8 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) { // R
                         <FormMessage />
                       </FormItem>
                     )}
-                  </motion.div>
+                  />
+                </motion.div>
               )}
 
               <motion.div
@@ -216,7 +217,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) { // R
                       <FormMessage />
                     </FormItem>
                   )}
-                </motion.div>
+                />
               </motion.div>
 
               <motion.div
@@ -243,7 +244,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) { // R
                       <FormMessage />
                     </FormItem>
                   )}
-                </motion.div>
+                />
               </motion.div>
 
               {!isSignUp && (
