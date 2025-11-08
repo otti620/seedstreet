@@ -152,6 +152,8 @@ interface SeedstreetAppContentProps {
   founderCount: number;
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
+  interestedStartups: string[]; // Corrected type from Notification[] to string[]
+  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
 // Dynamic imports for screens
@@ -206,6 +208,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
   fetchCommunityPosts,
   fetchNotifications,
+  interestedStartups, // Destructure interestedStartups prop
+  fetchStartups, // Destructure fetchStartups prop
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [activeTab, setActiveTab] = useState('home');
@@ -276,7 +280,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
-  interestedStartups = userProfile?.interested_startups || [];
+  // Removed: interestedStartups = userProfile?.interested_startups || []; // This line was causing the error
 
   const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
     async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
