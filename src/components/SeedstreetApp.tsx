@@ -92,7 +92,8 @@ const SeedstreetApp: React.FC = () => {
   // useAppData hook for fetching *other* data
   const {
     startups, chats, communityPosts, notifications, recentActivities,
-    loadingData, investorCount, founderCount, fetchCommunityPosts, fetchNotifications
+    loadingData, investorCount, founderCount, fetchCommunityPosts, fetchNotifications,
+    fetchStartups // Make sure fetchStartups is destructured here
   } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen); // Pass userId directly
 
   // 3. Initial Session check and FIRST screen determination (after splash)
@@ -249,7 +250,8 @@ const SeedstreetApp: React.FC = () => {
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} currentScreenParams={currentScreenParams} {...{
           isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
           userProfile, setUserProfile, startups, chats, communityPosts, notifications, recentActivities,
-          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications
+          loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications,
+          fetchStartups
         }} />
       </ThemeProviderWrapper>
     );
@@ -286,6 +288,8 @@ const SeedstreetApp: React.FC = () => {
         founderCount={founderCount}
         fetchCommunityPosts={fetchCommunityPosts}
         fetchNotifications={fetchNotifications}
+        // Removed: interestedStartups={interestedStartups}
+        fetchStartups={fetchStartups}
       />
       <Toaster richColors position="top-center" />
     </ThemeProviderWrapper>

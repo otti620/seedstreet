@@ -152,7 +152,7 @@ interface SeedstreetAppContentProps {
   founderCount: number;
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
-  interestedStartups: string[]; // Corrected type from Notification[] to string[]
+  // Removed: interestedStartups: string[]; // Corrected type from Notification[] to string[]
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
@@ -208,7 +208,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
   fetchCommunityPosts,
   fetchNotifications,
-  interestedStartups, // Destructure interestedStartups prop
+  // Removed: interestedStartups, // Destructure interestedStartups prop
   fetchStartups, // Destructure fetchStartups prop
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
@@ -280,7 +280,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
-  // Removed: interestedStartups = userProfile?.interested_startups || []; // This line was causing the error
+  const interestedStartups = userProfile?.interested_startups || []; // Correctly derive here
 
   const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
     async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
@@ -573,252 +573,253 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
 
 
+  if (maintenanceMode.enabled) {
+    return (
+      <DynamicMaintenanceModeScreen
+        setCurrentScreen={handleSetCurrentScreen}
+        message={maintenanceMode.message}
+      />
+    );
+  }
+
+  if (currentScreen === 'splash') {
+    return <SplashScreen />;
+  }
+
   return (
-    <>
-      {maintenanceMode.enabled ? (
-        <DynamicMaintenanceModeScreen
-          setCurrentScreen={handleSetCurrentScreen}
-          message={maintenanceMode.message}
-        />
-      ) : currentScreen === 'splash' ? (
-        <SplashScreen />
-      ) : (
-        <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
-          {currentScreen === 'onboarding' && (
-            <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
-          )}
-          {currentScreen === 'auth' && <DynamicAuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
-          {currentScreen === 'roleSelector' && <DynamicRoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
-          {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
-            <>
-              <DynamicHomeScreen
-                userRole={userRole}
-                startups={startups}
-                bookmarkedStartups={bookmarkedStartups}
-                interestedStartups={interestedStartups}
-                toggleBookmark={toggleBookmark}
-                toggleInterest={toggleInterest}
-                // Removed setSelectedStartup and setSelectedChat props
-                setCurrentScreen={handleSetCurrentScreen}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                loading={loadingData || bookmarkLoading || interestLoading}
-                userProfileId={userProfile?.id || null}
-                userProfileName={userProfile?.name || userProfile?.first_name || null}
-                userProfileEmail={userProfile?.email || null}
-                handleStartChat={handleStartChat}
-                recentActivities={recentActivities}
-                fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
-              />
-              {showWelcomeFlyer && (
-                <DynamicWelcomeFlyer
-                  userName={userProfile?.name || userProfile?.first_name || 'User'}
-                  onDismiss={handleDismissWelcomeFlyer}
-                />
-              )}
-            </>
-          )}
-          {currentScreen === 'home' && activeTab === 'chats' && (
-            <DynamicChatListScreen
-              chats={chats}
-              setCurrentScreen={handleSetCurrentScreen}
-              // Removed setSelectedChat prop
-              setActiveTab={setActiveTab}
-              activeTab={activeTab}
-              userRole={userRole}
-            />
-          )}
-          {currentScreen === 'home' && activeTab === 'community' && (
-            <DynamicCommunityFeedScreen
-              communityPosts={communityPosts}
-              setCurrentScreen={handleSetCurrentScreen}
-              setActiveTab={setActiveTab}
-              activeTab={activeTab}
-              userRole={userRole}
-              userProfileId={userProfile?.id || null}
-              fetchCommunityPosts={fetchCommunityPosts}
-            />
-          )}
-          {currentScreen === 'home' && activeTab === 'profile' && (
-            <DynamicProfileScreen
-              userProfile={userProfile}
-              userRole={userRole}
-              bookmarkedStartups={bookmarkedStartups}
-              interestedStartups={interestedStartups}
-              setCurrentScreen={handleSetCurrentScreen}
-              setActiveTab={setActiveTab}
-              activeTab={activeTab}
-              setIsLoggedIn={setIsLoggedIn}
-              setUserProfile={setUserProfile}
-            />
-          )}
-          {currentScreen === 'startupDetail' && selectedStartup && (
-            <DynamicStartupDetailScreen
-              selectedStartup={selectedStartup}
-              bookmarkedStartups={bookmarkedStartups}
-              interestedStartups={interestedStartups}
-              toggleBookmark={toggleBookmark}
-              toggleInterest={toggleInterest}
-              setCurrentScreen={handleSetCurrentScreen}
-              // Removed setSelectedChat prop
-              activeTab={activeTab}
-              userRole={userRole}
-              setActiveTab={setActiveTab}
-              handleStartChat={handleStartChat}
-              logActivity={logActivity}
-              fetchUserProfile={fetchUserProfile}
-              userProfile={userProfile}
-              fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
-            />
-          )}
-          {currentScreen === 'chat' && selectedChat && (
-            <DynamicChatConversationScreen
-              selectedChat={selectedChat}
-              setCurrentScreen={handleSetCurrentScreen}
-              setActiveTab={setActiveTab}
-              userProfile={userProfile}
-              logActivity={logActivity}
-              fetchMessagesForChat={fetchMessagesForChat}
-            />
-          )}
-          {currentScreen === 'editProfile' && userProfile && (
-            <DynamicEditProfileScreen
-              userProfile={userProfile}
-              setCurrentScreen={handleSetCurrentScreen}
-              setUserProfile={setUserProfile}
-              logActivity={logActivity}
-              fetchUserProfile={fetchUserProfile}
-            />
-          )}
-          {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
-            <DynamicManageStartupScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              userProfileId={userProfile.id}
-              userProfileName={userProfile.name}
-              userProfileEmail={userProfile.email}
-              startupId={selectedStartupId}
-              logActivity={logActivity}
-            />
-          )}
-          {currentScreen === 'createCommunityPost' && userProfile && (
-            <DynamicCreateCommunityPostScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              userProfile={userProfile}
-              postId={selectedCommunityPostId}
-            />
-          )}
-          {currentScreen === 'notifications' && userProfile && (
-            <DynamicNotificationsScreen
-              notifications={notifications}
-              setCurrentScreen={handleSetCurrentScreen}
-              fetchNotifications={fetchNotifications}
-            />
-          )}
-          {currentScreen === 'startupListingCelebration' && listedStartupName && (
-            <DynamicStartupListingCelebrationScreen
-              startupName={listedStartupName}
-              setCurrentScreen={handleSetCurrentScreen}
-            />
-          )}
-          {currentScreen === 'helpAndSupport' && (
-            <DynamicHelpAndSupportScreen
-              setCurrentScreen={handleSetCurrentScreen}
-            />
-          )}
-          {currentScreen === 'merchStore' && (
-            <DynamicMerchStoreScreen
-              setCurrentScreen={handleSetCurrentScreen}
-            />
-          )}
-          {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
-            <DynamicCommunityPostDetailScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              selectedCommunityPostId={selectedCommunityPostId}
-              userProfile={userProfile}
-            />
-          )}
-          {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
-            <DynamicAdminDashboardScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              maintenanceMode={maintenanceMode}
-              fetchAppSettings={fetchAppSettings}
-              setIsLoggedIn={setIsLoggedIn}
-            />
-          )}
-          {currentScreen === 'savedStartups' && userProfile && (
-            <DynamicSavedStartupsScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              userProfileId={userProfile.id}
-              bookmarkedStartups={bookmarkedStartups}
-              toggleBookmark={toggleBookmark}
-              toggleInterest={toggleInterest}
-              // Removed setSelectedStartup prop
-              handleStartChat={handleStartChat}
-              interestedStartups={interestedStartups}
-              fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
-            />
-          )}
-          {currentScreen === 'settings' && (
-            <DynamicSettingsScreen
-              setCurrentScreen={handleSetCurrentScreen}
-            />
-          )}
-          {currentScreen === 'termsAndPrivacy' && (
-            <DynamicTermsAndPrivacyScreen
-              setCurrentScreen={handleSetCurrentScreen}
-            />
-          )}
-          {currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup && (
-            <DynamicStartupRoomScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              selectedStartup={selectedStartup}
-            />
-          )}
-          {currentScreen === 'authAction' && authActionType && (
-            <DynamicAuthActionScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              authActionType={authActionType}
-            />
-          )}
-          {currentScreen === 'newChat' && userProfile && (
-            <DynamicNewChatScreen
-              setCurrentScreen={handleSetCurrentScreen}
-              userProfile={userProfile}
-              logActivity={logActivity}
-            />
-          )}
-          {/* Fallback for unhandled screens */}
-          {!Object.values({
-            // The outer ternary handles 'splash' and 'maintenanceMode', so these checks are for other screens
-            onboarding: currentScreen === 'onboarding',
-            auth: currentScreen === 'auth',
-            roleSelector: currentScreen === 'roleSelector',
-            home: currentScreen === 'home',
-            startupDetail: currentScreen === 'startupDetail' && selectedStartup,
-            chat: currentScreen === 'chat' && selectedChat,
-            editProfile: currentScreen === 'editProfile' && userProfile,
-            manageStartup: currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email,
-            createCommunityPost: currentScreen === 'createCommunityPost' && userProfile,
-            notifications: currentScreen === 'notifications' && userProfile,
-            startupListingCelebration: currentScreen === 'startupListingCelebration' && listedStartupName,
-            helpAndSupport: currentScreen === 'helpAndSupport',
-            merchStore: currentScreen === 'merchStore',
-            communityPostDetail: currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile,
-            adminDashboard: currentScreen === 'adminDashboard' && userProfile?.role === 'admin',
-            savedStartups: currentScreen === 'savedStartups' && userProfile,
-            settings: currentScreen === 'settings',
-            termsAndPrivacy: currentScreen === 'termsAndPrivacy',
-            startupRoom: currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup,
-            authAction: currentScreen === 'authAction' && authActionType,
-            newChat: currentScreen === 'newChat' && userProfile,
-          }).some(Boolean) && (
-            <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
-              Error: Unknown Screen "{currentScreen}"
-            </div>
-          )}
-        </ScreenTransitionWrapper>
+    <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
+      {currentScreen === 'onboarding' && (
+        <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
       )}
-    </>
+      {currentScreen === 'auth' && <DynamicAuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
+      {currentScreen === 'roleSelector' && <DynamicRoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
+      {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
+        <>
+          <DynamicHomeScreen
+            userRole={userRole}
+            startups={startups}
+            bookmarkedStartups={bookmarkedStartups}
+            interestedStartups={interestedStartups}
+            toggleBookmark={toggleBookmark}
+            toggleInterest={toggleInterest}
+            // Removed setSelectedStartup and setSelectedChat props
+            setCurrentScreen={handleSetCurrentScreen}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            loading={loadingData || bookmarkLoading || interestLoading}
+            userProfileId={userProfile?.id || null}
+            userProfileName={userProfile?.name || userProfile?.first_name || null}
+            userProfileEmail={userProfile?.email || null}
+            handleStartChat={handleStartChat}
+            recentActivities={recentActivities}
+            fetchStartups={fetchStartups}
+          />
+          {showWelcomeFlyer && (
+            <DynamicWelcomeFlyer
+              userName={userProfile?.name || userProfile?.first_name || 'User'}
+              onDismiss={handleDismissWelcomeFlyer}
+            />
+          )}
+        </>
+      )}
+      {currentScreen === 'home' && activeTab === 'chats' && (
+        <DynamicChatListScreen
+          chats={chats}
+          setCurrentScreen={handleSetCurrentScreen}
+          // Removed setSelectedChat prop
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+        />
+      )}
+      {currentScreen === 'home' && activeTab === 'community' && (
+        <DynamicCommunityFeedScreen
+          communityPosts={communityPosts}
+          setCurrentScreen={handleSetCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          userRole={userRole}
+          userProfileId={userProfile?.id || null}
+          fetchCommunityPosts={fetchCommunityPosts}
+        />
+      )}
+      {currentScreen === 'home' && activeTab === 'profile' && (
+        <DynamicProfileScreen
+          userProfile={userProfile}
+          userRole={userRole}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          setCurrentScreen={handleSetCurrentScreen}
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          setIsLoggedIn={setIsLoggedIn}
+          setUserProfile={setUserProfile}
+        />
+      )}
+      {currentScreen === 'startupDetail' && selectedStartup && (
+        <DynamicStartupDetailScreen
+          selectedStartup={selectedStartup}
+          bookmarkedStartups={bookmarkedStartups}
+          interestedStartups={interestedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          setCurrentScreen={handleSetCurrentScreen}
+          // Removed setSelectedChat prop
+          activeTab={activeTab}
+          userRole={userRole}
+          setActiveTab={setActiveTab}
+          handleStartChat={handleStartChat}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
+          userProfile={userProfile}
+          fetchStartups={fetchStartups}
+        />
+      )}
+      {currentScreen === 'chat' && selectedChat && (
+        <DynamicChatConversationScreen
+          selectedChat={selectedChat}
+          setCurrentScreen={handleSetCurrentScreen}
+          setActiveTab={setActiveTab}
+          userProfile={userProfile}
+          logActivity={logActivity}
+          fetchMessagesForChat={fetchMessagesForChat}
+        />
+      )}
+      {currentScreen === 'editProfile' && userProfile && (
+        <DynamicEditProfileScreen
+          userProfile={userProfile}
+          setCurrentScreen={handleSetCurrentScreen}
+          setUserProfile={setUserProfile}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
+        />
+      )}
+      {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
+        <DynamicManageStartupScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          userProfileId={userProfile.id}
+          userProfileName={userProfile.name}
+          userProfileEmail={userProfile.email}
+          startupId={selectedStartupId}
+          logActivity={logActivity}
+        />
+      )}
+      {currentScreen === 'createCommunityPost' && userProfile && (
+        <DynamicCreateCommunityPostScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          userProfile={userProfile}
+          postId={selectedCommunityPostId}
+        />
+      )}
+      {currentScreen === 'notifications' && userProfile && (
+        <DynamicNotificationsScreen
+          notifications={notifications}
+          setCurrentScreen={handleSetCurrentScreen}
+          fetchNotifications={fetchNotifications}
+        />
+      )}
+      {currentScreen === 'startupListingCelebration' && listedStartupName && (
+        <DynamicStartupListingCelebrationScreen
+          startupName={listedStartupName}
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'helpAndSupport' && (
+        <DynamicHelpAndSupportScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'merchStore' && (
+        <DynamicMerchStoreScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
+        <DynamicCommunityPostDetailScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          selectedCommunityPostId={selectedCommunityPostId}
+          userProfile={userProfile}
+        />
+      )}
+      {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
+        <DynamicAdminDashboardScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          maintenanceMode={maintenanceMode}
+          fetchAppSettings={fetchAppSettings}
+          setIsLoggedIn={setIsLoggedIn}
+        />
+      )}
+      {currentScreen === 'savedStartups' && userProfile && (
+        <DynamicSavedStartupsScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          userProfileId={userProfile.id}
+          bookmarkedStartups={bookmarkedStartups}
+          toggleBookmark={toggleBookmark}
+          toggleInterest={toggleInterest}
+          // Removed setSelectedStartup prop
+          handleStartChat={handleStartChat}
+          interestedStartups={interestedStartups}
+          fetchStartups={fetchStartups}
+        />
+      )}
+      {currentScreen === 'settings' && (
+        <DynamicSettingsScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'termsAndPrivacy' && (
+        <DynamicTermsAndPrivacyScreen
+          setCurrentScreen={handleSetCurrentScreen}
+        />
+      )}
+      {currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup && (
+        <DynamicStartupRoomScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          selectedStartup={selectedStartup}
+        />
+      )}
+      {currentScreen === 'authAction' && authActionType && (
+        <DynamicAuthActionScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          authActionType={authActionType}
+        />
+      )}
+      {currentScreen === 'newChat' && userProfile && (
+        <DynamicNewChatScreen
+          setCurrentScreen={handleSetCurrentScreen}
+          userProfile={userProfile}
+          logActivity={logActivity}
+        />
+      )}
+      {/* Fallback for unhandled screens */}
+      {!Object.values({
+        onboarding: currentScreen === 'onboarding',
+        auth: currentScreen === 'auth',
+        roleSelector: currentScreen === 'roleSelector',
+        home: currentScreen === 'home',
+        startupDetail: currentScreen === 'startupDetail' && selectedStartup,
+        chat: currentScreen === 'chat' && selectedChat,
+        editProfile: currentScreen === 'editProfile' && userProfile,
+        manageStartup: currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email,
+        createCommunityPost: currentScreen === 'createCommunityPost' && userProfile,
+        notifications: currentScreen === 'notifications' && userProfile,
+        startupListingCelebration: currentScreen === 'startupListingCelebration' && listedStartupName,
+        helpAndSupport: currentScreen === 'helpAndSupport',
+        merchStore: currentScreen === 'merchStore',
+        communityPostDetail: currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile,
+        adminDashboard: currentScreen === 'adminDashboard' && userProfile?.role === 'admin',
+        savedStartups: currentScreen === 'savedStartups' && userProfile,
+        settings: currentScreen === 'settings',
+        termsAndPrivacy: currentScreen === 'termsAndPrivacy',
+        startupRoom: currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup,
+        authAction: currentScreen === 'authAction' && authActionType,
+        newChat: currentScreen === 'newChat' && userProfile,
+      }).some(Boolean) && (
+        <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
+          Error: Unknown Screen "{currentScreen}"
+        </div>
+      )}
+    </ScreenTransitionWrapper>
   );
 };
 
