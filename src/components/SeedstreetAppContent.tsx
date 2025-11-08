@@ -572,7 +572,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   return (
     <>
       {currentScreen === 'splash' && <SplashScreen />}
-      {currentScreen !== 'splash' &&
+      {currentScreen !== 'splash' ? (
         <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
           {currentScreen === 'onboarding' && (
             <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
@@ -807,7 +807,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             </div>
           )}
         </ScreenTransitionWrapper>
-      }
+      ) : null} {/* Added null for the else branch of the ternary operator */}
     </>
   );
 };
