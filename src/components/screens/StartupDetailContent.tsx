@@ -65,14 +65,13 @@ interface StartupDetailContentProps {
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
-const StartupDetailContent = ({ // Removed React.FC<StartupDetailContentProps>
+const StartupDetailContent = ({
   selectedStartup,
   bookmarkedStartups,
   interestedStartups,
   toggleBookmark,
   toggleInterest,
   setCurrentScreen,
-  // Removed setSelectedChat from destructuring
   activeTab,
   userRole,
   setActiveTab,
@@ -80,8 +79,8 @@ const StartupDetailContent = ({ // Removed React.FC<StartupDetailContentProps>
   logActivity,
   fetchUserProfile,
   userProfile,
-  fetchStartups, // NEW: Destructure fetchStartups
-}: StartupDetailContentProps) => { // Added type annotation here instead
+  fetchStartups,
+}: StartupDetailContentProps) => {
   const isBookmarked = bookmarkedStartups.includes(selectedStartup.id);
   const isInterested = interestedStartups.includes(selectedStartup.id);
   const [isCommitmentDialogOpen, setIsCommitmentDialogOpen] = useState(false);
@@ -95,7 +94,7 @@ const StartupDetailContent = ({ // Removed React.FC<StartupDetailContentProps>
     : 0;
 
   return (
-    <> {/* Added explicit React.Fragment */}
+    <>
       <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
         {/* Header */}
         <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
@@ -301,7 +300,7 @@ const StartupDetailContent = ({ // Removed React.FC<StartupDetailContentProps>
             investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'}
             logActivity={logActivity}
             fetchUserProfile={fetchUserProfile}
-            fetchStartups={fetchStartups} {/* NEW: Pass fetchStartups */}
+            fetchStartups={fetchStartups}
           />
         )}
       </div>
