@@ -206,7 +206,7 @@ const StartupDetailContent = ({
                   <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.location}</div>
                   <div className="text-sm text-gray-500">Location</div>
                 </div>
-              </div>
+              )}
               {selectedStartup.amount_sought && (
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -279,7 +279,7 @@ const StartupDetailContent = ({
               {isInterested ? 'Interest Signaled' : 'Signal Interest'}
             </Button>
             <Button
-              onClick={() => handleJoinStartupRoom(selectedStartup)} {/* Updated to use handleJoinStartupRoom */}
+              onClick={() => handleJoinStartupRoom(selectedStartup)}
               className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
               aria-label={`Join room for ${selectedStartup.name}`}
             >
