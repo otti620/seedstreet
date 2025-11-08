@@ -141,6 +141,28 @@ const SeedstreetApp: React.FC = () => {
     }
   }, [splashTimerComplete, currentScreen, fetchUserProfile, setCurrentScreen, setIsLoggedIn, setCurrentScreenParams]);
 
+  // 4. Post-authentication navigation logic
+  useEffect(() => {
+    if (isLoggedIn && userProfile && !loadingSession) {
+      // Only navigate if the current screen is an auth-related screen
+      // or if the user profile state indicates a need for navigation
+      const requiresNavigation =
+        currentScreen === 'auth' ||
+        currentScreen === 'onboarding' ||
+        currentScreen === 'roleSelector';
+
+      if (requiresNavigation) {
+        if (!userProfile.role) {
+          setCurrentScreen('roleSelector');
+        } else if (!userProfile.onboarding_complete) {
+          setCurrentScreen('onboarding');
+        } else {
+          setCurrentScreen('home');
+        }
+      }
+    }
+  }, [isLoggedIn, userProfile, loadingSession, currentScreen, setCurrentScreen]);
+
 
   // 5. Effect to periodically update user's last_active timestamp
   useEffect(() => {
