@@ -208,7 +208,7 @@ const StartupDetailContent = ({
                   <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.location}</div>
                   <div className="text-sm text-gray-500">Location</div>
                 </div>
-              )}
+              </div>
               {selectedStartup.amount_sought && (
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -303,24 +303,24 @@ const StartupDetailContent = ({
             </Button>
           </div>
         </div>
+      </div> {/* Corrected: Moved this closing div outside the conditional block */}
 
-        {isCommitmentDialogOpen && userRole === 'investor' && userProfile && (
-          <CommitmentDialog
-            isOpen={isCommitmentDialogOpen}
-            onClose={() => setIsCommitmentDialogOpen(false)}
-            startupId={selectedStartup.id}
-            startupName={selectedStartup.name}
-            startupLogo={selectedStartup.logo}
-            founderId={selectedStartup.founder_id}
-            founderName={selectedStartup.founder_name}
-            investorId={userProfile.id}
-            investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'}
-            logActivity={logActivity}
-            fetchUserProfile={fetchUserProfile}
-            fetchStartups={fetchStartups}
-          />
-        )}
-      </div>
+      {isCommitmentDialogOpen && userRole === 'investor' && userProfile && (
+        <CommitmentDialog
+          isOpen={isCommitmentDialogOpen}
+          onClose={() => setIsCommitmentDialogOpen(false)}
+          startupId={selectedStartup.id}
+          startupName={selectedStartup.name}
+          startupLogo={selectedStartup.logo}
+          founderId={selectedStartup.founder_id}
+          founderName={selectedStartup.founder_name}
+          investorId={userProfile.id}
+          investorName={userProfile.name || userProfile.email?.split('@')[0] || 'Investor'}
+          logActivity={logActivity}
+          fetchUserProfile={fetchUserProfile}
+          fetchStartups={fetchStartups}
+        />
+      )}
     </>
   );
 };
