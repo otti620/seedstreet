@@ -559,10 +559,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   useEffect(() => {
     const isProtectedScreen = !['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen);
     if (!isLoggedIn && isProtectedScreen && !loadingSession) {
-      setCurrentScreen('auth');
-      setCurrentScreenParams({});
+      setCurrentScreen('auth', {}); // Corrected: Use setCurrentScreen with empty params
     }
-  }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen, setCurrentScreenParams]);
+  }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
 
 
   return (
