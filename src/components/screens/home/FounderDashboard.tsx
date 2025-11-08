@@ -63,6 +63,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   // This line is where the error is reported, so we need to inspect propRecentActivities right before it.
   console.log("FounderDashboard: propRecentActivities received (before local assignment):", propRecentActivities);
   const recentActivities = Array.isArray(propRecentActivities) ? propRecentActivities : [];
+  console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // NEW: Log after assignment
 
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state

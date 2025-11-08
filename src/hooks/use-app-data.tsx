@@ -287,6 +287,7 @@ export const useAppData = (
     };
   }, [userId, fetchStartups, fetchNotifications, fetchChats, fetchCommunityPosts]);
 
+  console.log("useAppData: recentActivities being returned:", recentActivities); // NEW: Log before return
 
   return {
     startups,
