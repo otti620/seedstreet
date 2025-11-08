@@ -206,7 +206,7 @@ const StartupDetailContent = ({
                   <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.location}</div>
                   <div className="text-sm text-gray-500">Location</div>
                 </div>
-              )}
+              </div>
               {selectedStartup.amount_sought && (
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
