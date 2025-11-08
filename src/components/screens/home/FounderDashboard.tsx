@@ -52,7 +52,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   setCurrentScreen,
   userProfileId,
   loading,
-  recentActivities, // Destructure recentActivities
+  recentActivities = [], // Add default empty array here
   startups, // Destructure global startups array
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
@@ -75,22 +75,17 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 
   // Effect for rotating recent activities
   useEffect(() => {
-    // Defensive check for null/undefined at the very beginning
-    if (recentActivities == null) { // Using == null checks for both null and undefined
-      return;
-    }
-
-    // Now we are sure recentActivities is not null or undefined.
-    // Proceed with array and length checks.
-    if (!Array.isArray(recentActivities) || recentActivities.length <= 1) {
+    // With recentActivities defaulting to [], we only need to check its length.
+    if (recentActivities.length <= 1) {
       return;
     }
 
     const timer = setInterval(() => {
-      // Defensive check inside the interval callback as well
-      if (recentActivities == null || !Array.isArray(recentActivities) || recentActivities.length === 0) {
-        clearInterval(timer); // Clear this specific timer
-        setCurrentActivityIndex(0); // Reset index if activities become invalid/empty
+      // The prop is guaranteed to be an array due to the default value,
+      // so only check length here.
+      if (recentActivities.length === 0) { // This case should ideally not be hit if initial length > 1
+        clearInterval(timer);
+        setCurrentActivityIndex(0);
         return;
       }
       setCurrentActivityIndex(prevIndex =>
@@ -163,8 +158,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
   };
 
-  // Ensure currentActivity is only accessed if recentActivities is a valid array and has items
-  const currentActivity = Array.isArray(recentActivities) && recentActivities.length > 0
+  // currentActivity is now safely accessed because recentActivities is guaranteed to be an array
+  const currentActivity = recentActivities.length > 0
     ? recentActivities[currentActivityIndex]
     : null;
 
@@ -304,7 +299,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Recent Activity</h3>
               <div className="space-y-3">
-                {Array.isArray(recentActivities) && recentActivities.length > 0 ? (
+                {recentActivities.length > 0 ? (
                   <AnimatePresence mode="wait">
                     {currentActivity && (
                       <motion.div
