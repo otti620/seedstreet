@@ -30,6 +30,7 @@ interface Startup {
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
   amount_raised: number;
+  valuation: number | null; // Added valuation
 }
 
 interface Profile {
@@ -213,6 +214,15 @@ const StartupDetailContent = ({
                   <div>
                     <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.currency}{selectedStartup.amount_sought?.toLocaleString()}</div>
                     <div className="text-sm text-gray-500">Amount Sought</div>
+                  </div>
+                </div>
+              )}
+              {selectedStartup.valuation !== null && ( // Display valuation if available
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-50">{selectedStartup.currency}{selectedStartup.valuation?.toLocaleString()}</div>
+                    <div className="text-sm text-gray-500">Valuation</div>
                   </div>
                 </div>
               )}

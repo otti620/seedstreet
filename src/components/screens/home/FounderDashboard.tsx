@@ -24,6 +24,7 @@ interface Startup {
   status: 'Pending' | 'Approved' | 'Rejected';
   founder_id: string;
   views: number; // Added views to the interface
+  valuation: number | null; // Added valuation
 }
 
 interface ActivityLog { // New interface for activity log entries
@@ -42,6 +43,7 @@ interface FounderDashboardProps {
   userProfileId: string;
   loading: boolean;
   recentActivities: ActivityLog[]; // New prop for recent activities
+  startups: Startup[]; // Pass the global startups array
 }
 
 const FounderDashboard: React.FC<FounderDashboardProps> = ({
@@ -50,49 +52,25 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   userProfileId,
   loading,
   recentActivities, // Destructure recentActivities
+  startups, // Destructure global startups array
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0); // State for rotating activities
 
-  const fetchFounderStartup = async () => {
-    setStartupLoading(true);
-    const { data, error } = await supabase
-      .from('startups')
-      .select('*')
-      .eq('founder_id', userProfileId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-      console.error("Error fetching founder's startup:", error);
-      toast.error("Failed to load your startup data.");
-      setFounderStartup(null);
-    } else if (data) {
-      setFounderStartup(data as Startup);
-    } else {
-      setFounderStartup(null);
-    }
-    setStartupLoading(false);
-  };
-
+  // Use a useEffect to find the founder's startup from the global 'startups' array
+  // This ensures the dashboard always reflects the latest global state
   useEffect(() => {
-    if (userProfileId) {
-      fetchFounderStartup();
-
-      // Real-time subscription for the founder's specific startup
-      const channel = supabase
-        .channel(`founder_startup:${userProfileId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'startups', filter: `founder_id=eq.${userProfileId}` }, payload => {
-          // When a change occurs, re-fetch the specific startup data
-          fetchFounderStartup();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    if (userProfileId && startups.length > 0) {
+      const foundStartup = startups.find(s => s.founder_id === userProfileId);
+      setFounderStartup(foundStartup || null);
+      setStartupLoading(false);
+    } else if (userProfileId && startups.length === 0 && !loading) {
+      // If no startups are loaded yet, or none found for this founder
+      setFounderStartup(null);
+      setStartupLoading(false);
     }
-  }, [userProfileId]);
+  }, [userProfileId, startups, loading]); // Depend on userProfileId and the global startups array
 
   // Effect for rotating recent activities
   useEffect(() => {
@@ -282,8 +260,8 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                     <div className="text-xs text-gray-500">Total Views</div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Using total views for "this week" as placeholder */}
-                    <div className="text-xs text-gray-500">This Week</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.valuation?.toLocaleString() || 'N/A'}</div> {/* Display valuation */}
+                    <div className="text-xs text-gray-500">Valuation</div>
                   </div>
                 </div>
               </motion.div>

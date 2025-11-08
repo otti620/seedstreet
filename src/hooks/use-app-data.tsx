@@ -44,6 +44,7 @@ interface Startup {
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
   amount_raised: number;
+  valuation: number | null; // Added valuation
 }
 
 interface Chat {
@@ -232,6 +233,60 @@ export const useAppData = (
       setLoadingData(false);
     }
   }, [isLoggedIn, userId, currentScreen, fetchStartups, fetchChats, fetchCommunityPosts, fetchNotifications, fetchRecentActivities, fetchUserCounts]);
+
+  // Real-time subscriptions for global data
+  useEffect(() => {
+    const channels: any[] = [];
+
+    // Subscribe to startups table for global updates
+    const startupChannel = supabase
+      .channel('public:startups')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, payload => {
+        console.log('Realtime startup change:', payload);
+        fetchStartups(); // Re-fetch all startups on any change
+      })
+      .subscribe();
+    channels.push(startupChannel);
+
+    // Subscribe to notifications table for the current user
+    if (userId) {
+      const notificationChannel = supabase
+        .channel(`public:notifications:${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, payload => {
+          console.log('Realtime notification change:', payload);
+          fetchNotifications(); // Re-fetch notifications for the current user
+        })
+        .subscribe();
+      channels.push(notificationChannel);
+    }
+
+    // Subscribe to chats table for the current user
+    if (userId) {
+      const chatChannel = supabase
+        .channel(`public:chats:${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${userId}}` }, payload => {
+          console.log('Realtime chat change:', payload);
+          fetchChats(); // Re-fetch chats for the current user
+        })
+        .subscribe();
+      channels.push(chatChannel);
+    }
+
+    // Subscribe to community_posts for global updates
+    const communityPostChannel = supabase
+      .channel('public:community_posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
+        console.log('Realtime community post change:', payload);
+        fetchCommunityPosts(); // Re-fetch all community posts
+      })
+      .subscribe();
+    channels.push(communityPostChannel);
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [userId, fetchStartups, fetchNotifications, fetchChats, fetchCommunityPosts]);
+
 
   return {
     startups,

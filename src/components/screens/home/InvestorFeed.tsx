@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye } from 'lucide-react'; // Import Eye icon
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye, DollarSign } from 'lucide-react'; // Import Eye and DollarSign icons
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import MarketCapDisplay from '@/components/MarketCapDisplay'; // Import the new MarketCapDisplay component
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Startup {
@@ -31,6 +32,7 @@ interface Startup {
   funding_stage: string | null;
   ai_risk_score: number | null;
   market_trend_analysis: string | null;
+  valuation: number | null; // Added valuation
 }
 
 interface ScreenParams {
@@ -185,6 +187,8 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        {/* Market Cap Display */}
+        <MarketCapDisplay />
       </div>
 
       {/* Content */}
@@ -249,6 +253,12 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                       <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.interests}</div>
                       <div className="text-xs text-gray-500 uppercase">Interested</div>
                     </div>
+                    {startup.valuation !== null && (
+                      <div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-gray-50">{startup.currency}{startup.valuation?.toLocaleString()}</div>
+                        <div className="text-xs text-gray-500 uppercase">Valuation</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
