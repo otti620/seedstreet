@@ -152,7 +152,6 @@ interface SeedstreetAppContentProps {
   founderCount: number;
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
-  // Removed: interestedStartups: string[]; // Corrected type from Notification[] to string[]
   fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
 }
 
@@ -208,7 +207,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
   fetchCommunityPosts,
   fetchNotifications,
-  // Removed: interestedStartups, // Destructure interestedStartups prop
   fetchStartups, // Destructure fetchStartups prop
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
