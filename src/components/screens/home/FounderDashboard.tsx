@@ -52,12 +52,15 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   setCurrentScreen,
   userProfileId,
   loading,
-  recentActivities = [], // Add default empty array here
+  recentActivities: propRecentActivities = [], // Use a different name for the prop
   startups, // Destructure global startups array
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0); // State for rotating activities
+
+  // Ensure recentActivities is always an array here, even if propRecentActivities is null/undefined
+  const recentActivities = Array.isArray(propRecentActivities) ? propRecentActivities : [];
 
   // Use a useEffect to find the founder's startup from the global 'startups' array
   // This ensures the dashboard always reflects the latest global state
@@ -75,15 +78,17 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
 
   // Effect for rotating recent activities
   useEffect(() => {
-    // With recentActivities defaulting to [], we only need to check its length.
+    // Now, recentActivities is guaranteed to be an array due to the local variable assignment above.
+    // We only need to check its length.
     if (recentActivities.length <= 1) {
       return;
     }
 
     const timer = setInterval(() => {
-      // The prop is guaranteed to be an array due to the default value,
-      // so only check length here.
-      if (recentActivities.length === 0) { // This case should ideally not be hit if initial length > 1
+      // Inside setInterval, recentActivities is still the same reference from the outer scope.
+      // It's already guaranteed to be an array.
+      // The length check here is primarily for when the array becomes empty after the interval starts.
+      if (recentActivities.length === 0) {
         clearInterval(timer);
         setCurrentActivityIndex(0);
         return;
@@ -93,7 +98,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
       );
     }, 5000); // Change activity every 5 seconds
     return () => clearInterval(timer);
-  }, [recentActivities]);
+  }, [recentActivities]); // Dependency on the local `recentActivities` variable
 
   const renderFounderStatsSkeleton = () => (
     <div className="bg-gradient-to-br from-purple-700 to-teal-600 rounded-2xl p-6 text-white animate-pulse">
