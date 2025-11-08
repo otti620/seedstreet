@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Toaster, toast } from 'sonner';
 import {
   Rocket, Users, MessageCircle, User, Search, TrendingUp,
   Heart, Bookmark, Send, ArrowLeft, Plus, Settings,
@@ -10,38 +11,11 @@ import {
 import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
-import SplashScreen from './screens/SplashScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
-import AuthScreen from '@/components/screens/AuthScreen';
-import RoleSelectorScreen from './screens/RoleSelectorScreen';
-import HomeScreen from './screens/HomeScreen';
-import ChatListScreen from './screens/ChatListScreen';
-import ChatConversationScreen from './screens/ChatConversationScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import CommunityFeedScreen from './screens/CommunityFeedScreen';
-import EditProfileScreen from './screens/EditProfileScreen';
-import ManageStartupScreen from './screens/ManageStartupScreen';
-import NotificationsScreen from './screens/NotificationsScreen';
-import StartupListingCelebrationScreen from './screens/StartupListingCelebrationScreen';
-import CreateCommunityPostScreen from './screens/CreateCommunityPostScreen';
-import HelpAndSupportScreen from './screens/HelpAndSupportScreen';
-import MerchStoreScreen from './screens/MerchStoreScreen';
-import CommunityPostDetailScreen from './screens/CommunityPostDetailScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen';
-import SavedStartupsScreen from './screens/SavedStartupsScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
-import TermsAndPrivacyScreen from './screens/TermsAndPrivacyScreen';
-import WelcomeFlyer from './WelcomeFlyer';
-import CommitmentDialog from './CommitmentDialog';
-import StartupRoomScreen from './screens/StartupRoomScreen';
-import AuthActionScreen from './screens/AuthActionScreen';
-import NewChatScreen from './screens/NewChatScreen';
+import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
 import ScreenTransitionWrapper from './ScreenTransitionWrapper';
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
@@ -179,6 +153,35 @@ interface SeedstreetAppContentProps {
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
 }
+
+// Dynamic imports for screens
+const DynamicOnboardingScreen = dynamic(() => import('./screens/OnboardingScreen'), { ssr: false });
+const DynamicAuthScreen = dynamic(() => import('@/components/screens/AuthScreen'), { ssr: false });
+const DynamicRoleSelectorScreen = dynamic(() => import('./screens/RoleSelectorScreen'), { ssr: false });
+const DynamicHomeScreen = dynamic(() => import('./screens/HomeScreen'), { ssr: false });
+const DynamicChatListScreen = dynamic(() => import('./screens/ChatListScreen'), { ssr: false });
+const DynamicChatConversationScreen = dynamic(() => import('./screens/ChatConversationScreen'), { ssr: false });
+const DynamicProfileScreen = dynamic(() => import('./screens/ProfileScreen'), { ssr: false });
+const DynamicCommunityFeedScreen = dynamic(() => import('./screens/CommunityFeedScreen'), { ssr: false });
+const DynamicEditProfileScreen = dynamic(() => import('./screens/EditProfileScreen'), { ssr: false });
+const DynamicManageStartupScreen = dynamic(() => import('./screens/ManageStartupScreen'), { ssr: false });
+const DynamicNotificationsScreen = dynamic(() => import('./screens/NotificationsScreen'), { ssr: false });
+const DynamicStartupListingCelebrationScreen = dynamic(() => import('./screens/StartupListingCelebrationScreen'), { ssr: false });
+const DynamicCreateCommunityPostScreen = dynamic(() => import('./screens/CreateCommunityPostScreen'), { ssr: false });
+const DynamicHelpAndSupportScreen = dynamic(() => import('./screens/HelpAndSupportScreen'), { ssr: false });
+const DynamicMerchStoreScreen = dynamic(() => import('./screens/MerchStoreScreen'), { ssr: false });
+const DynamicCommunityPostDetailScreen = dynamic(() => import('./screens/CommunityPostDetailScreen'), { ssr: false });
+const DynamicAdminDashboardScreen = dynamic(() => import('./screens/AdminDashboardScreen'), { ssr: false });
+const DynamicSavedStartupsScreen = dynamic(() => import('./screens/SavedStartupsScreen'), { ssr: false });
+const DynamicSettingsScreen = dynamic(() => import('./screens/SettingsScreen'), { ssr: false });
+const DynamicMaintenanceModeScreen = dynamic(() => import('./screens/MaintenanceModeScreen'), { ssr: false });
+const DynamicTermsAndPrivacyScreen = dynamic(() => import('./screens/TermsAndPrivacyScreen'), { ssr: false });
+const DynamicStartupRoomScreen = dynamic(() => import('./screens/StartupRoomScreen'), { ssr: false });
+const DynamicAuthActionScreen = dynamic(() => import('./screens/AuthActionScreen'), { ssr: false });
+const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { ssr: false });
+const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
+const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
+
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   isLoggedIn,
@@ -570,13 +573,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen !== 'splash' && (
         <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
           {currentScreen === 'onboarding' && (
-            <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
+            <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
           )}
-          {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
-          {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
+          {currentScreen === 'auth' && <DynamicAuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
+          {currentScreen === 'roleSelector' && <DynamicRoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
           {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
             <>
-              <HomeScreen
+              <DynamicHomeScreen
                 userRole={userRole}
                 startups={startups}
                 bookmarkedStartups={bookmarkedStartups}
@@ -595,7 +598,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
                 recentActivities={recentActivities}
               />
               {showWelcomeFlyer && (
-                <WelcomeFlyer
+                <DynamicWelcomeFlyer
                   userName={userProfile?.name || userProfile?.first_name || 'User'}
                   onDismiss={handleDismissWelcomeFlyer}
                 />
@@ -603,7 +606,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             </>
           )}
           {currentScreen === 'home' && activeTab === 'chats' && (
-            <ChatListScreen
+            <DynamicChatListScreen
               chats={chats}
               setCurrentScreen={handleSetCurrentScreen}
               // Removed setSelectedChat prop
@@ -613,7 +616,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'home' && activeTab === 'community' && (
-            <CommunityFeedScreen
+            <DynamicCommunityFeedScreen
               communityPosts={communityPosts}
               setCurrentScreen={handleSetCurrentScreen}
               setActiveTab={setActiveTab}
@@ -624,7 +627,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'home' && activeTab === 'profile' && (
-            <ProfileScreen
+            <DynamicProfileScreen
               userProfile={userProfile}
               userRole={userRole}
               bookmarkedStartups={bookmarkedStartups}
@@ -637,7 +640,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'startupDetail' && selectedStartup && (
-            <StartupDetailScreen
+            <DynamicStartupDetailScreen
               selectedStartup={selectedStartup}
               bookmarkedStartups={bookmarkedStartups}
               interestedStartups={interestedStartups}
@@ -655,7 +658,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'chat' && selectedChat && (
-            <ChatConversationScreen
+            <DynamicChatConversationScreen
               selectedChat={selectedChat}
               setCurrentScreen={handleSetCurrentScreen}
               setActiveTab={setActiveTab}
@@ -665,7 +668,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'editProfile' && userProfile && (
-            <EditProfileScreen
+            <DynamicEditProfileScreen
               userProfile={userProfile}
               setCurrentScreen={handleSetCurrentScreen}
               setUserProfile={setUserProfile}
@@ -674,7 +677,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'manageStartup' && userProfile?.id && userProfile?.name && userProfile?.email && (
-            <ManageStartupScreen
+            <DynamicManageStartupScreen
               setCurrentScreen={handleSetCurrentScreen}
               userProfileId={userProfile.id}
               userProfileName={userProfile.name}
@@ -684,44 +687,44 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'createCommunityPost' && userProfile && (
-            <CreateCommunityPostScreen
+            <DynamicCreateCommunityPostScreen
               setCurrentScreen={handleSetCurrentScreen}
               userProfile={userProfile}
               postId={selectedCommunityPostId}
             />
           )}
           {currentScreen === 'notifications' && userProfile && (
-            <NotificationsScreen
+            <DynamicNotificationsScreen
               notifications={notifications}
               setCurrentScreen={handleSetCurrentScreen}
               fetchNotifications={fetchNotifications}
             />
           )}
           {currentScreen === 'startupListingCelebration' && listedStartupName && (
-            <StartupListingCelebrationScreen
+            <DynamicStartupListingCelebrationScreen
               startupName={listedStartupName}
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
           {currentScreen === 'helpAndSupport' && (
-            <HelpAndSupportScreen
+            <DynamicHelpAndSupportScreen
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
           {currentScreen === 'merchStore' && (
-            <MerchStoreScreen
+            <DynamicMerchStoreScreen
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
           {currentScreen === 'communityPostDetail' && selectedCommunityPostId && userProfile && (
-            <CommunityPostDetailScreen
+            <DynamicCommunityPostDetailScreen
               setCurrentScreen={handleSetCurrentScreen}
               selectedCommunityPostId={selectedCommunityPostId}
               userProfile={userProfile}
             />
           )}
           {currentScreen === 'adminDashboard' && userProfile?.role === 'admin' && (
-            <AdminDashboardScreen
+            <DynamicAdminDashboardScreen
               setCurrentScreen={handleSetCurrentScreen}
               maintenanceMode={maintenanceMode}
               fetchAppSettings={fetchAppSettings}
@@ -729,7 +732,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'savedStartups' && userProfile && (
-            <SavedStartupsScreen
+            <DynamicSavedStartupsScreen
               setCurrentScreen={handleSetCurrentScreen}
               userProfileId={userProfile.id}
               bookmarkedStartups={bookmarkedStartups}
@@ -741,29 +744,29 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             />
           )}
           {currentScreen === 'settings' && (
-            <SettingsScreen
+            <DynamicSettingsScreen
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
           {currentScreen === 'termsAndPrivacy' && (
-            <TermsAndPrivacyScreen
+            <DynamicTermsAndPrivacyScreen
               setCurrentScreen={handleSetCurrentScreen}
             />
           )}
           {currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup && (
-            <StartupRoomScreen
+            <DynamicStartupRoomScreen
               setCurrentScreen={handleSetCurrentScreen}
               selectedStartup={selectedStartup}
             />
           )}
           {currentScreen === 'authAction' && authActionType && (
-            <AuthActionScreen
+            <DynamicAuthActionScreen
               setCurrentScreen={handleSetCurrentScreen}
               authActionType={authActionType}
             />
           )}
           {currentScreen === 'newChat' && userProfile && (
-            <NewChatScreen
+            <DynamicNewChatScreen
               setCurrentScreen={handleSetCurrentScreen}
               userProfile={userProfile}
               logActivity={logActivity}
