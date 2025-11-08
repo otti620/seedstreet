@@ -303,5 +303,6 @@ export const useAppData = (
     investorCount,
     founderCount,
     fetchStartups, // NEW: Return fetchStartups
+    fetchNotifications, // FIX: Return fetchNotifications
   };
 };
