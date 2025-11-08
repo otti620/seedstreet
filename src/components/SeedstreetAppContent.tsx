@@ -361,6 +361,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
+        fetchStartups(); // NEW: Re-fetch startups to update counts
       },
       onError: (error) => {
         console.error("Error updating interest:", error);
@@ -503,6 +504,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         toast.error("Failed to update startup chat metrics.");
       } else {
         console.log("Startup chat metrics updated:", updatedStartup);
+        fetchStartups(); // NEW: Re-fetch startups to update counts
       }
 
       await supabase.from('notifications').insert({
