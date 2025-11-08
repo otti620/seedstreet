@@ -555,6 +555,14 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     return data as Message[];
   }, []);
 
+  // If not logged in and on a protected screen, redirect to auth
+  const isProtectedScreen = !['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen);
+  if (!isLoggedIn && isProtectedScreen && !loadingSession) {
+    setCurrentScreen('auth');
+    setCurrentScreenParams({});
+    return null; // Render nothing or a loading spinner while redirecting
+  }
+
   return (
     <>
       {currentScreen === 'splash' && <SplashScreen />}

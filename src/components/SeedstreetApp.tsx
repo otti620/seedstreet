@@ -96,10 +96,11 @@ const SeedstreetApp: React.FC = () => {
   } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen); // Pass userId directly
 
   // 3. Initial Session check and FIRST screen determination (after splash)
+  // This useEffect should primarily set the *initial* screen.
   useEffect(() => {
     const checkInitialSession = async () => {
       if (!splashTimerComplete) {
-        return; // Wait for splash screen to complete
+        return;
       }
 
       setLoadingSession(true);
@@ -110,10 +111,8 @@ const SeedstreetApp: React.FC = () => {
         setIsLoggedIn(false);
         if (!onboardingSeenLocally) {
           setCurrentScreen('onboarding');
-          setCurrentScreenParams({});
         } else {
           setCurrentScreen('auth');
-          setCurrentScreenParams({});
         }
       } else {
         setIsLoggedIn(true);
@@ -121,61 +120,26 @@ const SeedstreetApp: React.FC = () => {
         if (fetchedProfile) {
           if (!fetchedProfile.role) {
             setCurrentScreen('roleSelector');
-            setCurrentScreenParams({});
           } else if (!fetchedProfile.onboarding_complete) {
             setCurrentScreen('onboarding');
-            setCurrentScreenParams({});
           } else {
             setCurrentScreen('home');
-            setCurrentScreenParams({});
           }
         } else {
-          // This case should ideally not happen if handle_new_user works, but fallback
-          setCurrentScreen('roleSelector');
-          setCurrentScreenParams({});
+          setCurrentScreen('roleSelector'); // Fallback
         }
       }
       setLoadingSession(false);
+      setCurrentScreenParams({}); // Ensure params are reset on initial screen set
     };
 
-    // Only run this effect once after splash is complete and if we are still on the splash screen
-    // to prevent re-running if user navigates away and comes back.
+    // This effect should only run once to determine the *initial* screen after splash.
+    // If currentScreen is already set to something other than 'splash', it means
+    // user-initiated navigation has taken over, or the initial check already ran.
     if (splashTimerComplete && currentScreen === 'splash') {
       checkInitialSession();
     }
-  }, [splashTimerComplete, currentScreen, fetchUserProfile]);
-
-  // 4. Navigation logic for subsequent state changes (after initial screen is set)
-  useEffect(() => {
-    if (!loadingSession) { // Ensure initial session check is complete
-      let targetScreen = currentScreen;
-      let targetParams: ScreenParams = {};
-
-      if (isLoggedIn && userProfile) {
-        // User is logged in and profile is loaded, navigate based on profile status
-        if (!userProfile.role) {
-          targetScreen = 'roleSelector';
-        } else if (!userProfile.onboarding_complete) {
-          targetScreen = 'onboarding';
-        } else {
-          targetScreen = 'home';
-        }
-      } else if (!isLoggedIn && currentScreen !== 'auth' && currentScreen !== 'onboarding' && currentScreen !== 'splash') {
-        // User logged out or session expired, and not on onboarding/splash/auth already
-        targetScreen = 'auth';
-      }
-
-      // Only update state if the target screen or params are actually different
-      const areParamsEqual = JSON.stringify(targetParams) === JSON.stringify(currentScreenParams);
-
-      if (targetScreen !== currentScreen) {
-        setCurrentScreen(targetScreen);
-        setCurrentScreenParams(targetParams); // Always update params when screen changes
-      } else if (!areParamsEqual) { // If screen is the same, but params are different, update params
-        setCurrentScreenParams(targetParams);
-      }
-    }
-  }, [isLoggedIn, userProfile, loadingSession, currentScreen, currentScreenParams, setCurrentScreen, setCurrentScreenParams]);
+  }, [splashTimerComplete, currentScreen, fetchUserProfile, setCurrentScreen, setIsLoggedIn, setCurrentScreenParams]);
 
 
   // 5. Effect to periodically update user's last_active timestamp
