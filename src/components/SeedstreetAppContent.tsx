@@ -603,6 +603,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     }
   }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
 
+  // NEW: Console log to inspect recentActivities before passing to FounderDashboard
+  console.log("SeedstreetAppContent: recentActivities before passing to FounderDashboard:", recentActivities);
+
 
   if (maintenanceMode.enabled) {
     return (
