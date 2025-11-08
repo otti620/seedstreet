@@ -20,6 +20,25 @@ import {
 } from '@/components/ui/form';
 import { motion } from 'framer-motion';
 
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_id: number | null;
+  email: string | null;
+  name: string | null;
+  role: 'investor' | 'founder' | 'admin' | null;
+  onboarding_complete: boolean;
+  bookmarked_startups: string[];
+  interested_startups: string[];
+  bio: string | null;
+  location: string | null;
+  phone: string | null;
+  last_seen: string | null;
+  show_welcome_flyer: boolean;
+  total_committed: number;
+}
+
 interface ScreenParams {
   startupId?: string;
   startupName?: string;
@@ -32,6 +51,7 @@ interface ScreenParams {
 interface AuthScreenProps {
   setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Added fetchUserProfile prop
 }
 
 const loginSchema = z.object({
@@ -47,7 +67,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 type SignUpFormInputs = z.infer<typeof signUpSchema>;
 type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>;
 
-function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) {
+function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthScreenProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +100,8 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) {
         if (!authError && data?.user) {
           toast.success("Account created! Please check your email to verify.");
           setIsLoggedIn(true);
-          setCurrentScreen('roleSelector');
+          await fetchUserProfile(data.user.id); // Fetch profile after signup
+          // Navigation will be handled by SeedstreetApp's useEffect
         }
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -91,6 +112,8 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) {
         if (!authError && data?.user) {
           toast.success("Logged in successfully!");
           setIsLoggedIn(true);
+          await fetchUserProfile(data.user.id); // Fetch profile after login
+          // Navigation will be handled by SeedstreetApp's useEffect
         }
       }
     } catch (error: any) {
@@ -217,7 +240,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn }: AuthScreenProps) {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                </motion.div>
               </motion.div>
 
               <motion.div

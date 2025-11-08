@@ -14,7 +14,7 @@ import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import AuthScreen from '@/components/screens/AuthScreen';
 import RoleSelectorScreen from './screens/RoleSelectorScreen';
-import HomeScreen from '@/components/screens/HomeScreen';
+import HomeScreen from './screens/HomeScreen';
 import ChatListScreen from './screens/ChatListScreen';
 import ChatConversationScreen from './screens/ChatConversationScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -60,7 +60,7 @@ interface Profile {
   bio: string | null;
   location: string | null;
   phone: string | null;
-  last_seen: string | null;
+  last_seen: string | null; // Assuming this is the field for last activity
   show_welcome_flyer: boolean;
   total_committed: number;
 }
@@ -563,7 +563,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           {currentScreen === 'onboarding' && (
             <OnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
           )}
-          {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} />}
+          {currentScreen === 'auth' && <AuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
           {currentScreen === 'roleSelector' && <RoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
           {currentScreen === 'home' && (activeTab === 'home' || activeTab === 'startups') && (
             <>
