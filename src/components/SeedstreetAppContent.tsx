@@ -549,7 +549,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       toast.success(`You've joined the ${startup.name} room!`);
       logActivity('joined_room', `Joined startup room: ${startup.name}`, startup.id, 'Users');
       fetchStartups(); // Re-fetch startups to update counts in the UI
-      handleSetCurrentScreen('startupRoom', { startupRoomId: startup.id });
+      // FIX: Pass startupId here so selectedStartup can be derived
+      handleSetCurrentScreen('startupRoom', { startupRoomId: startup.id, startupId: startup.id });
 
     } catch (invokeError: any) {
       toast.error("An unexpected error occurred while joining the room.");
