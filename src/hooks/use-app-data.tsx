@@ -305,5 +305,6 @@ export const useAppData = (
     founderCount,
     fetchStartups, // NEW: Return fetchStartups
     fetchNotifications, // FIX: Return fetchNotifications
+    fetchCommunityPosts, // NEW: Return fetchCommunityPosts
   };
 };
