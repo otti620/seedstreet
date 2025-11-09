@@ -3,10 +3,9 @@
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
-// Removed GlobalLoadingIndicator and Toaster imports
 
 interface ThemeProviderWrapperProps extends ThemeProviderProps {
-  // Removed showGlobalLoadingIndicator prop
+  children: React.ReactNode; // Explicitly add children prop
 }
 
 export function ThemeProviderWrapper({ children, ...props }: ThemeProviderWrapperProps) {
