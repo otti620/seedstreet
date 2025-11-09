@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'; // Import the specific type
 
 // Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
 interface Profile {
@@ -244,7 +245,7 @@ export const useAppData = (
     // Subscribe to startups table for global updates
     const startupChannel = supabase
       .channel('public:startups')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, (payload: RealtimePostgresChangesPayload<any>) => {
         console.log('Realtime startup change:', payload);
         fetchStartups(); // Re-fetch all startups on any change
       })
@@ -255,7 +256,7 @@ export const useAppData = (
     if (userId) {
       const notificationChannel = supabase
         .channel(`public:notifications:${userId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Realtime notification change:', payload);
           fetchNotifications(); // Re-fetch notifications for the current user
         })
@@ -267,7 +268,7 @@ export const useAppData = (
     if (userId) {
       const chatChannel = supabase
         .channel(`public:chats:${userId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${userId}}` }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `user_ids.cs.{${userId}}` }, (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Realtime chat change:', payload);
           fetchChats(); // Re-fetch chats for the current user
         })
@@ -278,7 +279,7 @@ export const useAppData = (
     // Subscribe to community_posts for global updates
     const communityPostChannel = supabase
       .channel('public:community_posts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, (payload: RealtimePostgresChangesPayload<any>) => {
         console.log('Realtime community post change:', payload);
         fetchCommunityPosts(); // Re-fetch all community posts
       })
