@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Toaster } from 'sonner'; // Import Toaster directly
+import { Toaster, toast } from 'sonner'; // Import Toaster directly, and add toast
 import { ThemeProvider as NextThemesProvider } from "next-themes"; // Import ThemeProvider directly
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator directly
 import SeedstreetAppContent from './SeedstreetAppContent';
@@ -202,6 +202,7 @@ const SeedstreetApp: React.FC = () => {
 
   // Handle screen changes from child components
   const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
+    console.log("SeedstreetAppContent: handleSetCurrentScreen called with screen:", screen, "params:", params);
     setCurrentScreen(screen);
     setCurrentScreenParams(prevParams => {
       const newParams = params || {};
