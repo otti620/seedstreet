@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 // import { GeistSans, GeistMono } from "@vercel/font-geist"; // Explicitly import GeistSans and GeistMono
 import "./globals.css";
-// Removed direct import of Toaster and ThemeProvider
-import { Suspense } from "react"; // Import Suspense
-// Removed dynamic import of GlobalLoadingIndicator as it's now in ThemeProviderWrapper
-
-import { ThemeProviderWrapper } from "@/components/ThemeProviderWrapper"; // Import the new wrapper
+import { Suspense } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes"; // Directly import ThemeProvider from next-themes
 
 // const geistSans = GeistSans({ // Use GeistSans directly
 //   variable: "--font-geist-sans",
@@ -33,14 +30,14 @@ export default function RootLayout({
         // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         className={`antialiased`}
       >
-        <ThemeProviderWrapper
+        <NextThemesProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
           {children}
-        </ThemeProviderWrapper>
+        </NextThemesProvider>
       </body>
     </html>
   );
