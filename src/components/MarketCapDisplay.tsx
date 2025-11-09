@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { DollarSign, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'; // Import the specific type
 
 interface MarketCapDisplayProps {
   // No props needed for now, it fetches its own data
@@ -46,7 +47,7 @@ const MarketCapDisplay: React.FC<MarketCapDisplayProps> = () => {
     // Set up real-time subscription for startups to update market cap
     const channel = supabase
       .channel('market_cap_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'startups' }, (payload: RealtimePostgresChangesPayload<any>) => { // Apply the type here
         // Re-fetch market cap on any change to the startups table
         // This ensures updates to valuation or new approved startups trigger a refresh
         console.log('Realtime startup change detected for market cap:', payload);
