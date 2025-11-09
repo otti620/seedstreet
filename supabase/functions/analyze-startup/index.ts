@@ -32,11 +32,12 @@ serve(async (req) => {
 
   try {
     const { startupData } = await req.json()
+    console.log("Received startupData:", startupData);
 
-    // Retrieve Gemini API key from Supabase secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY'); 
 
     if (!geminiApiKey) {
+      console.error("GEMINI_API_KEY is not configured.");
       return new Response(JSON.stringify({ error: "Gemini API Key not configured." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -58,6 +59,7 @@ Example Output:
   "marketTrendAnalysis": "This startup is well-positioned...",
   "aiRiskScore": 45
 }`;
+    console.log("Prompt sent to Gemini:", prompt);
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -74,13 +76,25 @@ Example Output:
     });
 
     console.log("Gemini API Response Status:", geminiResponse.status);
+    console.log("Gemini API Response OK:", geminiResponse.ok);
+    console.log("Gemini API Response Status Text:", geminiResponse.statusText);
+    
     const geminiRawText = await geminiResponse.text();
     console.log("Gemini API Raw Response Body:", geminiRawText);
 
-    const geminiResult = JSON.parse(geminiRawText);
+    let geminiResult;
+    try {
+      geminiResult = JSON.parse(geminiRawText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini raw response as JSON:", parseError);
+      return new Response(JSON.stringify({ error: "Failed to parse Gemini API response. Raw text: " + geminiRawText }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
     if (geminiResult.error) {
-      console.error("Gemini API Error:", geminiResult.error);
+      console.error("Gemini API Error details:", geminiResult.error);
       return new Response(JSON.stringify({ error: "Gemini API error: " + geminiResult.error.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -90,7 +104,8 @@ Example Output:
     const textResponse = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!textResponse) {
-      return new Response(JSON.stringify({ error: "No text response from Gemini API." }), {
+      console.error("No text response found in Gemini API candidates.");
+      return new Response(JSON.stringify({ error: "No text response from Gemini API. Check Gemini API logs for details." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -106,7 +121,7 @@ Example Output:
       }
     } catch (parseError) {
       console.error("Failed to parse Gemini response as JSON:", parseError, "Raw response:", textResponse);
-      return new Response(JSON.stringify({ error: "Failed to parse AI analysis response." }), {
+      return new Response(JSON.stringify({ error: "Failed to parse AI analysis response from Gemini. Raw text: " + textResponse }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -115,7 +130,8 @@ Example Output:
     const { marketTrendAnalysis, aiRiskScore } = parsedAnalysis;
 
     if (typeof marketTrendAnalysis !== 'string' || typeof aiRiskScore !== 'number') {
-      return new Response(JSON.stringify({ error: "Invalid format from AI analysis." }), {
+      console.error("Invalid format from AI analysis. Expected string for marketTrendAnalysis and number for aiRiskScore.");
+      return new Response(JSON.stringify({ error: "Invalid format from AI analysis. Expected marketTrendAnalysis (string) and aiRiskScore (number)." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -128,9 +144,9 @@ Example Output:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
-  } catch (error) {
-    console.error('Error in analyze-startup function:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: any) {
+    console.error('Caught unexpected error in analyze-startup function:', error.message, error);
+    return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
