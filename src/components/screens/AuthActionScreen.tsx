@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } => '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Corrected from '=>' to 'from'
 import { Label } from '@/components/ui/label';
 import {
   Form,
