@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } => '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Form,
@@ -51,9 +51,9 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
   // Determine the current schema
   const currentSchema = authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema;
 
-  // Use FieldValues for the generic type of useForm and cast the resolver to any
+  // Use FieldValues for the generic type of useForm and cast the currentSchema to any for zodResolver
   const form = useForm<FieldValues>({
-    resolver: zodResolver(currentSchema) as any, // Explicitly cast the resolver result to any
+    resolver: zodResolver(currentSchema as any), // Cast currentSchema to any here
     defaultValues: {
       ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
     },
