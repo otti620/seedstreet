@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User as UserIcon, ArrowLeft } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -219,8 +219,7 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-              </motion.div>
+                </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
