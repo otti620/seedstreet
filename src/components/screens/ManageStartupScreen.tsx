@@ -75,19 +75,19 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasExistingStartup, setHasExistingStartup] = useState(false);
 
-  const form = useForm<StartupFormInputs>({ // Explicitly set the type here
-    resolver: zodResolver(formSchema),
+  const form = useForm<StartupFormInputs>({
+    resolver: zodResolver(formSchema) as any, // Explicitly cast resolver to any
     defaultValues: {
       name: '',
       logo: '',
       tagline: '',
       pitch: '',
-      description: null, // Changed to null
-      category: undefined,
+      description: null, // Align with nullable().optional()
+      category: undefined, // Align with optional()
       location: '',
-      amount_sought: null, // Changed to null
-      currency: null, // Changed to null
-      funding_stage: null, // Changed to null
+      amount_sought: null, // Align with nullable().optional()
+      currency: null, // Align with nullable().optional()
+      funding_stage: null, // Align with nullable().optional()
     },
   });
 

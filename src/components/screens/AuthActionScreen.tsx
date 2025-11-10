@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, FieldValues } from 'react-hook-form'; // Import FieldValues
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
@@ -41,29 +41,30 @@ const changePasswordSchema = z.object({
 type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
 type ChangePasswordFormInputs = z.infer<typeof changePasswordSchema>;
 
-// Define a union type for the form data
+// Define a union type for the form data (used for onSubmit, not for useForm generic)
 type AuthFormInputs = ForgotPasswordFormInputs | ChangePasswordFormInputs;
 
 const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, authActionType }) => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Determine the current schema and default values based on authActionType
+  // Determine the current schema
   const currentSchema = authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema;
-  const defaultValues = authActionType === 'forgotPassword'
-    ? { email: '' } as ForgotPasswordFormInputs
-    : { password: '', confirmPassword: '' } as ChangePasswordFormInputs;
 
-  // Use the inferred type from the current schema for useForm
-  const form = useForm<AuthFormInputs>({
-    resolver: zodResolver(currentSchema),
-    defaultValues: defaultValues as AuthFormInputs, // Cast defaultValues to the union type
+  // Use FieldValues for the generic type of useForm and cast the resolver to any
+  const form = useForm<FieldValues>({
+    resolver: zodResolver(currentSchema) as any, // Explicitly cast the resolver result to any
+    defaultValues: {
+      ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
+    },
   });
 
   // Reset form when authActionType changes
   useEffect(() => {
-    form.reset(defaultValues as AuthFormInputs);
-  }, [authActionType, form, defaultValues]);
+    form.reset({
+      ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
+    });
+  }, [authActionType, form]);
 
 
   const handleForgotPassword = async (values: ForgotPasswordFormInputs) => {
@@ -98,7 +99,7 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
     setLoading(false);
   };
 
-  const onSubmit = (values: AuthFormInputs) => { // Use the union type here
+  const onSubmit = (values: FieldValues) => { // Use FieldValues here
     if (authActionType === 'forgotPassword') {
       handleForgotPassword(values as ForgotPasswordFormInputs);
     } else {
