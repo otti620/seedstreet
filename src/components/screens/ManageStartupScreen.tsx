@@ -53,13 +53,14 @@ const formSchema = z.object({
   location: z.string().min(2, { message: "Location is required." }),
   amount_sought: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
-    z.any() // Preprocess returns any, then pipe to the actual schema
-  ).pipe(
     z.number().min(0, { message: "Amount must be a positive number." }).nullable()
   ).optional(),
   currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).nullable().optional(),
   funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).nullable().optional(),
 });
+
+// Define the inferred type from the schema for useForm
+type StartupFormInputs = z.infer<typeof formSchema>;
 
 const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   setCurrentScreen,
@@ -74,19 +75,19 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasExistingStartup, setHasExistingStartup] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<StartupFormInputs>({ // Explicitly set the type here
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       logo: '',
       tagline: '',
       pitch: '',
-      description: undefined,
+      description: null, // Changed to null
       category: undefined,
       location: '',
-      amount_sought: undefined,
-      currency: undefined,
-      funding_stage: undefined,
+      amount_sought: null, // Changed to null
+      currency: null, // Changed to null
+      funding_stage: null, // Changed to null
     },
   });
 
@@ -132,12 +133,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             logo: startupData.logo,
             tagline: startupData.tagline,
             pitch: startupData.pitch,
-            description: startupData.description || undefined, // Convert null to undefined for optional fields
+            description: startupData.description || null, // Use nullish coalescing
             category: startupData.category,
             location: startupData.location,
-            amount_sought: startupData.amount_sought ?? undefined, // Use nullish coalescing
-            currency: startupData.currency ?? undefined, // Use nullish coalescing
-            funding_stage: startupData.funding_stage ?? undefined, // Use nullish coalescing
+            amount_sought: startupData.amount_sought ?? null, // Use nullish coalescing
+            currency: startupData.currency ?? null, // Use nullish coalescing
+            funding_stage: startupData.funding_stage ?? null, // Use nullish coalescing
           });
         }
       }
@@ -147,7 +148,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   }, [startupId, userProfileId, userProfileProAccount, setCurrentScreen, form]);
 
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: StartupFormInputs) => { // Use StartupFormInputs here
     setLoading(true);
 
     if (!startupId && hasExistingStartup && !userProfileProAccount) {
@@ -512,7 +513,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                         type="number"
                         placeholder="How much capital are you seeking? (e.g., 500000)"
                         className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                        onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                         value={field.value ?? ''} // Use nullish coalescing for value
                         aria-label="Amount to be raised"
                       />

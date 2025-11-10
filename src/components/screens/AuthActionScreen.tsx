@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,16 +48,23 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Determine the current schema
+  // Determine the current schema and default values based on authActionType
   const currentSchema = authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema;
+  const defaultValues = authActionType === 'forgotPassword'
+    ? { email: '' } as ForgotPasswordFormInputs
+    : { password: '', confirmPassword: '' } as ChangePasswordFormInputs;
 
-  // Use the union type for useForm and cast the resolver to any
+  // Use the inferred type from the current schema for useForm
   const form = useForm<AuthFormInputs>({
-    resolver: zodResolver(currentSchema) as any, // Explicitly cast the resolver result to any
-    defaultValues: {
-      ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
-    },
+    resolver: zodResolver(currentSchema),
+    defaultValues: defaultValues as AuthFormInputs, // Cast defaultValues to the union type
   });
+
+  // Reset form when authActionType changes
+  useEffect(() => {
+    form.reset(defaultValues as AuthFormInputs);
+  }, [authActionType, form, defaultValues]);
+
 
   const handleForgotPassword = async (values: ForgotPasswordFormInputs) => {
     setLoading(true);
