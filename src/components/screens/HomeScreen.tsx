@@ -24,6 +24,7 @@ interface HomeScreenProps {
   recentActivities: ActivityLog[];
   fetchStartups: () => Promise<void>;
   handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  userProfile: Profile | null; // Added userProfile prop
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -44,6 +45,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   recentActivities,
   fetchStartups,
   handleJoinStartupRoom,
+  userProfile, // Destructure userProfile
 }) => {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">

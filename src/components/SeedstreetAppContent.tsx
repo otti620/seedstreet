@@ -62,6 +62,7 @@ interface HomeScreenProps {
   recentActivities: ActivityLog[];
   fetchStartups: () => Promise<void>;
   handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  userProfile: Profile | null; // Added userProfile to HomeScreenProps
 }
 
 interface ChatListScreenProps {
@@ -717,7 +718,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   if (maintenanceMode.enabled) {
     return (
       <DynamicMaintenanceModeScreen
-        setCurrentScreen={handleSetCurrentScreen}
         message={maintenanceMode.message}
       />
     );
@@ -754,6 +754,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             recentActivities={recentActivities}
             fetchStartups={fetchStartups}
             handleJoinStartupRoom={handleJoinStartupRoom}
+            userProfile={userProfile} // Pass userProfile here
           />
           {showWelcomeFlyer && (
             <DynamicWelcomeFlyer
