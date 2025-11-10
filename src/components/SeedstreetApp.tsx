@@ -67,37 +67,51 @@ const SeedstreetApp: React.FC = () => {
   useEffect(() => {
     const checkInitialSession = async () => {
       if (!splashTimerComplete) {
+        console.log("checkInitialSession: Splash timer not complete, returning.");
         return;
       }
 
       setLoadingSession(true);
+      console.log("checkInitialSession: Starting session check.");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
+      console.log("checkInitialSession: Session:", session ? "exists" : "none", "Error:", sessionError, "Onboarding seen locally:", onboardingSeenLocally);
 
       if (sessionError || !session) {
         setIsLoggedIn(false);
+        console.log("checkInitialSession: User NOT logged in.");
         if (!onboardingSeenLocally) {
+          console.log("checkInitialSession: Onboarding NOT seen locally. Setting screen to 'onboarding'.");
           setCurrentScreen('onboarding');
         } else {
+          console.log("checkInitialSession: Onboarding SEEN locally. Setting screen to 'auth'.");
           setCurrentScreen('auth');
         }
       } else {
         setIsLoggedIn(true);
+        console.log("checkInitialSession: User IS logged in. Fetching profile for user ID:", session.user.id);
         const fetchedProfile = await fetchUserProfile(session.user.id);
         if (fetchedProfile) {
+          console.log("checkInitialSession: Fetched profile:", fetchedProfile);
           if (!fetchedProfile.role) {
+            console.log("checkInitialSession: Profile role NOT set. Setting screen to 'roleSelector'.");
             setCurrentScreen('roleSelector');
           } else if (!fetchedProfile.onboarding_complete) {
+            console.log("checkInitialSession: Profile onboarding NOT complete. Setting screen to 'onboarding'.");
             setCurrentScreen('onboarding');
           } else {
+            console.log("checkInitialSession: Profile role SET and onboarding COMPLETE. Setting screen to 'home'.");
             setCurrentScreen('home');
           }
         } else {
+          console.log("checkInitialSession: Logged in, but profile NOT found. Setting screen to 'roleSelector'.");
           setCurrentScreen('roleSelector');
         }
       }
       setLoadingSession(false);
       setCurrentScreenParams({});
+      // Note: currentScreen might not be updated immediately in this log, but the state update is scheduled.
+      console.log("checkInitialSession: Session check complete. Next screen determined."); 
     };
 
     if (splashTimerComplete && currentScreen === 'splash') {
@@ -167,9 +181,11 @@ const SeedstreetApp: React.FC = () => {
   }, [setCurrentScreen, setCurrentScreenParams]);
 
   const handleOnboardingComplete = useCallback(async () => {
+    console.log("handleOnboardingComplete: Marking onboarding as seen locally.");
     await localforage.setItem('hasSeenOnboarding', true);
 
     if (userProfile?.id) {
+      console.log("handleOnboardingComplete: User is logged in, updating Supabase profile onboarding_complete for user:", userProfile.id);
       const { error } = await supabase.from('profiles')
         .update({ onboarding_complete: true })
         .eq('id', userProfile.id);
@@ -180,8 +196,10 @@ const SeedstreetApp: React.FC = () => {
       } else {
         setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
         toast.success("Onboarding complete! Welcome to Seedstreet.");
+        console.log("handleOnboardingComplete: Supabase profile updated. User profile state updated.");
       }
     } else {
+      console.log("handleOnboardingComplete: User NOT logged in. Redirecting to auth.");
       setCurrentScreen('auth');
       setCurrentScreenParams({});
     }
