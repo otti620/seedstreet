@@ -3,10 +3,7 @@
 import React from 'react';
 import { Wrench, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface MaintenanceModeScreenProps {
-  message?: string;
-}
+import { MaintenanceModeScreenProps } from '@/types'; // Import from shared types
 
 const MaintenanceModeScreen: React.FC<MaintenanceModeScreenProps> = ({
   message = "We are currently performing scheduled maintenance. We will be back shortly!",

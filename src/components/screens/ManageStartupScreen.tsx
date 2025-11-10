@@ -48,15 +48,15 @@ const formSchema = z.object({
   logo: z.string().emoji({ message: "Logo must be a single emoji." }).min(1, { message: "Logo is required." }),
   tagline: z.string().min(10, { message: "Tagline must be at least 10 characters." }).max(100, { message: "Tagline cannot exceed 100 characters." }),
   pitch: z.string().min(50, { message: "Pitch must be at least 50 characters." }).max(1000, { message: "Pitch cannot exceed 1000 characters." }),
-  description: z.string().max(1000, { message: "Description cannot exceed 1000 characters." }).nullable().optional(), // Changed to nullable().optional()
+  description: z.string().max(1000, { message: "Description cannot exceed 1000 characters." }).nullable().optional(),
   category: z.enum(startupCategories as [string, ...string[]], { message: "Please select a valid category." }),
   location: z.string().min(2, { message: "Location is required." }),
   amount_sought: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
     z.number().min(0, { message: "Amount must be a positive number." }).nullable()
-  ).optional(), // Changed to nullable().optional()
-  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).nullable().optional(), // Changed to nullable().optional()
-  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).nullable().optional(), // Changed to nullable().optional()
+  ).optional(),
+  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).nullable().optional(),
+  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).nullable().optional(),
 });
 
 const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
@@ -79,12 +79,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       logo: '',
       tagline: '',
       pitch: '',
-      description: undefined, // Default to undefined for optional fields
+      description: undefined,
       category: undefined,
       location: '',
-      amount_sought: undefined, // Default to undefined for optional fields
-      currency: undefined, // Default to undefined for optional fields
-      funding_stage: undefined, // Default to undefined for optional fields
+      amount_sought: undefined,
+      currency: undefined,
+      funding_stage: undefined,
     },
   });
 
@@ -130,12 +130,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             logo: startupData.logo,
             tagline: startupData.tagline,
             pitch: startupData.pitch,
-            description: startupData.description || undefined, // Convert null to undefined for optional fields
+            description: startupData.description || undefined,
             category: startupData.category,
             location: startupData.location,
-            amount_sought: startupData.amount_sought || undefined, // Convert null to undefined
-            currency: startupData.currency || undefined, // Convert null to undefined
-            funding_stage: startupData.funding_stage || undefined, // Convert null to undefined
+            amount_sought: startupData.amount_sought ?? undefined, // Use nullish coalescing
+            currency: startupData.currency ?? undefined, // Use nullish coalescing
+            funding_stage: startupData.funding_stage ?? undefined, // Use nullish coalescing
           });
         }
       }
@@ -160,12 +160,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       logo: values.logo,
       tagline: values.tagline,
       pitch: values.pitch,
-      description: values.description || null, // Can be null
+      description: values.description || null,
       category: values.category,
       location: values.location,
-      amount_sought: values.amount_sought || null, // Can be null
-      currency: values.currency || null, // Can be null
-      funding_stage: values.funding_stage || null, // Can be null
+      amount_sought: values.amount_sought || null,
+      currency: values.currency || null,
+      funding_stage: values.funding_stage || null,
       founder_id: userProfileId,
       founder_name: userProfileName,
       status: 'Pending',
@@ -426,7 +426,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <FormLabel className="dark:text-gray-50">Full Description (Optional)</FormLabel>
                     <Textarea
                       {...field}
-                      value={field.value || ''} // Convert undefined/null to empty string for textarea
+                      value={field.value ?? ''} // Use nullish coalescing for value
                       placeholder="Dive deeper! Tell us more about your vision, team, market, and what makes you unique."
                       className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup description"
@@ -448,7 +448,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="dark:text-gray-50">Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select startup category">
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''} aria-label="Select startup category">
                       <FormControl>
                         <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                           <SelectValue placeholder="What industry are you disrupting?" />
@@ -511,7 +511,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                         placeholder="How much capital are you seeking? (e.g., 500000)"
                         className="peer w-full h-12 px-4 pl-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-                        value={field.value === undefined ? '' : field.value}
+                        value={field.value ?? ''} // Use nullish coalescing for value
                         aria-label="Amount to be raised"
                       />
                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -533,7 +533,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="dark:text-gray-50">Currency</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select currency">
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''} aria-label="Select currency">
                       <FormControl>
                         <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                           <SelectValue placeholder="What currency are you raising in?" />
@@ -562,7 +562,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="dark:text-gray-50">Funding Stage</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} aria-label="Select funding stage">
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''} aria-label="Select funding stage">
                       <FormControl>
                         <SelectTrigger className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500">
                           <SelectValue placeholder="What's your current funding stage?" />

@@ -20,8 +20,9 @@ import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
 import {
-  Profile, Startup, Chat, Message, CommunityPost, Notification, ActivityLog, ScreenParams, MaintenanceModeSettings
-} from '@/types'; // Import all types from the shared file
+  Profile, Startup, Chat, Message, CommunityPost, Notification, ActivityLog, ScreenParams, MaintenanceModeSettings, MaintenanceModeScreenProps
+} from '@/types'; // Import all types from the shared file, including MaintenanceModeScreenProps
+
 
 // Prop interfaces for screens (defined here for dynamic imports)
 interface OnboardingScreenProps {
@@ -225,8 +226,6 @@ interface UpgradeToProScreenProps {
   setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
-import { MaintenanceModeScreenProps } from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreenProps
-
 
 // Dynamic imports for screens
 const DynamicOnboardingScreen = dynamic<OnboardingScreenProps>(() => import('./screens/OnboardingScreen'), { ssr: false });
@@ -242,7 +241,7 @@ const DynamicManageStartupScreen = dynamic<ManageStartupScreenProps>(() => impor
 const DynamicNotificationsScreen = dynamic<NotificationsScreenProps>(() => import('./screens/NotificationsScreen'), { ssr: false });
 const DynamicStartupListingCelebrationScreen = dynamic<StartupListingCelebrationScreenProps>(() => import('./screens/StartupListingCelebrationScreen'), { ssr: false });
 const DynamicCreateCommunityPostScreen = dynamic<CreateCommunityPostScreenProps>(() => import('./screens/CreateCommunityPostScreen'), { ssr: false });
-const DynamicHelpAndSupportScreen = dynamic<HelpAndSupportScreenProps>(() => import('./screens/HelpAndSupportScreen'), { ssr: false });
+const DynamicHelpAndSupportScreen = dynamic<HelpAndAndSupportScreenProps>(() => import('./screens/HelpAndSupportScreen'), { ssr: false });
 const DynamicMerchStoreScreen = dynamic<MerchStoreScreenProps>(() => import('./screens/MerchStoreScreen'), { ssr: false });
 const DynamicCommunityPostDetailScreen = dynamic<CommunityPostDetailScreenProps>(() => import('./screens/CommunityPostDetailScreen'), { ssr: false });
 const DynamicAdminDashboardScreen = dynamic<AdminDashboardScreenProps>(() => import('./screens/AdminDashboardScreen'), { ssr: false });

@@ -118,7 +118,7 @@ export interface ActivityLog {
   icon: string | null;
 }
 
-export interface FlaggedMessage { // Added FlaggedMessage interface
+export interface FlaggedMessage {
   id: string;
   message_id: string;
   original_message_id: string | null;
@@ -138,7 +138,7 @@ export interface ScreenParams {
   startupName?: string;
   postId?: string;
   chat?: Chat;
-  chatId?: string; // Added chatId for direct chat navigation
+  chatId?: string;
   authActionType?: 'forgotPassword' | 'changePassword';
   startupRoomId?: string;
 }
@@ -146,4 +146,8 @@ export interface ScreenParams {
 export interface MaintenanceModeSettings {
   enabled: boolean;
   message: string;
+}
+
+export interface MaintenanceModeScreenProps { // Moved here
+  message?: string;
 }
