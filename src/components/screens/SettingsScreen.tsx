@@ -1,25 +1,31 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Palette, Lock } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle'; // Import ThemeToggle
-import MenuItem from '../MenuItem'; // Import MenuItem
-import { motion } from 'framer-motion';
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { ArrowLeft, User, Bell, MessageCircle, ShieldCheck, HelpCircle, FileText, LogOut, Sun, Moon, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import MenuItem from '../MenuItem';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface SettingsScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ setCurrentScreen }) => {
+  const { theme, setTheme } = useTheme();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Failed to log out: " + error.message);
+    } else {
+      toast.success("Logged out successfully!");
+      setCurrentScreen('auth');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
@@ -34,43 +40,42 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setCurrentScreen }) => 
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
-        >
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-gray-50">
-            <Palette className="w-5 h-5 text-purple-700 dark:text-purple-400" /> Theme
-          </h3>
-          <div className="flex items-center justify-between">
-            <p className="text-gray-700 dark:text-gray-200">Choose your preferred theme:</p>
-            <ThemeToggle />
+        {/* Account Settings */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 p-4 border-b border-gray-100 dark:text-gray-50 dark:border-gray-700">Account</h3>
+          <MenuItem icon={<User />} label="Edit Profile" onClick={() => setCurrentScreen('editProfile')} />
+          <MenuItem icon={<Bell />} label="Notification Preferences" onClick={() => setCurrentScreen('notifications')} />
+          <MenuItem icon={<ShieldCheck />} label="Security & Privacy" onClick={() => setCurrentScreen('termsAndPrivacy')} />
+        </div>
+
+        {/* App Preferences */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 p-4 border-b border-gray-100 dark:text-gray-50 dark:border-gray-700">App Preferences</h3>
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              {theme === 'light' && <Sun className="w-5 h-5 text-yellow-500" />}
+              {theme === 'dark' && <Moon className="w-5 h-5 text-blue-500" />}
+              {theme === 'system' && <Monitor className="w-5 h-5 text-gray-500" />}
+              <span className="font-medium text-gray-900 dark:text-gray-50">Theme</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant={theme === 'light' ? 'default' : 'outline'} size="sm" onClick={() => setTheme('light')} className={theme === 'light' ? 'bg-purple-700 text-white hover:bg-purple-800' : 'dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700'}>Light</Button>
+              <Button variant={theme === 'dark' ? 'default' : 'outline'} size="sm" onClick={() => setTheme('dark')} className={theme === 'dark' ? 'bg-purple-700 text-white hover:bg-purple-800' : 'dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700'}>Dark</Button>
+              <Button variant={theme === 'system' ? 'default' : 'outline'} size="sm" onClick={() => setTheme('system')} className={theme === 'system' ? 'bg-purple-700 text-white hover:bg-purple-800' : 'dark:text-gray-50 dark:border-gray-700 dark:hover:bg-gray-700'}>System</Button>
+            </div>
           </div>
-        </motion.div>
+          <MenuItem icon={<MessageCircle />} label="Help & Support" onClick={() => setCurrentScreen('helpAndSupport')} />
+          <MenuItem icon={<FileText />} label="Terms & Privacy" onClick={() => setCurrentScreen('termsAndPrivacy')} />
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="w-full h-12 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800"
         >
-          <h3 className="font-bold text-gray-900 mb-0 p-5 flex items-center gap-2 dark:text-gray-50">
-            <Lock className="w-5 h-5 text-teal-600 dark:text-teal-400" /> Account Security
-          </h3>
-          <MenuItem icon={<Lock />} label="Change Password" onClick={() => setCurrentScreen('authAction', { authActionType: 'changePassword' })} />
-        </motion.div>
-
-        {/* Future settings can go here */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
-        >
-          <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Other Settings</h3>
-          <p className="text-gray-600 dark:text-gray-300">More settings coming soon!</p>
-        </motion.div>
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </button>
       </div>
     </div>
   );

@@ -3,15 +3,16 @@
 import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion'; // Import motion
+import { motion } from 'framer-motion';
+import { ScreenParams, Profile } from '@/types'; // Import types from the shared file
 
 interface RoleSelectorScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   setActiveTab: (tab: string) => void;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
-  investorCount: number; // New prop
-  founderCount: number; // New prop
+  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Updated to accept userId and return Profile | null
+  investorCount: number;
+  founderCount: number;
 }
 
 const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScreen, setActiveTab, logActivity, fetchUserProfile, investorCount, founderCount }) => {
@@ -20,7 +21,7 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
     if (user) {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role, onboarding_complete: true, show_welcome_flyer: true }) // Set show_welcome_flyer to true
+        .update({ role: role, onboarding_complete: true, show_welcome_flyer: true })
         .eq('id', user.id);
 
       if (error) {
@@ -28,14 +29,14 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
         console.error("Error setting user role:", error);
       } else {
         toast.success(`Welcome, ${role}!`);
-        logActivity('role_selected', `Selected role: ${role}`, user.id, role === 'investor' ? '💰' : '💡'); // Log activity
-        await fetchUserProfile(user.id); // Call fetchUserProfile to refresh the user profile state
+        logActivity('role_selected', `Selected role: ${role}`, user.id, role === 'investor' ? '💰' : '💡');
+        await fetchUserProfile(user.id);
         setCurrentScreen('home');
         setActiveTab('home');
       }
     } else {
       toast.error("No active user session found.");
-      setCurrentScreen('auth'); // Redirect to auth if no user
+      setCurrentScreen('auth');
     }
   };
 
@@ -46,65 +47,45 @@ const RoleSelectorScreen: React.FC<RoleSelectorScreenProps> = ({ setCurrentScree
         <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-teal-200 rounded-full filter blur-3xl opacity-30 animate-float-delay-2s dark:bg-teal-800" />
       </div>
 
-      <div className="relative z-10 w-full max-w-2xl">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-gray-50">
-            Welcome to Seedstreet, <span className="bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent">User</span>!
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">Choose your path</p>
-        </div>
+      <div className="relative z-10 w-full max-w-md mx-auto text-center space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 100, damping: 10 }}
+        >
+          <h1 className="text-3xl font-bold text-gray-900 mb-3 dark:text-gray-50">What's Your Role?</h1>
+          <p className="text-gray-600 text-lg dark:text-gray-300">Choose how you'll engage with Seedstreet.</p>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Investor Card */}
-          <motion.button 
-            whileHover={{ scale: 1.02, translateY: -5 }}
+        <div className="grid grid-cols-1 gap-6">
+          <motion.button
+            whileHover={{ scale: 1.03, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 10, delay: 0.2 }}
             onClick={() => handleRoleSelection('investor')}
-            className="group relative bg-gradient-to-br from-purple-700 to-purple-900 rounded-3xl p-8 text-white hover:shadow-2xl transition-all duration-300 active:scale-95"
-            aria-label="Select role: Investor"
+            className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col items-center justify-center space-y-3 cursor-pointer dark:bg-gray-800 dark:border-gray-700"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="relative space-y-6">
-              <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center text-5xl animate-float">
-                💰
-              </div>
-              
-              <div>
-                <h3 className="text-2xl font-bold mb-2">I want to invest</h3>
-                <p className="text-white/80 text-sm">Back startups and watch your impact grow</p>
-              </div>
-
-              <div className="inline-block px-4 py-1.5 bg-teal-500/30 border border-teal-400/40 rounded-full text-teal-100 text-sm font-semibold">
-                Join {investorCount.toLocaleString()}+ investors
-              </div>
-            </div>
+            <span className="text-5xl">💰</span>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Investor</h2>
+            <p className="text-gray-600 text-sm dark:text-gray-300">Discover and fund promising startups.</p>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{investorCount} investors already here!</span>
           </motion.button>
 
-          {/* Founder Card */}
-          <motion.button 
-            whileHover={{ scale: 1.02, translateY: -5 }}
+          <motion.button
+            whileHover={{ scale: 1.03, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 10, delay: 0.3 }}
             onClick={() => handleRoleSelection('founder')}
-            className="group relative bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-8 text-white hover:shadow-2xl transition-all duration-300 active:scale-95"
-            aria-label="Select role: Founder"
+            className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col items-center justify-center space-y-3 cursor-pointer dark:bg-gray-800 dark:border-gray-700"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-teal-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="relative space-y-6">
-              <div className="w-20 h-20 mx-auto bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center text-5xl animate-float-delay-1s">
-                💡
-              </div>
-              
-              <div>
-                <h3 className="text-2xl font-bold mb-2">I'm building something</h3>
-                <p className="text-white/80 text-sm">Get funded by people who actually get it</p>
-              </div>
-
-              <div className="inline-block px-4 py-1.5 bg-purple-500/30 border border-purple-400/40 rounded-full text-purple-100 text-sm font-semibold">
-                Join {founderCount.toLocaleString()}+ founders
-              </div>
-            </div>
+            <span className="text-5xl">💡</span>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Founder</h2>
+            <p className="text-gray-600 text-sm dark:text-gray-300">List your startup and attract investors.</p>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{founderCount} founders already here!</span>
           </motion.button>
         </div>
       </div>

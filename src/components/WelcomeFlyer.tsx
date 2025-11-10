@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import { Profile } from '@/types'; // Import Profile from shared types
 
 interface WelcomeFlyerProps {
   userName: string;
@@ -13,30 +14,23 @@ interface WelcomeFlyerProps {
 const WelcomeFlyer: React.FC<WelcomeFlyerProps> = ({ userName, onDismiss }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 100 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 100 }}
+      initial={{ y: "100%", opacity: 0 }}
+      animate={{ y: "0%", opacity: 1 }}
+      exit={{ y: "100%", opacity: 0 }}
       transition={{ type: "spring", stiffness: 100, damping: 10 }}
-      className="fixed bottom-24 left-4 right-4 z-50 max-w-md mx-auto bg-gradient-to-br from-purple-700 to-teal-600 text-white rounded-2xl p-6 shadow-xl flex flex-col items-center text-center space-y-4 border-2 border-white/30"
+      className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-purple-700 to-teal-600 text-white shadow-lg rounded-t-2xl"
     >
-      <button
-        onClick={onDismiss}
-        className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
-        aria-label="Dismiss welcome message"
-      >
-        <X className="w-5 h-5" />
-      </button>
-      <Sparkles className="w-12 h-12 text-yellow-300 animate-bounce" />
-      <h2 className="text-2xl font-bold">Welcome, {userName}!</h2>
-      <p className="text-white/90 leading-relaxed">
-        We're thrilled to have you on Seedstreet. Explore startups, connect with founders, and make an impact!
+      <div className="flex items-start justify-between mb-2">
+        <h2 className="text-xl font-bold">Welcome, {userName}! 👋</h2>
+        <Button variant="ghost" size="icon" onClick={onDismiss} className="text-white hover:bg-white/20" aria-label="Dismiss welcome message">
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
+      <p className="text-sm mb-4">
+        We're thrilled to have you on Seedstreet. Explore startups, connect with founders, or list your own venture!
       </p>
-      <Button
-        onClick={onDismiss}
-        className="w-full bg-white text-purple-700 rounded-xl font-semibold hover:bg-gray-100 active:scale-95 transition-all shadow-md"
-        aria-label="Start exploring"
-      >
-        Start Exploring
+      <Button onClick={onDismiss} className="w-full bg-white text-purple-700 hover:bg-gray-100 font-semibold" aria-label="Get started">
+        Get Started
       </Button>
     </motion.div>
   );

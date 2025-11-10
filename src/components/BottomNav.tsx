@@ -1,73 +1,62 @@
 "use client";
 
 import React from 'react';
-import { Home, Rocket, MessageCircle, Sparkles, User } from 'lucide-react';
+import { Home, Rocket, MessageCircle, Users, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Profile } from '@/types'; // Import Profile from shared types
 
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  userRole: string | null; // Not directly used in this component, but kept for consistency if needed later
+  userRole: string | null;
 }
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, userRole }) => {
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'startups', icon: Rocket, label: 'Startups' },
-    { id: 'chats', icon: MessageCircle, label: 'Chats', badge: 2 },
-    { id: 'community', icon: Sparkles, label: 'Community' },
-    { id: 'profile', icon: User, label: 'Profile' }
+    { id: 'startups', icon: Rocket, label: 'Startups', showForRole: 'investor' },
+    { id: 'chats', icon: MessageCircle, label: 'Chats' },
+    { id: 'community', icon: Users, label: 'Community' },
+    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-50 dark:bg-gray-900 dark:border-gray-800 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex justify-around items-center max-w-lg mx-auto">
-        {navItems.map(item => {
-          const Icon = item.icon;
+    <motion.nav
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 120, damping: 15 }}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-40 dark:bg-gray-900 dark:border-gray-800"
+    >
+      <div className="flex justify-around h-16 items-center max-w-md mx-auto">
+        {navItems.map((item) => {
+          // If item has showForRole, only render if userRole matches or is admin
+          if (item.showForRole && userRole !== item.showForRole && userRole !== 'admin') {
+            return null;
+          }
+
           const isActive = activeTab === item.id;
-          
           return (
-            <motion.button
+            <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              whileTap={{ scale: 0.9 }}
-              className={`relative flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all ${
-                isActive ? 'scale-105' : 'scale-100'
+              className={`flex flex-col items-center justify-center flex-1 h-full text-sm font-medium transition-colors relative ${
+                isActive ? 'text-purple-700 dark:text-purple-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
               aria-label={item.label}
             >
-              <div className="relative">
-                <Icon 
-                  className={`w-6 h-6 transition-all ${
-                    isActive 
-                      ? 'text-purple-700 scale-110 dark:text-purple-400' 
-                      : 'text-gray-400 dark:text-gray-500'
-                  }`}
-                />
-                {item.badge && (
-                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-br from-purple-700 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    {item.badge}
-                  </div>
-                )}
-              </div>
-              <span className={`text-xs font-medium transition-all ${
-                isActive 
-                  ? 'text-purple-700 font-semibold dark:text-purple-400' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                {item.label}
-              </span>
               {isActive && (
                 <motion.div
-                  layoutId="activeTabIndicator" // Unique layoutId for shared layout animation
-                  className="absolute -top-1 w-1 h-1 bg-gradient-to-r from-purple-700 to-teal-600 rounded-full animate-pulse-dot"
+                  layoutId="activeTabIndicator"
+                  className="absolute top-0 h-0.5 w-full bg-gradient-to-r from-purple-700 to-teal-600 rounded-b-full"
                 />
               )}
-            </motion.button>
+              <item.icon className={`w-6 h-6 mb-1 ${isActive ? 'text-purple-700 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400'}`} />
+              <span className="text-xs">{item.label}</span>
+            </button>
           );
         })}
       </div>
-    </div>
+    </motion.nav>
   );
 };
 

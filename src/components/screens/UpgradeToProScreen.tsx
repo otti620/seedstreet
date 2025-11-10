@@ -1,58 +1,78 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Crown, Sparkles, DollarSign, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface UpgradeToProScreenProps {
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
 const UpgradeToProScreen: React.FC<UpgradeToProScreenProps> = ({ setCurrentScreen }) => {
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-700 via-purple-600 to-teal-500 flex items-center justify-center p-6 text-white overflow-hidden">
-      {/* Animated background orbs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
-        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" />
-        <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delay" />
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-50 to-teal-50 flex flex-col dark:from-gray-900 dark:to-gray-800">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 dark:bg-gray-900 dark:border-gray-800 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentScreen('home')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors" aria-label="Back to home">
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Upgrade to Pro</h2>
+        </div>
       </div>
 
-      <div className="relative z-10 text-center space-y-8 max-w-md">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-center">
         <motion.div
-          initial={{ scale: 0.5, opacity: 0, y: -50 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 100, damping: 10 }}
-          className="space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-gradient-to-br from-purple-700 to-teal-600 rounded-2xl p-8 text-white shadow-lg"
         >
-          <Crown className="w-24 h-24 mx-auto text-yellow-300 animate-bounce" />
-          <h1 className="text-4xl font-bold">Unlock Pro Features!</h1>
-          <p className="text-white/90 text-xl leading-relaxed">
-            You've reached the limit for free listings. Upgrade to a Pro account to list more startups and access exclusive benefits.
+          <Crown className="w-20 h-20 mx-auto mb-4 animate-pulse" />
+          <h3 className="text-3xl font-bold mb-2">Unlock Pro Features!</h3>
+          <p className="text-white/90 text-lg">
+            Take your Seedstreet experience to the next level.
           </p>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 100, damping: 10 }}
-          className="space-y-4"
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700"
         >
+          <h4 className="text-xl font-bold text-gray-900 mb-4 dark:text-gray-50">Why Go Pro?</h4>
+          <ul className="text-left space-y-3 text-gray-700 dark:text-gray-200">
+            <li className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <span>List multiple startups (Founders)</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <span>Advanced analytics & insights</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <span>Priority support</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <span>Exclusive investor matching (Investors)</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <span>Ad-free experience</span>
+            </li>
+          </ul>
           <Button
             onClick={() => alert("Simulating upgrade to Pro!")} // Placeholder for actual upgrade logic
-            className="w-full px-8 py-4 bg-yellow-400 text-purple-900 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
-            aria-label="Upgrade to Pro"
+            className="mt-8 px-8 py-4 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-full text-lg font-semibold shadow-lg hover:shadow-xl active:scale-95 transition-all"
+            aria-label="Upgrade to Pro now"
           >
-            <Sparkles className="w-6 h-6" /> Upgrade to Pro Now
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setCurrentScreen('home')}
-            className="w-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            aria-label="No thanks, go back"
-          >
-            No thanks, maybe later
+            <DollarSign className="w-5 h-5 mr-2" /> Upgrade to Pro Now
           </Button>
         </motion.div>
       </div>
