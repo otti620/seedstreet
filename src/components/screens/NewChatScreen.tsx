@@ -9,65 +9,10 @@ import { getAvatarUrl } from '@/lib/default-avatars';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
-
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null;
-  show_welcome_flyer: boolean;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
-}
-
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  pitch: string;
-  description: string | null;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  amount_raised: number;
-}
-
-interface Chat {
-  id: string;
-  startup_id: string;
-  startup_name: string;
-  startup_logo: string;
-  last_message_text: string;
-  last_message_timestamp: string;
-  unread_count: number;
-  investor_id: string;
-  founder_id: string;
-  user_ids: string[];
-  unread_counts: { [key: string]: number };
-}
+import { Profile, Startup, Chat, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface NewChatScreenProps {
-  setCurrentScreen: (screen: string, params?: { chat?: Chat }) => void; // Updated param type
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   userProfile: Profile;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
 }
@@ -83,7 +28,7 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
       const { data, error } = await supabase
         .from('startups')
         .select('*')
-        .neq('founder_id', userProfile.id); // Exclude own startups
+        .neq('founder_id', userProfile.id);
       if (error) {
         console.error("Error fetching startups:", error);
         toast.error("Failed to load startups.");
@@ -108,7 +53,6 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
         throw new Error("Your profile information is incomplete. Cannot start chat.");
       }
 
-      // Check for existing chat
       const { data: existingChats, error: fetchChatError } = await supabase
         .from('chats')
         .select('*')
@@ -123,10 +67,9 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
 
       if (existingChats) {
         toast.info("Continuing existing chat.");
-        return existingChats as Chat;
+        return { data: existingChats as Chat, error: null }; // Return as { data, error }
       }
 
-      // Fetch founder profile to get their name
       const { data: founderProfile, error: founderError } = await supabase
         .from('profiles')
         .select('name, email, role')
@@ -170,7 +113,6 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
         throw createChatError;
       }
 
-      // Increment active_chats and room_members for the startup
       const { data: updatedStartup, error: updateStartupError } = await supabase
         .from('startups')
         .update({
@@ -183,7 +125,6 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
 
       if (updateStartupError) {
         console.error("Error updating startup chat metrics:", updateStartupError);
-        // Don't throw, as chat was already created
       }
 
       await supabase.from('notifications').insert({
@@ -194,14 +135,14 @@ const NewChatScreen: React.FC<NewChatScreenProps> = ({ setCurrentScreen, userPro
         related_entity_id: newChat.id,
       });
 
-      return newChat as Chat;
+      return { data: newChat as Chat, error: null }; // Return as { data, error }
     },
     {
       onSuccess: (newChat) => {
         toast.success("New chat started!");
         logActivity('chat_started', `Started a chat with ${newChat.founder_name} about ${newChat.startup_name}`, newChat.id, 'MessageCircle');
 
-        setCurrentScreen('chat', { chat: newChat }); // Pass the full chat object
+        setCurrentScreen('chat', { chat: newChat });
       },
       onError: (error) => {
         toast.error(`Failed to start chat: ${error.message}`);

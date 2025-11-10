@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import Image from next/image
-import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react'; // Removed ImageIcon, Upload
+import Image from 'next/image';
+import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,34 +20,16 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAvatarUrl, DEFAULT_AVATAR_COUNT } from '@/lib/default-avatars'; // Import getAvatarUrl and DEFAULT_AVATAR_COUNT
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea component
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null; // Changed from avatar_url
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
-}
+import { getAvatarUrl, DEFAULT_AVATAR_COUNT } from '@/lib/default-avatars';
+import { Textarea } from '@/components/ui/textarea';
+import { Profile } from '@/types'; // Import Profile from the shared file
 
 interface EditProfileScreenProps {
   setCurrentScreen: (screen: string) => void;
   userProfile: Profile;
   setUserProfile: (profile: Profile | null) => void;
-  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity
-  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Updated to accept userId and return Profile | null
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
 }
 
 const formSchema = z.object({
@@ -57,15 +39,15 @@ const formSchema = z.object({
   bio: z.string().max(500, { message: "Bio cannot exceed 500 characters." }).nullable(),
   location: z.string().nullable(),
   phone: z.string().nullable(),
-  avatar_id: z.number().min(1).max(DEFAULT_AVATAR_COUNT).nullable(), // Add avatar_id to schema
+  avatar_id: z.number().min(1).max(DEFAULT_AVATAR_COUNT).nullable(),
 });
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   setCurrentScreen,
   userProfile,
   setUserProfile,
-  logActivity, // Destructure logActivity
-  fetchUserProfile, // Destructure fetchUserProfile
+  logActivity,
+  fetchUserProfile,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -75,15 +57,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       first_name: userProfile.first_name || '',
       last_name: userProfile.last_name || '',
       email: userProfile.email || '',
-      bio: userProfile.bio || '',
-      location: userProfile.location || '',
-      phone: userProfile.phone || '',
-      avatar_id: userProfile.avatar_id || 1, // Default to first avatar if none set
+      bio: userProfile.bio || null, // Keep as null for Zod validation, convert to '' for input value
+      location: userProfile.location || null, // Keep as null for Zod validation
+      phone: userProfile.phone || null, // Keep as null for Zod validation
+      avatar_id: userProfile.avatar_id || 1,
     },
   });
-
-  // No need for useEffect to fetch startup data, userProfile is passed as a prop
-  // The form's defaultValues are set directly from userProfile.
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -93,12 +72,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       .update({
         first_name: values.first_name,
         last_name: values.last_name,
-        name: `${values.first_name} ${values.last_name}`, // Update full name
+        name: `${values.first_name} ${values.last_name}`,
         email: values.email,
         bio: values.bio,
         location: values.location,
         phone: values.phone,
-        avatar_id: values.avatar_id, // Update avatar_id
+        avatar_id: values.avatar_id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userProfile.id);
@@ -108,18 +87,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       console.error("Error updating profile:", error);
     } else {
       toast.success("Profile updated successfully!");
-      // Update local userProfile state
-      const updatedProfile = await fetchUserProfile(userProfile.id); // Re-fetch user profile to ensure all data is fresh
+      const updatedProfile = await fetchUserProfile(userProfile.id);
       if (updatedProfile) {
         setUserProfile(updatedProfile);
       }
-      logActivity('profile_updated', `Updated profile details`, userProfile.id, 'User'); // Log activity
-      setCurrentScreen('home'); // Go back to profile dashboard
+      logActivity('profile_updated', `Updated profile details`, userProfile.id, 'User');
+      setCurrentScreen('home');
     }
     setLoading(false);
   };
 
-  // If userProfile is not available, render a loading state or redirect
   if (!userProfile) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center dark:bg-gray-950">
@@ -241,7 +218,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       type="email"
                       placeholder=" "
                       className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
-                      disabled // Email is usually not editable directly here
+                      disabled
                       aria-label="Email address"
                     />
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 peer-focus:text-purple-700 dark:peer-focus:text-purple-500" />
@@ -259,6 +236,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   <FormLabel className="dark:text-gray-50">Bio</FormLabel>
                   <Textarea
                     {...field}
+                    value={field.value || ''} // Convert null to empty string for textarea
                     placeholder="Tell us about yourself..."
                     className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                     aria-label="Biography"
@@ -277,6 +255,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   <div className="relative">
                     <Input
                       {...field}
+                      value={field.value || ''} // Convert null to empty string for input
                       type="text"
                       placeholder=" "
                       className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
@@ -298,6 +277,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   <div className="relative">
                     <Input
                       {...field}
+                      value={field.value || ''} // Convert null to empty string for input
                       type="tel"
                       placeholder=" "
                       className="peer w-full h-12 px-12 border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"

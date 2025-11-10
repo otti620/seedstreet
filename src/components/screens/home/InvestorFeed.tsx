@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye, DollarSign, Edit } from 'lucide-react'; // Import Eye, DollarSign, and Edit icons
+import { Rocket, MessageCircle, Bookmark, Check, Bell, Search, Filter, BrainCircuit, Eye, DollarSign, Edit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -11,53 +11,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import MarketCapDisplay from '@/components/MarketCapDisplay'; // Import the new MarketCapDisplay component
-import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  description: string;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  valuation: number | null; // Added valuation
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import MarketCapDisplay from '@/components/MarketCapDisplay';
+import { formatCurrency } from '@/lib/utils';
+import { Startup, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface InvestorFeedProps {
   startups: Startup[];
   bookmarkedStartups: string[];
-  interestedStartups: string[]; // NEW: Add interestedStartups prop
+  interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
-  toggleInterest: (startupId: string) => void; // NEW: Add toggleInterest prop
-  // Removed setSelectedStartup and setSelectedChat props
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  toggleInterest: (startupId: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   loading: boolean;
   handleStartChat: (startup: Startup) => Promise<void>;
-  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
-  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
-  userProfileId: string | null; // NEW: Add userProfileId prop
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  userProfileId: string | null;
 }
 
 const startupCategories = [
@@ -69,16 +38,15 @@ const startupCategories = [
 const InvestorFeed: React.FC<InvestorFeedProps> = ({
   startups,
   bookmarkedStartups,
-  interestedStartups, // NEW: Destructure interestedStartups
+  interestedStartups,
   toggleBookmark,
-  toggleInterest, // NEW: Destructure toggleInterest
-  // Removed setSelectedStartup and setSelectedChat from destructuring
+  toggleInterest,
   setCurrentScreen,
   loading,
   handleStartChat,
-  fetchStartups, // NEW: Destructure fetchStartups
-  handleJoinStartupRoom, // NEW: Destructure handleJoinStartupRoom
-  userProfileId, // NEW: Destructure userProfileId
+  fetchStartups,
+  handleJoinStartupRoom,
+  userProfileId,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -202,8 +170,8 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
           filteredStartups.length > 0 ? (
             filteredStartups.map(startup => {
               const isBookmarked = bookmarkedStartups.includes(startup.id);
-              const isInterested = interestedStartups.includes(startup.id); // NEW: Check if interested
-              const isMyStartup = userProfileId === startup.founder_id; // NEW: Check if it's the current user's startup
+              const isInterested = interestedStartups.includes(startup.id);
+              const isMyStartup = userProfileId === startup.founder_id;
 
               return (
                 <motion.div
@@ -237,7 +205,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
                     </div>
-                    {!isMyStartup && ( // Only show bookmark button if not my startup
+                    {!isMyStartup && (
                       <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
                         <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
                       </button>
@@ -286,7 +254,7 @@ const InvestorFeed: React.FC<InvestorFeedProps> = ({
                           View Details
                         </button>
                         <button onClick={() => {
-                          handleJoinStartupRoom(startup); // Updated to use handleJoinStartupRoom
+                          handleJoinStartupRoom(startup);
                         }} className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700" aria-label={`Join room for ${startup.name}`}>
                           <Rocket className="w-4 h-4" />
                           Join room 🚀

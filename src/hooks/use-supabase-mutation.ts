@@ -44,6 +44,7 @@ export const useSupabaseMutation = <TVariables, TData>(
         details: err.message,
         hint: '',
         message: err.message,
+        name: 'PostgrestError', // Added missing 'name' property
       };
       setError(postgrestError);
       toast.error(options?.errorMessage || `An unexpected error occurred: ${err.message}`);

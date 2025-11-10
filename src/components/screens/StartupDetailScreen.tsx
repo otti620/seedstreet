@@ -3,44 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  pitch: string;
-  description: string | null;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  amount_raised: number;
-}
-
-interface Profile {
-  id: string;
-  name: string | null;
-  email: string | null;
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { Startup, Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface StartupDetailScreenProps {
   selectedStartup: Startup;
@@ -48,21 +11,21 @@ interface StartupDetailScreenProps {
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
-  // Removed setSelectedChat prop
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
   handleStartChat: (startup: Startup) => Promise<void>;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: (userId: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
   userProfile: Profile | null;
-  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
-  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  userProfileId: string | null;
 }
 
 // Dynamically import the content component
-const DynamicStartupDetailContent = dynamic(
+const DynamicStartupDetailContent = dynamic<StartupDetailScreenProps>(
   () => import('./StartupDetailContent').then((mod) => mod.default),
   {
     ssr: false,

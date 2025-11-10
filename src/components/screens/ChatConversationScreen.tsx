@@ -16,67 +16,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Chat {
-  id: string;
-  startup_id: string;
-  startup_name: string;
-  startup_logo: string;
-  last_message_text: string;
-  last_message_timestamp: string;
-  unread_count: number;
-  investor_id: string;
-  founder_id: string;
-  user_ids: string[];
-  unread_counts: { [key: string]: number };
-}
-
-interface Message {
-  id: string;
-  chat_id: string;
-  sender_id: string;
-  sender_name: string;
-  text: string;
-  created_at: string;
-  read: boolean;
-}
-
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-}
+import { Skeleton } from '@/components/ui/skeleton';
+import { Chat, Message, Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface ChatConversationScreenProps {
-  selectedChat: Chat | null; // Make selectedChat nullable
-  // messages prop removed
-  setCurrentScreen: (screen: string, params?: { startupId?: string, chatId?: string }) => void;
+  selectedChat: Chat | null;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   setActiveTab: (tab: string) => void;
   userProfile: Profile | null;
   logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
-  fetchMessagesForChat: (chatId: string) => Promise<Message[] | null>; // New prop
+  fetchMessagesForChat: (chatId: string) => Promise<Message[] | null>;
 }
 
 const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
   selectedChat,
-  // messages prop removed
   setCurrentScreen,
   setActiveTab,
   userProfile,
   logActivity,
-  fetchMessagesForChat, // New prop
+  fetchMessagesForChat,
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]); // Local state for messages
-  const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null); // State for the other user's profile
-  const [loadingMessages, setLoadingMessages] = useState(true); // Loading state for messages
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [otherUserProfile, setOtherUserProfile] = useState<Profile | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch other user's profile
   useEffect(() => {
     const fetchOtherUserProfile = async () => {
       if (!userProfile?.id || !selectedChat) return;
@@ -101,7 +67,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     fetchOtherUserProfile();
   }, [userProfile?.id, selectedChat]);
 
-  // Fetch messages for the selected chat and set up real-time subscription
   useEffect(() => {
     if (!selectedChat?.id) {
       setOptimisticMessages([]);
@@ -120,14 +85,12 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
 
     loadMessages();
 
-    // Real-time subscription for messages in this specific chat
     const channel = supabase
       .channel(`chat_messages:${selectedChat.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
         setOptimisticMessages(prevMessages => {
           if (payload.eventType === 'INSERT') {
             const newMessage = payload.new as Message;
-            // Check if message already exists (e.g., from optimistic update)
             if (!prevMessages.some(msg => msg.id === newMessage.id)) {
               return [...prevMessages, newMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
             }
@@ -138,7 +101,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             const deletedMessageId = (payload.old as Message).id;
             return prevMessages.filter(msg => msg.id !== deletedMessageId);
           }
-          return prevMessages; // No change or unhandled event type
+          return prevMessages;
         });
       })
       .subscribe();
@@ -146,7 +109,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedChat?.id, fetchMessagesForChat]); // Re-run when selectedChat.id changes
+  }, [selectedChat?.id, fetchMessagesForChat]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -164,7 +127,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     setNewMessage('');
 
     const tempMessage: Message = {
-      id: `temp-${Date.now()}`, // Temporary ID
+      id: `temp-${Date.now()}`,
       chat_id: selectedChat.id,
       sender_id: userProfile.id,
       sender_name: userProfile.name,
@@ -185,13 +148,8 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     if (error) {
       toast.error("Failed to send message: " + error.message);
       console.error("Error sending message:", error);
-      // Revert optimistic update on error
       setOptimisticMessages(prevMessages => prevMessages.filter(msg => msg.id !== tempMessage.id));
     } else if (newMessageData) {
-      // The real-time subscription will handle updating optimisticMessages with the actual message
-      // No need to manually replace tempMessage here.
-      
-      // Update chat's last message and unread counts
       const otherUserId = selectedChat.user_ids.find(id => id !== userProfile.id);
       const newUnreadCounts = { ...selectedChat.unread_counts };
       if (otherUserId) {
@@ -204,7 +162,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
         unread_counts: newUnreadCounts,
       }).eq('id', selectedChat.id);
 
-      // Send notification to the other user
       if (otherUserId && selectedChat.startup_name) {
         await supabase.from('notifications').insert({
           user_id: otherUserId,
@@ -259,7 +216,6 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
     } else if (otherUserProfile?.id === senderId) {
       return otherUserProfile.avatar_id ? getAvatarUrl(otherUserProfile.avatar_id) : undefined;
     }
-    // Fallback to startup logo if other user profile not found or for general chat context
     return selectedChat?.startup_logo;
   };
 
@@ -397,7 +353,7 @@ const ChatConversationScreen: React.FC<ChatConversationScreenProps> = ({
             <Paperclip className="w-5 h-5" />
           </button>
           <Textarea
-            key={selectedChat?.id} // Use chat ID as key to reset textarea on chat change
+            key={selectedChat?.id}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {

@@ -8,34 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAvatarUrl } from '@/lib/default-avatars';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion'; // Import motion for animations
-
-interface Chat {
-  id: string;
-  startup_id: string;
-  startup_name: string;
-  startup_logo: string;
-  last_message_text: string;
-  last_message_timestamp: string;
-  unread_count: number;
-  investor_id: string;
-  founder_id: string;
-  user_ids: string[];
-  unread_counts: { [key: string]: number };
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: Chat;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { motion } from 'framer-motion';
+import { Chat, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface ChatListScreenProps {
   chats: Chat[];
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated param type
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   setActiveTab: (tab: string) => void;
   activeTab: string;
   userRole: 'investor' | 'founder' | 'admin' | null;
@@ -49,7 +27,7 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   userRole,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(false);
 
   const filteredChats = chats.filter(chat =>
     chat.startup_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,12 +37,17 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
   );
 
   const handleChatClick = (chat: Chat) => {
-    setCurrentScreen('chat', { chat: chat }); // Pass the full chat object
+    setCurrentScreen('chat', { chat: chat });
   };
 
   const handleNewChatClick = () => {
     setCurrentScreen('newChat');
   };
+
+  const getUserId = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id;
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
@@ -133,11 +116,12 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                   {new Date(chat.last_message_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
-                {chat.unread_counts && chat.unread_counts[supabase.auth.user?.()?.id || ''] > 0 && (
+                {/* Use getUserId to safely access user ID */}
+                {getUserId().then(userId => chat.unread_counts && chat.unread_counts[userId || ''] > 0 && (
                   <span className="mt-1 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {chat.unread_counts[supabase.auth.user?.()?.id || '']}
+                    {chat.unread_counts[userId || '']}
                   </span>
-                )}
+                ))}
               </div>
             </motion.button>
           ))

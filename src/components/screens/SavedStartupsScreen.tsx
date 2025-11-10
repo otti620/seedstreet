@@ -1,47 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Bookmark, Eye, Rocket, MessageCircle, DollarSign, Edit } from 'lucide-react'; // Added Edit icon
+import { ArrowLeft, Bookmark, Eye, Rocket, MessageCircle, DollarSign, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
-
-// Define TypeScript interfaces for data structures
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  description: string;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  valuation: number | null; // Added valuation
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { formatCurrency } from '@/lib/utils';
+import { Startup, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface SavedStartupsScreenProps {
   setCurrentScreen: (screen: string, params?: ScreenParams) => void;
-  userProfileId: string;
+  userProfileId: string | null; // Changed to string | null
   bookmarkedStartups: string[];
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
@@ -49,8 +19,7 @@ interface SavedStartupsScreenProps {
   handleStartChat: (startup: Startup) => Promise<void>;
   fetchStartups: () => Promise<void>;
   handleJoinStartupRoom: (startup: Startup) => Promise<void>;
-  startups: Startup[]; // Pass all startups to filter from
-  userProfileId: string | null; // NEW: Add userProfileId prop
+  startups: Startup[];
 }
 
 const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
@@ -63,20 +32,19 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
   handleStartChat,
   fetchStartups,
   handleJoinStartupRoom,
-  startups, // Destructure all startups
+  startups,
 }) => {
   const [loading, setLoading] = useState(true);
   const [savedStartups, setSavedStartups] = useState<Startup[]>([]);
 
   useEffect(() => {
     setLoading(true);
-    // Filter from the global 'startups' array based on bookmarked and interested IDs
     const filtered = startups.filter(startup =>
       bookmarkedStartups.includes(startup.id) || interestedStartups.includes(startup.id)
     );
     setSavedStartups(filtered);
     setLoading(false);
-  }, [startups, bookmarkedStartups, interestedStartups]); // Depend on global startups and user's saved lists
+  }, [startups, bookmarkedStartups, interestedStartups]);
 
   const renderStartupCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
@@ -132,7 +100,7 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
             savedStartups.map(startup => {
               const isBookmarked = bookmarkedStartups.includes(startup.id);
               const isInterested = interestedStartups.includes(startup.id);
-              const isMyStartup = userProfileId === startup.founder_id; // NEW: Check if it's the current user's startup
+              const isMyStartup = userProfileId === startup.founder_id;
 
               return (
                 <motion.div
@@ -150,7 +118,7 @@ const SavedStartupsScreen: React.FC<SavedStartupsScreenProps> = ({
                       <h3 className="font-bold text-gray-900 dark:text-gray-50">{startup.name}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{startup.tagline}</p>
                     </div>
-                    {!isMyStartup && ( // Only show bookmark button if not my startup
+                    {!isMyStartup && (
                       <button onClick={() => toggleBookmark(startup.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isBookmarked ? 'bg-gradient-to-br from-purple-700 to-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark startup"}>
                         <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
                       </button>

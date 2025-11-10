@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import Image from next/image
+import Image from 'next/image';
 import { ArrowLeft, Image as ImageIcon, Send, X, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,47 +20,20 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import { getAvatarUrl } from '@/lib/default-avatars';
 import { motion } from 'framer-motion';
-import { Label } from '@/components/ui/label'; // Import Label for floating labels
-
-// Define TypeScript interfaces for data structures
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_id: number | null; // Changed from avatar_url
-}
-
-interface CommunityPost {
-  id: string;
-  author_id: string;
-  author_name: string;
-  author_avatar_id: number | null; // Changed from author_avatar_url
-  content: string;
-  image_url: string | null;
-  created_at: string;
-  likes: string[];
-  comments_count: number;
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { Label } from '@/components/ui/label';
+import { Profile, CommunityPost, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface CreateCommunityPostScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   userProfile: Profile;
-  postId?: string; // Optional prop for editing
+  postId?: string;
 }
 
 const formSchema = z.object({
   content: z.string().min(1, { message: "Post content cannot be empty." }).max(1000, { message: "Post cannot exceed 1000 characters." }),
-  image_url: z.string().url({ message: "Invalid image URL." }).optional().or(z.literal('')), // Keep image_url for existing posts, but no upload
+  image_url: z.string().url({ message: "Invalid image URL." }).optional().or(z.literal('')),
 });
 
 const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
@@ -69,7 +42,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
   postId,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // For loading existing post data
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,7 +52,6 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
     },
   });
 
-  // Fetch existing post data if in edit mode
   useEffect(() => {
     if (postId) {
       const fetchPost = async () => {
@@ -93,7 +65,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
         if (error) {
           toast.error("Failed to load post data: " + error.message);
           console.error("Error fetching post:", error);
-          setCurrentScreen('home'); // Go back if data can't be loaded
+          setCurrentScreen('home');
         } else if (data) {
           form.reset({
             content: data.content,
@@ -104,7 +76,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
       };
       fetchPost();
     } else {
-      setInitialLoading(false); // Not in edit mode, no initial loading needed
+      setInitialLoading(false);
     }
   }, [postId, form, setCurrentScreen]);
 
@@ -113,28 +85,26 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
 
     const postData = {
       content: values.content,
-      image_url: values.image_url || null, // Use the URL from the form, or null
+      image_url: values.image_url || null,
       updated_at: new Date().toISOString(),
     };
 
     let error;
     if (postId) {
-      // Update existing post
       const { error: updateError } = await supabase
         .from('community_posts')
         .update(postData)
         .eq('id', postId)
-        .eq('author_id', userProfile.id); // Ensure only author can update
+        .eq('author_id', userProfile.id);
       error = updateError;
     } else {
-      // Insert new post
       const { error: insertError } = await supabase
         .from('community_posts')
         .insert({
           ...postData,
           author_id: userProfile.id,
           author_name: userProfile.name,
-          author_avatar_id: userProfile.avatar_id, // Use avatar_id
+          author_avatar_id: userProfile.avatar_id,
           likes: [],
           comments_count: 0,
         });
@@ -146,7 +116,7 @@ const CreateCommunityPostScreen: React.FC<CreateCommunityPostScreenProps> = ({
       console.error(`Error ${postId ? 'updating' : 'creating'} post:`, error);
     } else {
       toast.success(`Post ${postId ? 'updated' : 'created'} successfully!`);
-      setCurrentScreen('home'); // Go back to community feed
+      setCurrentScreen('home');
     }
     setLoading(false);
   };

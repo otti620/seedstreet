@@ -3,6 +3,18 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+// Extend the Navigator interface to include the 'connection' property
+declare global {
+  interface Navigator {
+    connection?: NetworkInformation;
+  }
+  interface NetworkInformation extends EventTarget {
+    readonly downlink?: number;
+    readonly effectiveType?: '2g' | '3g' | '4g' | '5g';
+    // Add other properties if needed
+  }
+}
+
 export const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(true);
   const [isSlowNetwork, setIsSlowNetwork] = useState(false);
@@ -40,8 +52,10 @@ export const useNetworkStatus = () => {
 
     // Optional: Basic check for slow network (can be unreliable)
     const checkConnection = () => {
-      if (navigator.connection) {
-        const { effectiveType, downlink } = navigator.connection;
+      // Use type assertion for navigator.connection
+      const connection = navigator.connection as NetworkInformation | undefined;
+      if (connection) {
+        const { effectiveType, downlink } = connection;
         // Consider '2g', '3g' or very low downlink as slow
         if (effectiveType && ['2g', '3g'].includes(effectiveType) || (downlink !== undefined && downlink < 1)) {
           if (!isSlowNetwork && isOnline) { // Only show if online but slow, and not already showing
@@ -62,12 +76,14 @@ export const useNetworkStatus = () => {
 
     // Check connection type on load and when it changes
     checkConnection();
-    navigator.connection?.addEventListener('change', checkConnection);
+    // Use type assertion for navigator.connection
+    (navigator.connection as NetworkInformation | undefined)?.addEventListener('change', checkConnection);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      navigator.connection?.removeEventListener('change', checkConnection);
+      // Use type assertion for navigator.connection
+      (navigator.connection as NetworkInformation | undefined)?.removeEventListener('change', checkConnection);
       toast.dismiss(slowNetworkToastId); // Dismiss on unmount
       toast.dismiss('online-toast');
     };

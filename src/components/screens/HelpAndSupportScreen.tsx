@@ -3,18 +3,10 @@
 import React from 'react';
 import { ArrowLeft, Mail, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface HelpAndSupportScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
 const HelpAndSupportScreen: React.FC<HelpAndSupportScreenProps> = ({ setCurrentScreen }) => {

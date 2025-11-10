@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion'; // Import motion
+import { motion } from 'framer-motion';
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface StartupListingCelebrationScreenProps {
   startupName: string;
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
 const StartupListingCelebrationScreen: React.FC<StartupListingCelebrationScreenProps> = ({
@@ -22,7 +23,7 @@ const StartupListingCelebrationScreen: React.FC<StartupListingCelebrationScreenP
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     } else {
-      const celebrationTimer = setTimeout(() => setShowCelebration(true), 500); // Small delay before celebration
+      const celebrationTimer = setTimeout(() => setShowCelebration(true), 500);
       return () => clearTimeout(celebrationTimer);
     }
   }, [countdown]);

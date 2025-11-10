@@ -4,18 +4,10 @@ import React from 'react';
 import { ArrowLeft, Shirt, ShoppingBag, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface MerchStoreScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
 const MerchStoreScreen: React.FC<MerchStoreScreenProps> = ({ setCurrentScreen }) => {

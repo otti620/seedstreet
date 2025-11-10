@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 import { motion } from 'framer-motion';
+import { Profile } from '@/types'; // Import Profile from the shared file
 
 interface CommitmentDialogProps {
   isOpen: boolean;
@@ -31,8 +32,8 @@ interface CommitmentDialogProps {
   investorId: string;
   investorName: string;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: (userId: string) => Promise<void>; // Updated to accept userId
-  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
+  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Updated to accept userId and return Profile | null
+  fetchStartups: () => Promise<void>;
 }
 
 const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
@@ -47,7 +48,7 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
   investorName,
   logActivity,
   fetchUserProfile,
-  fetchStartups, // NEW: Destructure fetchStartups
+  fetchStartups,
 }) => {
   const [amount, setAmount] = useState<number | ''>('');
 
@@ -57,7 +58,6 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
         throw new Error("Commitment amount must be positive.");
       }
 
-      // 1. Insert into commitments table with 'Approved' status for immediate visibility
       const { data: newCommitment, error: commitmentError } = await supabase
         .from('commitments')
         .insert({
@@ -68,14 +68,13 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
           startup_id: startupId,
           startup_name: startupName,
           amount: commitmentAmount,
-          status: 'Approved', // Changed from 'Pending' to 'Approved'
+          status: 'Approved',
         })
         .select()
         .single();
 
       if (commitmentError) throw commitmentError;
 
-      // 2. Update startup's amount_raised
       const { data: startupData, error: fetchStartupError } = await supabase
         .from('startups')
         .select('amount_raised')
@@ -93,7 +92,6 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
 
       if (updateStartupError) throw updateStartupError;
 
-      // 3. Update investor's total_committed
       const { data: investorProfileData, error: fetchInvestorProfileError } = await supabase
         .from('profiles')
         .select('total_committed')
@@ -111,18 +109,11 @@ const CommitmentDialog: React.FC<CommitmentDialogProps> = ({
 
       if (updateInvestorProfileError) throw updateInvestorProfileError;
 
-
-      // 4. Send notification to founder is now handled by a database trigger on the 'commitments' table.
-      // No need for client-side notification insert here.
-
-      // 5. Log activity for investor
       await logActivity('commitment_made', `Committed $${commitmentAmount.toLocaleString()} to ${startupName}`, startupId, '💰');
       
-      // 6. Re-fetch user profile to update 'committed' count
-      await fetchUserProfile(investorId); // Pass investorId to fetchUserProfile
+      await fetchUserProfile(investorId);
       
-      // 7. Re-fetch startups to update amount_raised on the detail screen
-      await fetchStartups(); // NEW: Call fetchStartups here
+      await fetchStartups();
 
       return newCommitment;
     },

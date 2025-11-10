@@ -1,66 +1,33 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Toaster, toast } from 'sonner'; // Import Toaster directly, and add toast
-import { ThemeProvider as NextThemesProvider } from "next-themes"; // Import ThemeProvider directly
-import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator"; // Import GlobalLoadingIndicator directly
+import { Toaster, toast } from 'sonner';
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import SeedstreetAppContent from './SeedstreetAppContent';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
-// Removed ThemeProviderWrapper import as it will be simplified
-
-// Define Profile interface here or import from a shared type file
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null; // Assuming this is the field for last activity
-  show_welcome_flyer: boolean;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
-}
-
-// Define a type for screen parameters for better type safety
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any; // Using 'any' for chat for now, can be refined
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { Profile, ScreenParams, MaintenanceModeSettings } from '@/types'; // Import types from the shared file
 
 const SeedstreetApp: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
   const [currentScreen, setCurrentScreen] = useState('splash');
-  const [currentScreenParams, setCurrentScreenParams] = useState<ScreenParams>({}); // NEW: State for screen parameters
-  const [maintenanceMode, setMaintenanceMode] = useState({ enabled: false, message: '' });
+  const [currentScreenParams, setCurrentScreenParams] = useState<ScreenParams>({});
+  const [maintenanceMode, setMaintenanceMode] = useState<MaintenanceModeSettings>({ enabled: false, message: '' });
   const [splashTimerComplete, setSplashTimerComplete] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [showGlobalLoadingIndicator, setShowGlobalLoadingIndicator] = useState(false);
 
-  // 1. Splash screen timer: Ensures splash screen shows for a minimum duration
   useEffect(() => {
     const timer = setTimeout(() => {
       setSplashTimerComplete(true);
-    }, 1500); // Show splash for at least 1.5 seconds
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  // 2. Fetch app settings (can run independently)
   const fetchAppSettings = useCallback(async () => {
     const { data, error } = await supabase.from('app_settings').select('*').single();
     if (error) {
@@ -74,7 +41,6 @@ const SeedstreetApp: React.FC = () => {
     fetchAppSettings();
   }, [fetchAppSettings]);
 
-  // Callback to fetch/refresh user profile, managed by SeedstreetApp
   const fetchUserProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
@@ -92,15 +58,12 @@ const SeedstreetApp: React.FC = () => {
     return null;
   }, []);
 
-  // useAppData hook for fetching *other* data
   const {
     startups, chats, communityPosts, notifications, recentActivities,
     loadingData, investorCount, founderCount, fetchCommunityPosts, fetchNotifications,
-    fetchStartups // Make sure fetchStartups is destructured here
-  } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen); // Pass userId directly
+    fetchStartups
+  } = useAppData(isLoggedIn, userProfile?.id || null, currentScreen);
 
-  // 3. Initial Session check and FIRST screen determination (after splash)
-  // This useEffect should primarily set the *initial* screen.
   useEffect(() => {
     const checkInitialSession = async () => {
       if (!splashTimerComplete) {
@@ -130,26 +93,20 @@ const SeedstreetApp: React.FC = () => {
             setCurrentScreen('home');
           }
         } else {
-          setCurrentScreen('roleSelector'); // Fallback
+          setCurrentScreen('roleSelector');
         }
       }
       setLoadingSession(false);
-      setCurrentScreenParams({}); // Ensure params are reset on initial screen set
+      setCurrentScreenParams({});
     };
 
-    // This effect should only run once to determine the *initial* screen after splash.
-    // If currentScreen is already set to something other than 'splash', it means
-    // user-initiated navigation has taken over, or the initial check already ran.
     if (splashTimerComplete && currentScreen === 'splash') {
       checkInitialSession();
     }
   }, [splashTimerComplete, currentScreen, fetchUserProfile, setCurrentScreen, setIsLoggedIn, setCurrentScreenParams]);
 
-  // 4. Post-authentication navigation logic
   useEffect(() => {
     if (isLoggedIn && userProfile && !loadingSession) {
-      // Only navigate if the current screen is an auth-related screen
-      // or if the user profile state indicates a need for navigation
       const requiresNavigation =
         currentScreen === 'auth' ||
         currentScreen === 'onboarding' ||
@@ -167,8 +124,6 @@ const SeedstreetApp: React.FC = () => {
     }
   }, [isLoggedIn, userProfile, loadingSession, currentScreen, setCurrentScreen]);
 
-
-  // 5. Effect to periodically update user's last_active timestamp
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isLoggedIn && userProfile?.id) {
@@ -182,17 +137,15 @@ const SeedstreetApp: React.FC = () => {
         }
       };
 
-      // Update immediately on login/profile load, then every 30 seconds
       updateLastActive();
-      interval = setInterval(updateLastActive, 30 * 1000); // Every 30 seconds
+      interval = setInterval(updateLastActive, 30 * 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isLoggedIn, userProfile?.id]); // Only re-run if login status or user ID changes
+  }, [isLoggedIn, userProfile?.id]);
 
-  // 6. Effect to control global loading indicator based on useAppData's loadingData
   useEffect(() => {
     if (currentScreen !== 'splash' && !loadingSession) {
       setShowGlobalLoadingIndicator(loadingData);
@@ -201,22 +154,20 @@ const SeedstreetApp: React.FC = () => {
     }
   }, [loadingData, currentScreen, loadingSession]);
 
-  // Handle screen changes from child components
-  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
+  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => {
     console.log("SeedstreetAppContent: handleSetCurrentScreen called with screen:", screen, "params:", params);
     setCurrentScreen(screen);
     setCurrentScreenParams(prevParams => {
       const newParams = params || {};
-      // Deep compare to avoid unnecessary updates
       if (JSON.stringify(prevParams) === JSON.stringify(newParams)) {
-        return prevParams; // Return old object if content is same
+        return prevParams;
       }
-      return newParams; // Return new object if content is different
+      return newParams;
     });
-  }, [setCurrentScreen, setCurrentScreenParams]); // Dependencies for useCallback
+  }, [setCurrentScreen, setCurrentScreenParams]);
 
   const handleOnboardingComplete = useCallback(async () => {
-    await localforage.setItem('hasSeenOnboarding', true); // Mark as seen locally
+    await localforage.setItem('hasSeenOnboarding', true);
 
     if (userProfile?.id) {
       const { error } = await supabase.from('profiles')
@@ -227,16 +178,14 @@ const SeedstreetApp: React.FC = () => {
         console.error("Error updating onboarding status:", error);
         toast.error("Failed to save onboarding status.");
       } else {
-        // Update local userProfile state and trigger re-evaluation of navigation
         setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
         toast.success("Onboarding complete! Welcome to Seedstreet.");
-        // The new navigation useEffect will now handle setting currentScreen to 'home'
       }
     } else {
-      setCurrentScreen('auth'); // Redirect to auth for unauthenticated users
+      setCurrentScreen('auth');
       setCurrentScreenParams({});
     }
-  }, [userProfile, setCurrentScreen, setUserProfile, setCurrentScreenParams]); // Added setCurrentScreenParams to dependencies
+  }, [userProfile, setCurrentScreen, setUserProfile, setCurrentScreenParams]);
 
   if (maintenanceMode.enabled) {
     return <MaintenanceModeScreen message={maintenanceMode.message} />;
@@ -252,7 +201,7 @@ const SeedstreetApp: React.FC = () => {
       >
         <GlobalLoadingIndicator loading={false} />
         <SeedstreetAppContent currentScreen="splash" setCurrentScreen={handleSetCurrentScreen} currentScreenParams={currentScreenParams} {...{
-          isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onboardingComplete: handleOnboardingComplete,
+          isLoggedIn, setIsLoggedIn, loadingSession, maintenanceMode, fetchAppSettings, onOnboardingComplete: handleOnboardingComplete, // Renamed prop
           userProfile, setUserProfile, startups, chats, communityPosts, notifications, recentActivities,
           loadingData, fetchUserProfile: fetchUserProfile, investorCount, founderCount, fetchCommunityPosts, fetchNotifications,
           fetchStartups
@@ -278,8 +227,8 @@ const SeedstreetApp: React.FC = () => {
         fetchAppSettings={fetchAppSettings}
         currentScreen={currentScreen}
         setCurrentScreen={handleSetCurrentScreen}
-        currentScreenParams={currentScreenParams} // NEW: Pass currentScreenParams
-        onboardingComplete={handleOnboardingComplete}
+        currentScreenParams={currentScreenParams}
+        onOnboardingComplete={handleOnboardingComplete} // Renamed prop
         userProfile={userProfile}
         setUserProfile={setUserProfile}
         startups={startups}
@@ -293,7 +242,6 @@ const SeedstreetApp: React.FC = () => {
         founderCount={founderCount}
         fetchCommunityPosts={fetchCommunityPosts}
         fetchNotifications={fetchNotifications}
-        // Removed: interestedStartups={interestedStartups}
         fetchStartups={fetchStartups}
       />
       <Toaster richColors position="top-center" />

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings, LogOut, Trash2, User as UserIcon, DollarSign, Edit } from 'lucide-react'; // Import LogOut, Trash2, UserIcon, DollarSign, Edit
+import { ArrowLeft, CheckCircle, XCircle, Flag, MessageCircle, Sparkles, Rocket, Users, LayoutDashboard, Settings, LogOut, Trash2, User as UserIcon, DollarSign, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,79 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input'; // Import Input for maintenance message
-import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
-import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
-import Image from 'next/image'; // Import Image from next/image
+import { Input } from '@/components/ui/input';
+import ConfirmationDialog from '../ConfirmationDialog';
+import { getAvatarUrl } from '@/lib/default-avatars';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface FlaggedMessage {
-  id: string;
-  message_id: string;
-  original_message_id: string | null;
-  chat_id: string;
-  sender: string;
-  sender_id: string | null;
-  chat_type: 'DM' | 'Community';
-  startup_name: string | null;
-  reason: string;
-  timestamp: string;
-  status: 'Pending' | 'Resolved' | 'Dismissed';
-  reported_by: string;
-}
-
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  description: string;
-  category: string;
-  founder_name: string;
-  location: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  date_created: string;
-  founder_id: string;
-  valuation: number | null; // Added valuation
-  currency: string | null; // Added currency
-}
-
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  name: string | null;
-  email: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  avatar_id: number | null;
-  created_at: string;
-}
-
-interface CommunityPost {
-  id: string;
-  author_id: string;
-  author_name: string;
-  author_avatar_id: number | null;
-  content: string;
-  image_url: string | null;
-  created_at: string;
-  likes: string[];
-  comments_count: number;
-  is_hidden: boolean; // Add is_hidden
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { FlaggedMessage, Startup, Profile, CommunityPost, ScreenParams, MaintenanceModeSettings } from '@/types'; // Import types from the shared file
 
 interface AdminDashboardScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
-  maintenanceMode: { enabled: boolean; message: string };
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  maintenanceMode: MaintenanceModeSettings;
   fetchAppSettings: () => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
 }
@@ -89,9 +26,9 @@ interface AdminDashboardScreenProps {
 const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentScreen, maintenanceMode, fetchAppSettings, setIsLoggedIn }) => {
   const [flaggedItems, setFlaggedItems] = useState<FlaggedMessage[]>([]);
   const [pendingStartups, setPendingStartups] = useState<Startup[]>([]);
-  const [allUsers, setAllUsers] = useState<Profile[]>([]); // New state for all users
-  const [allStartups, setAllStartups] = useState<Startup[]>([]); // New state for all startups
-  const [allCommunityPosts, setAllCommunityPosts] = useState<CommunityPost[]>([]); // New state for all community posts
+  const [allUsers, setAllUsers] = useState<Profile[]>([]);
+  const [allStartups, setAllStartups] = useState<Startup[]>([]);
+  const [allCommunityPosts, setAllCommunityPosts] = useState<CommunityPost[]>([]);
   const [analytics, setAnalytics] = useState({
     totalUsers: 0,
     totalStartups: 0,
@@ -103,7 +40,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   const [loading, setLoading] = useState(true);
   const [updatingMaintenance, setUpdatingMaintenance] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'analytics' | 'settings' | 'pendingStartups' | 'flaggedContent' | 'allUsers' | 'allStartups' | 'allCommunityPosts'>('analytics');
-  const [maintenanceMessage, setMaintenanceMessage] = useState(maintenanceMode.message); // State for editable message
+  const [maintenanceMessage, setMaintenanceMessage] = useState(maintenanceMode.message);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'user' | 'startup' | 'post'; id: string; name: string } | null>(null);
@@ -112,13 +49,12 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   const [newValuation, setNewValuation] = useState<number | ''>('');
 
   useEffect(() => {
-    setMaintenanceMessage(maintenanceMode.message); // Sync local state with prop
+    setMaintenanceMessage(maintenanceMode.message);
   }, [maintenanceMode.message]);
 
   const fetchAdminData = async () => {
     setLoading(true);
 
-    // Fetch analytics
     const { count: totalUsersCount, error: usersError } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { count: totalStartupsCount, error: startupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true });
     const { count: approvedStartupsCount, error: approvedStartupsError } = await supabase.from('startups').select('*', { count: 'exact', head: true }).eq('status', 'Approved');
@@ -140,7 +76,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       toast.error("Failed to load analytics data.");
     }
 
-    // Fetch flagged items
     const { data: flaggedData, error: flaggedError } = await supabase
       .from('flagged_messages')
       .select('*')
@@ -153,7 +88,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setFlaggedItems(flaggedData as FlaggedMessage[]);
     }
 
-    // Fetch pending startups
     const { data: pendingStartupData, error: pendingStartupError } = await supabase
       .from('startups')
       .select('*')
@@ -167,7 +101,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setPendingStartups(pendingStartupData as Startup[]);
     }
 
-    // Fetch all users
     const { data: allUsersData, error: allUsersError } = await supabase
       .from('profiles')
       .select('*')
@@ -180,7 +113,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setAllUsers(allUsersData as Profile[]);
     }
 
-    // Fetch all startups
     const { data: allStartupsData, error: allStartupsError } = await supabase
       .from('startups')
       .select('*')
@@ -193,7 +125,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       setAllStartups(allStartupsData as Startup[]);
     }
 
-    // Fetch all community posts (including hidden ones for admin view)
     const { data: allCommunityPostsData, error: allCommunityPostsError } = await supabase
       .from('community_posts')
       .select('*')
@@ -212,7 +143,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   useEffect(() => {
     fetchAdminData();
 
-    // Realtime subscriptions for all relevant tables
     const channels: any[] = [];
 
     const subscribeToTable = (tableName: string, callback: () => void) => {
@@ -228,7 +158,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     subscribeToTable('profiles', fetchAdminData);
     subscribeToTable('chats', fetchAdminData);
     subscribeToTable('community_posts', fetchAdminData);
-    subscribeToTable('app_settings', fetchAdminData); // Subscribe to app_settings for maintenance mode changes
+    subscribeToTable('app_settings', fetchAdminData);
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
@@ -251,8 +181,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
   };
 
   const handleUpdateStartupStatus = async (startupId: string, newStatus: 'Approved' | 'Rejected') => {
-    // The notification for startup status change is now handled by a database trigger.
-    // We only need to update the status here.
     const { error } = await supabase
       .from('startups')
       .update({ status: newStatus })
@@ -271,7 +199,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
     setUpdatingMaintenance(true);
     const { error } = await supabase
       .from('app_settings')
-      .update({ setting_value: { enabled: checked, message: maintenanceMessage } }) // Use local state for message
+      .update({ setting_value: { enabled: checked, message: maintenanceMessage } })
       .eq('setting_key', 'maintenance_mode_enabled');
 
     if (error) {
@@ -312,7 +240,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       console.error(`Error toggling post visibility:`, error);
     } else {
       toast.success(`Post ${isHidden ? 'hidden' : 'unhidden'} successfully!`);
-      fetchAdminData(); // Re-fetch all data to update lists
+      fetchAdminData();
     }
   };
 
@@ -349,7 +277,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
 
     switch (itemToDelete.type) {
       case 'user':
-        // Deleting a user from 'profiles' table. Supabase auth.users will cascade delete.
         const { error: userDeleteError } = await supabase
           .from('profiles')
           .delete()
@@ -380,7 +307,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       console.error(`Error deleting ${itemToDelete.type}:`, error);
     } else {
       toast.success(`${itemToDelete.type} "${itemToDelete.name}" deleted successfully!`);
-      fetchAdminData(); // Re-fetch all data to update lists
+      fetchAdminData();
     }
     setItemToDelete(null);
   };
@@ -410,7 +337,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
       toast.success("Valuation updated successfully!");
       setEditingValuationId(null);
       setNewValuation('');
-      fetchAdminData(); // Re-fetch to update the list
+      fetchAdminData();
     }
   };
 
@@ -452,9 +379,9 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ setCurrentS
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-bold text-gray-900 flex-1 dark:text-gray-50">Admin Dashboard</h2>
-          <button 
-            onClick={handleLogout} 
-            className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 text-red-600 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-200 transition-colors" 
+          <button
+            onClick={handleLogout}
+            className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 text-red-600 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-200 transition-colors"
             aria-label="Log Out"
           >
             <LogOut className="w-5 h-5" />

@@ -1,53 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageCircle, Bell, Rocket, Check, Bookmark, Eye } from 'lucide-react'; // Import Bookmark and Eye icons
+import { Plus, MessageCircle, Bell, Rocket, Check, Bookmark, Eye } from 'lucide-react';
 import BottomNav from '../../BottomNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
-import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  description: string;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  founder_id: string;
-  views: number; // Added views to the interface
-  valuation: number | null; // Added valuation
-  amount_raised?: number; // Added amount_raised
-  currency: string | null; // Added currency
-}
-
-interface ActivityLog { // New interface for activity log entries
-  id: string;
-  user_id: string;
-  type: string; // e.g., 'startup_listed', 'chat_started', 'profile_updated', 'bookmark_added'
-  description: string;
-  timestamp: string;
-  entity_id: string | null; // ID of the related entity (startup, chat, etc.)
-  icon: string | null; // Lucide icon name or emoji
-}
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatCurrency } from '@/lib/utils';
+import { Startup, ActivityLog, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface FounderDashboardProps {
   setActiveTab: (tab: string) => void;
-  setCurrentScreen: (screen: string, params?: { startupId?: string }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   userProfileId: string;
   loading: boolean;
-  recentActivities: ActivityLog[]; // New prop for recent activities
-  startups: Startup[]; // Pass the global startups array
-  userProfileProAccount: boolean; // NEW: Add pro_account prop
+  recentActivities: ActivityLog[];
+  startups: Startup[];
+  userProfileProAccount: boolean;
 }
 
 const FounderDashboard: React.FC<FounderDashboardProps> = ({
@@ -55,54 +25,41 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
   setCurrentScreen,
   userProfileId,
   loading,
-  recentActivities: propRecentActivities, // Keep it as propRecentActivities to inspect its raw value
-  startups = [], // Add default empty array here
-  userProfileProAccount, // NEW: Destructure pro_account
+  recentActivities: propRecentActivities,
+  startups = [],
+  userProfileProAccount,
 }) => {
   const [founderStartup, setFounderStartup] = useState<Startup | null>(null);
   const [startupLoading, setStartupLoading] = useState(true);
-  const [currentActivityIndex, setCurrentActivityIndex] = useState(0); // State for rotating activities
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
 
-  // Initialize recentActivities as an empty array, then conditionally update it.
-  // This is the most robust way to ensure it's always an array.
   let recentActivities: ActivityLog[] = [];
   if (Array.isArray(propRecentActivities)) {
     recentActivities = propRecentActivities;
   }
-  // Removed console.log("FounderDashboard: propRecentActivities received (before local assignment):", propRecentActivities);
-  // Removed console.log("FounderDashboard: recentActivities AFTER assignment:", recentActivities); // Log after assignment
 
-  // Use a useEffect to find the founder's startup from the global 'startups' array
-  // This ensures the dashboard always reflects the latest global state
   useEffect(() => {
     console.log("FounderDashboard useEffect: userProfileId:", userProfileId);
     console.log("FounderDashboard useEffect: startups prop:", startups);
 
-    // With 'startups' defaulting to [], we only need to check its length.
     if (userProfileId && startups.length > 0) {
       const foundStartup = startups.find(s => s.founder_id === userProfileId);
       console.log("FounderDashboard useEffect: foundStartup:", foundStartup);
       setFounderStartup(foundStartup || null);
       setStartupLoading(false);
     } else if (userProfileId && startups.length === 0 && !loading) {
-      // If no startups are loaded yet, or none found for this founder
       console.log("FounderDashboard useEffect: No startups found for user or loading is complete.");
       setFounderStartup(null);
       setStartupLoading(false);
     }
-  }, [userProfileId, startups, loading]); // Depend on userProfileId and the global startups array
+  }, [userProfileId, startups, loading]);
 
-  // Effect for rotating recent activities
   useEffect(() => {
-    // Now, recentActivities is guaranteed to be an array due to the local variable assignment above.
-    // We only need to check its length.
     if (recentActivities.length <= 1) {
       return;
     }
 
     const timer = setInterval(() => {
-      // The local `recentActivities` variable is guaranteed to be an array.
-      // We only need to check its length.
       if (recentActivities.length === 0) {
         clearInterval(timer);
         setCurrentActivityIndex(0);
@@ -111,9 +68,9 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
       setCurrentActivityIndex(prevIndex =>
         (prevIndex + 1) % recentActivities.length
       );
-    }, 5000); // Change activity every 5 seconds
+    }, 5000);
     return () => clearInterval(timer);
-  }, [recentActivities]); // Dependency on the local `recentActivities` variable
+  }, [recentActivities]);
 
   const renderFounderStatsSkeleton = () => (
     <div className="bg-gradient-to-br from-purple-700 to-teal-600 rounded-2xl p-6 text-white animate-pulse">
@@ -153,7 +110,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse dark:bg-gray-800 dark:border-gray-700">
       <Skeleton className="h-5 w-1/2 mb-4" />
       <div className="space-y-3">
-        {Array.from({ length: 1 }).map((_, i) => ( // Only one skeleton for rotating display
+        {Array.from({ length: 1 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl dark:bg-gray-700">
             <Skeleton className="w-8 h-8 rounded-lg" />
             <div className="flex-1 space-y-1">
@@ -178,17 +135,14 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
     }
   };
 
-  // currentActivity is now safely accessed because recentActivities is guaranteed to be an array
   const currentActivity = recentActivities.length > 0
     ? recentActivities[currentActivityIndex]
     : null;
 
   const handleManageStartupClick = () => {
     if (founderStartup && !userProfileProAccount) {
-      // If founder already has a startup and is NOT Pro, prompt to upgrade
       setCurrentScreen('upgradeToPro');
     } else {
-      // Otherwise, proceed to manage/list startup
       setCurrentScreen('manageStartup', { startupId: founderStartup?.id });
     }
   };
@@ -246,7 +200,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleManageStartupClick} // Use the new handler
+                onClick={handleManageStartupClick}
                 className="h-24 bg-white rounded-2xl border-2 border-purple-700 text-purple-700 font-semibold hover:bg-purple-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-2 dark:bg-gray-800 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
                 aria-label={founderStartup ? 'Update startup listing' : 'List your startup'}
               >
@@ -276,7 +230,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900 dark:text-gray-50">Your Startup</h3>
                   <button
-                    onClick={handleManageStartupClick} // Use the new handler
+                    onClick={handleManageStartupClick}
                     className="text-purple-700 text-sm font-medium hover:underline dark:text-purple-400"
                     aria-label={`Edit ${founderStartup.name}`}
                   >
@@ -300,7 +254,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-gray-50 rounded-xl p-3 dark:bg-gray-700">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div> {/* Use actual views */}
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{founderStartup.views || 0}</div>
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">
                       {formatCurrency(founderStartup.amount_raised || 0, founderStartup.currency)}
                     </div>
@@ -320,7 +274,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({
                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">No Startup Listed Yet</h3>
                 <p className="text-gray-600 text-sm dark:text-gray-300">Get started by listing your amazing startup!</p>
                 <button
-                  onClick={handleManageStartupClick} // Use the new handler
+                  onClick={handleManageStartupClick}
                   className="px-6 py-3 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all"
                   aria-label="List your startup now"
                 >

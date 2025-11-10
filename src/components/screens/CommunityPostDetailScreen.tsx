@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import Image from next/image
+import Image from 'next/image';
 import { ArrowLeft, Heart, MessageCircle, Send, Flag, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,53 +22,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
-import ConfirmationDialog from '../ConfirmationDialog'; // Import ConfirmationDialog
-import { getAvatarUrl } from '@/lib/default-avatars'; // Import getAvatarUrl
+import ConfirmationDialog from '../ConfirmationDialog';
+import { getAvatarUrl } from '@/lib/default-avatars';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-
-// Define TypeScript interfaces for data structures
-interface CommunityPost {
-  id: string;
-  author_id: string;
-  author_name: string;
-  author_avatar_id: number | null; // Changed from author_avatar_url
-  content: string;
-  image_url: string | null;
-  created_at: string;
-  likes: string[];
-  comments_count: number;
-}
-
-interface CommunityComment {
-  id: string;
-  post_id: string;
-  author_id: string;
-  author_name: string;
-  author_avatar_id: number | null; // Changed from author_avatar_url
-  content: string;
-  created_at: string;
-}
-
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_id: number | null; // Changed from avatar_url
-  email: string | null; // Added email for fallback name
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { CommunityPost, CommunityComment, Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface CommunityPostDetailScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   selectedCommunityPostId: string;
   userProfile: Profile | null;
 }
@@ -98,7 +60,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
   const fetchPostAndComments = async () => {
     setLoading(true);
-    // Fetch post details
     const { data: postData, error: postError } = await supabase
       .from('community_posts')
       .select('*')
@@ -114,7 +75,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     }
     setPost(postData as CommunityPost);
 
-    // Fetch comments for the post
     const { data: commentsData, error: commentsError } = await supabase
       .from('community_comments')
       .select('*')
@@ -137,7 +97,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       const channel = supabase
         .channel(`post_comments:${selectedCommunityPostId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments', filter: `post_id=eq.${selectedCommunityPostId}` }, payload => {
-          // When a change occurs, re-fetch to get the latest state, including real IDs
           fetchPostAndComments();
         })
         .subscribe();
@@ -160,7 +119,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       ? post.likes.filter(id => id !== userProfile.id)
       : [...post.likes, userProfile.id];
 
-    // Optimistic UI update
     setPost(prev => prev ? { ...prev, likes: newLikes } : null);
 
     const { error } = await supabase
@@ -171,11 +129,8 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (error) {
       toast.error("Failed to update like: " + error.message);
       console.error("Error updating like:", error);
-      // Revert optimistic update on error
       setPost(prev => prev ? { ...prev, likes: originalLikes } : null);
     } else {
-      // Notification for new like is now handled by a database trigger.
-      // No need for client-side notification insert here.
     }
   };
 
@@ -187,14 +142,14 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
 
     setSubmittingComment(true);
     const commentContent = values.content;
-    form.reset(); // Clear input immediately
+    form.reset();
 
     const tempComment: CommunityComment = {
-      id: `temp-${Date.now()}`, // Temporary ID for optimistic update
+      id: `temp-${Date.now()}`,
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
-      author_avatar_id: userProfile.avatar_id, // Changed from avatar_url
+      author_avatar_id: userProfile.avatar_id,
       content: commentContent,
       created_at: new Date().toISOString(),
     };
@@ -207,24 +162,20 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       post_id: post.id,
       author_id: userProfile.id,
       author_name: userProfile.name,
-      author_avatar_id: userProfile.avatar_id, // Changed from avatar_url
+      author_avatar_id: userProfile.avatar_id,
       content: commentContent,
-    }).select().single(); // Select the new row to get its actual ID
+    }).select().single();
 
     if (error) {
       toast.error("Failed to add comment: " + error.message);
       console.error("Error adding comment:", error);
-      // Revert optimistic update on error
       setComments(prevComments => prevComments.filter(c => c.id !== tempComment.id));
       setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
     } else if (newCommentData) {
       toast.success("Comment added!");
-      // Replace the temporary comment with the real one from the database
       setComments(prevComments =>
         prevComments.map(c => (c.id === tempComment.id ? (newCommentData as CommunityComment) : c))
       );
-      // Notification for new comment is now handled by a database trigger.
-      // No need for client-side notification insert here.
     }
     setSubmittingComment(false);
   };
@@ -273,7 +224,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       toast.error("You can only delete your own comments.");
       return;
     }
-    // Prevent deletion of temporary comments that haven't been synced
     if (comment.id.startsWith('temp-')) {
       toast.error("This comment is still being processed. Please wait a moment or refresh.");
       return;
@@ -288,11 +238,10 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
       return;
     }
 
-    setShowDeleteCommentConfirm(false); // Close dialog
+    setShowDeleteCommentConfirm(false);
     const commentId = commentToDelete.id;
     const originalComments = comments;
 
-    // Optimistic UI update: remove comment immediately
     setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
     setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count - 1 } : null);
 
@@ -306,7 +255,6 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
     if (error) {
       toast.error("Failed to delete comment: " + error.message);
       console.error("Error deleting comment:", error);
-      // Revert optimistic update on error
       setComments(originalComments);
       setPost(prevPost => prevPost ? { ...prevPost, comments_count: prevPost.comments_count + 1 } : null);
     } else {
@@ -316,19 +264,18 @@ const CommunityPostDetailScreen: React.FC<CommunityPostDetailScreenProps> = ({
           onClick: async () => {
             const { error: undoError } = await supabase
               .from('community_comments')
-              .insert(commentToDelete); // Re-insert the original comment data
+              .insert(commentToDelete);
             if (undoError) {
               toast.error("Failed to undo deletion: " + undoError.message);
               console.error("Error undoing deletion:", undoError);
             } else {
               toast.success("Deletion undone!");
-              fetchPostAndComments(); // Re-fetch to ensure state is consistent
+              fetchPostAndComments();
             }
           },
         },
-        duration: 5000, // Allow 5 seconds to undo
+        duration: 5000,
       });
-      // Real-time subscription will handle updating the comments list
     }
     setCommentToDelete(null);
   };

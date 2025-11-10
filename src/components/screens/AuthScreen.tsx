@@ -19,40 +19,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { motion } from 'framer-motion';
-
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null;
-  show_welcome_flyer: boolean;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface AuthScreenProps {
   setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Added fetchUserProfile prop
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
 }
 
 const loginSchema = z.object({
@@ -66,7 +38,7 @@ const signUpSchema = loginSchema.extend({
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 type SignUpFormInputs = z.infer<typeof signUpSchema>;
-type AuthFormInputs = LoginFormInputs & Partial<SignUpFormInputs>;
+type AuthFormInputs = LoginFormInputs | SignUpFormInputs; // Use union type for form inputs
 
 function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthScreenProps) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -74,12 +46,18 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
 
   const form = useForm<AuthFormInputs>({
     resolver: zodResolver(isSignUp ? signUpSchema : loginSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues: isSignUp
+      ? { name: "", email: "", password: "" }
+      : { email: "", password: "" },
   });
+
+  // Reset form when isSignUp changes
+  useEffect(() => {
+    form.reset(isSignUp
+      ? { name: "", email: "", password: "" }
+      : { email: "", password: "" });
+  }, [isSignUp, form]);
+
 
   const handleAuth = async (values: AuthFormInputs) => {
     setLoading(true);
@@ -87,12 +65,13 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
 
     try {
       if (isSignUp) {
+        const signUpValues = values as SignUpFormInputs;
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
+          email: signUpValues.email,
+          password: signUpValues.password,
           options: {
             data: {
-              name: values.name,
+              name: signUpValues.name,
               role: null,
             },
           },
@@ -101,20 +80,19 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
         if (!authError && data?.user) {
           toast.success("Account created! Please check your email to verify.");
           setIsLoggedIn(true);
-          await fetchUserProfile(data.user.id); // Fetch profile after signup
-          // Navigation will be handled by SeedstreetApp's useEffect
+          await fetchUserProfile(data.user.id);
         }
       } else {
+        const loginValues = values as LoginFormInputs;
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
+          email: loginValues.email,
+          password: loginValues.password,
         });
         authError = signInError;
         if (!authError && data?.user) {
           toast.success("Logged in successfully!");
           setIsLoggedIn(true);
-          await fetchUserProfile(data.user.id); // Fetch profile after login
-          // Navigation will be handled by SeedstreetApp's useEffect
+          await fetchUserProfile(data.user.id);
         }
       }
     } catch (error: any) {
@@ -304,24 +282,21 @@ function AuthScreen({ setCurrentScreen, setIsLoggedIn, fetchUserProfile }: AuthS
             </form>
           </Form>
 
-          {/* Wrapped these elements in a div */}
           <div>
             <p className="text-center text-sm text-gray-600 dark:text-gray-400">
               {isSignUp ? 'Already have an account?' : 'New here, fam?'}{' '}
             </p>
-            <button 
+            <button
               onClick={() => {
                 setIsSignUp(prev => {
                   const newState = !prev;
-                  form.reset({
-                    name: "",
-                    email: "",
-                    password: "",
-                  });
+                  form.reset(newState
+                    ? { name: "", email: "", password: "" }
+                    : { email: "", password: "" });
                   return newState;
                 });
-              }} 
-              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400" 
+              }}
+              className="font-semibold bg-gradient-to-r from-purple-700 to-teal-600 bg-clip-text text-transparent cursor-pointer relative z-10 block mx-auto dark:text-purple-400"
               aria-label={isSignUp ? 'Log In' : 'Sign Up'}
             >
               {isSignUp ? 'Log In' : 'Sign Up'}

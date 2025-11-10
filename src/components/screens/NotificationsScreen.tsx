@@ -1,26 +1,16 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Bell, CheckCircle, XCircle, Info, MessageCircle, Rocket, Bookmark, Sparkles, Eye } from 'lucide-react'; // Added Sparkles for community posts and Eye for new_interest
+import { ArrowLeft, Bell, CheckCircle, XCircle, Info, MessageCircle, Rocket, Bookmark, Sparkles, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-
-interface Notification {
-  id: string;
-  user_id: string;
-  type: string;
-  message: string;
-  link: string | null;
-  read: boolean;
-  created_at: string;
-  related_entity_id: string | null;
-}
+import { Notification, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface NotificationsScreenProps {
   notifications: Notification[];
-  setCurrentScreen: (screen: string, params?: { startupId?: string, postId?: string, chatId?: string }) => void; // Updated to accept chatId
-  fetchNotifications: () => void; // Function to re-fetch notifications after an action
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  fetchNotifications: () => void;
 }
 
 const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
@@ -39,7 +29,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
       console.error("Error marking notification as read:", error);
     } else {
       toast.success("Notification marked as read!");
-      fetchNotifications(); // Re-fetch to update the list
+      fetchNotifications();
     }
   };
 
@@ -57,7 +47,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
         break;
       case 'new_chat':
-        setCurrentScreen('chat', { chatId: notification.related_entity_id }); // Direct navigation to chat
+        setCurrentScreen('chat', { chatId: notification.related_entity_id });
         break;
       case 'new_comment':
       case 'post_liked':
@@ -68,7 +58,6 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         setCurrentScreen('home');
         break;
     }
-    // Optionally mark as read after viewing details
     if (!notification.read) {
       handleMarkAsRead(notification.id);
     }

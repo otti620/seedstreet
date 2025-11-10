@@ -19,9 +19,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { motion } from 'framer-motion';
+import { ScreenParams } from '@/types'; // Import ScreenParams from shared types
 
 interface AuthActionScreenProps {
-  setCurrentScreen: (screen: string, params?: { authActionType?: 'forgotPassword' | 'changePassword' }) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   authActionType: 'forgotPassword' | 'changePassword';
 }
 
@@ -37,23 +38,25 @@ const changePasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
+type ChangePasswordFormInputs = z.infer<typeof changePasswordSchema>;
+
 const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, authActionType }) => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  const form = useForm<z.infer<typeof forgotPasswordSchema> | z.infer<typeof changePasswordSchema>>({
+  // Use a conditional type for the form's generic parameter
+  const form = useForm<typeof authActionType extends 'forgotPassword' ? ForgotPasswordFormInputs : ChangePasswordFormInputs>({
     resolver: zodResolver(authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema),
     defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
+      ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
+    } as any, // Type assertion needed here due to conditional default values
   });
 
-  const handleForgotPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+  const handleForgotPassword = async (values: ForgotPasswordFormInputs) => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/auth-callback?type=changePassword`, // Redirect to a generic callback page
+      redirectTo: `${window.location.origin}/auth-callback?type=changePassword`,
     });
 
     if (error) {
@@ -66,7 +69,7 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
     setLoading(false);
   };
 
-  const handleChangePassword = async (values: z.infer<typeof changePasswordSchema>) => {
+  const handleChangePassword = async (values: ChangePasswordFormInputs) => {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({
       password: values.password,
@@ -77,16 +80,16 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
       console.error("Change password error:", error);
     } else {
       toast.success("Password updated successfully!");
-      setCurrentScreen('auth'); // Redirect to auth after successful password change
+      setCurrentScreen('auth');
     }
     setLoading(false);
   };
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: any) => { // Use 'any' here for simplicity due to conditional types
     if (authActionType === 'forgotPassword') {
-      handleForgotPassword(values as z.infer<typeof forgotPasswordSchema>);
+      handleForgotPassword(values as ForgotPasswordFormInputs);
     } else {
-      handleChangePassword(values as z.infer<typeof changePasswordSchema>);
+      handleChangePassword(values as ChangePasswordFormInputs);
     }
   };
 

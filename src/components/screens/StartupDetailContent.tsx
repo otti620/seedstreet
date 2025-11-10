@@ -8,46 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CommitmentDialog from '../CommitmentDialog';
 import { Progress } from '@/components/ui/progress';
-import { formatCurrency } from '@/lib/utils'; // Import formatCurrency
-
-// Define TypeScript interfaces for data structures
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  pitch: string;
-  description: string | null;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  amount_raised: number;
-  valuation: number | null; // Added valuation
-}
-
-interface Profile {
-  id: string;
-  name: string | null;
-  email: string | null;
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { formatCurrency } from '@/lib/utils';
+import { Startup, Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface StartupDetailContentProps {
   selectedStartup: Startup;
@@ -55,17 +17,16 @@ interface StartupDetailContentProps {
   interestedStartups: string[];
   toggleBookmark: (startupId: string) => void;
   toggleInterest: (startupId: string) => void;
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
-  // Removed setSelectedChat prop
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   activeTab: string;
   userRole: string | null;
   setActiveTab: (tab: string) => void;
   handleStartChat: (startup: Startup) => Promise<void>;
   logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
-  fetchUserProfile: (userId: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
   userProfile: Profile | null;
-  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
-  handleJoinStartupRoom: (startup: Startup) => Promise<void>; // NEW: Add handleJoinStartupRoom prop
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
 }
 
 const StartupDetailContent = ({
@@ -83,7 +44,7 @@ const StartupDetailContent = ({
   fetchUserProfile,
   userProfile,
   fetchStartups,
-  handleJoinStartupRoom, // NEW: Destructure handleJoinStartupRoom
+  handleJoinStartupRoom,
 }: StartupDetailContentProps) => {
   const isBookmarked = bookmarkedStartups.includes(selectedStartup.id);
   const isInterested = interestedStartups.includes(selectedStartup.id);
@@ -220,7 +181,7 @@ const StartupDetailContent = ({
                   </div>
                 </div>
               )}
-              {selectedStartup.valuation !== null && ( // Display valuation if available
+              {selectedStartup.valuation !== null && (
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                   <div>
@@ -303,8 +264,7 @@ const StartupDetailContent = ({
             </Button>
           </div>
         </div>
-      </div> {/* Corrected: Moved this closing div outside the conditional block */}
-
+      </div>
       {isCommitmentDialogOpen && userRole === 'investor' && userProfile && (
         <CommitmentDialog
           isOpen={isCommitmentDialogOpen}

@@ -20,49 +20,18 @@ import {
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
+import { Textarea } from '@/components/ui/textarea';
 import { motion } from 'framer-motion';
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  description: string | null; // Made nullable as per schema
-  pitch: string; // Added as required
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null; // Added for AI analysis
-  market_trend_analysis: string | null; // Added for AI analysis
-}
-
-interface ScreenParams {
-  startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: any;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
-}
+import { Startup, ScreenParams } from '@/types'; // Import Startup and ScreenParams from shared types
 
 interface ManageStartupScreenProps {
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
   userProfileId: string;
   userProfileName: string;
   userProfileEmail: string;
-  startupId?: string; // Optional prop for editing
-  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>; // Add logActivity prop
-  userProfileProAccount: boolean; // NEW: Add pro_account prop
+  startupId?: string;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  userProfileProAccount: boolean;
 }
 
 const startupCategories = [
@@ -78,16 +47,16 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Startup name must be at least 3 characters." }),
   logo: z.string().emoji({ message: "Logo must be a single emoji." }).min(1, { message: "Logo is required." }),
   tagline: z.string().min(10, { message: "Tagline must be at least 10 characters." }).max(100, { message: "Tagline cannot exceed 100 characters." }),
-  pitch: z.string().min(50, { message: "Pitch must be at least 50 characters." }).max(1000, { message: "Pitch cannot exceed 1000 characters." }), // New required field
-  description: z.string().max(1000, { message: "Description cannot exceed 1000 characters." }).optional().or(z.literal('')), // Existing field, now optional
+  pitch: z.string().min(50, { message: "Pitch must be at least 50 characters." }).max(1000, { message: "Pitch cannot exceed 1000 characters." }),
+  description: z.string().max(1000, { message: "Description cannot exceed 1000 characters." }).nullable(), // Changed to nullable
   category: z.enum(startupCategories as [string, ...string[]], { message: "Please select a valid category." }),
   location: z.string().min(2, { message: "Location is required." }),
   amount_sought: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
     z.number().min(0, { message: "Amount must be a positive number." }).nullable()
   ).optional(),
-  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).optional(),
-  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).optional(),
+  currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).nullable(), // Changed to nullable
+  funding_stage: z.enum(fundingStages as [string, ...string[]], { message: "Please select a valid funding stage." }).nullable(), // Changed to nullable
 });
 
 const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
@@ -96,12 +65,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   userProfileName,
   userProfileEmail,
   startupId,
-  logActivity, // Destructure logActivity
-  userProfileProAccount, // NEW: Destructure pro_account
+  logActivity,
+  userProfileProAccount,
 }) => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [hasExistingStartup, setHasExistingStartup] = useState(false); // NEW: State to track if user has a startup
+  const [hasExistingStartup, setHasExistingStartup] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -110,12 +79,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       logo: '',
       tagline: '',
       pitch: '',
-      description: '',
+      description: null, // Default to null
       category: undefined,
       location: '',
       amount_sought: null,
-      currency: undefined,
-      funding_stage: undefined,
+      currency: null, // Default to null
+      funding_stage: null, // Default to null
     },
   });
 
@@ -136,10 +105,9 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
 
       if (data && data.length > 0) {
         setHasExistingStartup(true);
-        // If in create mode (no startupId) and already has a startup, redirect to upgrade
         if (!startupId && !userProfileProAccount) {
           setCurrentScreen('upgradeToPro');
-          return; // Prevent further loading/rendering of the form
+          return;
         }
       } else {
         setHasExistingStartup(false);
@@ -162,12 +130,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             logo: startupData.logo,
             tagline: startupData.tagline,
             pitch: startupData.pitch,
-            description: startupData.description || '',
+            description: startupData.description || null,
             category: startupData.category,
             location: startupData.location,
             amount_sought: startupData.amount_sought,
-            currency: startupData.currency,
-            funding_stage: startupData.funding_stage,
+            currency: startupData.currency || null,
+            funding_stage: startupData.funding_stage || null,
           });
         }
       }
@@ -180,7 +148,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
 
-    // NEW: Final check before submission for non-Pro users trying to list a second startup
     if (!startupId && hasExistingStartup && !userProfileProAccount) {
       toast.error("You can only list one startup with a free account. Please upgrade to Pro.");
       setCurrentScreen('upgradeToPro');
@@ -193,12 +160,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       logo: values.logo,
       tagline: values.tagline,
       pitch: values.pitch,
-      description: values.description || null,
+      description: values.description, // Can be null
       category: values.category,
       location: values.location,
-      amount_sought: values.amount_sought || null,
-      currency: values.currency || null,
-      funding_stage: values.funding_stage || null,
+      amount_sought: values.amount_sought, // Can be null
+      currency: values.currency, // Can be null
+      funding_stage: values.funding_stage, // Can be null
       founder_id: userProfileId,
       founder_name: userProfileName,
       status: 'Pending',
@@ -232,7 +199,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
     } else {
       toast.success(`Startup ${startupId ? 'updated' : 'listed'} successfully!`);
 
-      // --- AI Analysis Integration ---
       if (newStartupId) {
         try {
           const { data: aiAnalysis, error: aiError } = await supabase.functions.invoke('analyze-startup', {
@@ -246,7 +212,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                 description: values.description,
                 funding_stage: values.funding_stage,
                 amount_sought: values.amount_sought,
-                // Add any other relevant fields for AI analysis
               },
             },
           });
@@ -256,7 +221,6 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             toast.error("AI analysis failed: " + aiError.message);
           } else if (aiAnalysis) {
             console.log("AI Analysis Result:", aiAnalysis);
-            // Update the startup with AI analysis results
             const { error: updateAiError } = await supabase
               .from('startups')
               .update({
@@ -277,14 +241,13 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
           toast.error("An unexpected error occurred during AI analysis.");
         }
       }
-      // --- End AI Analysis Integration ---
 
       if (!startupId) {
         logActivity('startup_listed', `Listed new startup: ${values.name}`, newStartupId, 'Rocket');
         setCurrentScreen('startupListingCelebration', { startupName: values.name });
       } else {
         logActivity('startup_updated', `Updated startup: ${values.name}`, newStartupId, 'Rocket');
-        setCurrentScreen('home'); // Return to home (FounderDashboard) after update
+        setCurrentScreen('home');
       }
     }
     setLoading(false);
@@ -463,6 +426,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
                     <FormLabel className="dark:text-gray-50">Full Description (Optional)</FormLabel>
                     <Textarea
                       {...field}
+                      value={field.value || ''} // Convert null to empty string for textarea
                       placeholder="Dive deeper! Tell us more about your vision, team, market, and what makes you unique."
                       className="min-h-[100px] border-2 border-gray-200 rounded-xl focus:border-purple-700 focus:ring-2 focus:ring-purple-100 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 dark:focus:border-purple-500"
                       aria-label="Startup description"

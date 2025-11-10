@@ -11,180 +11,275 @@ import {
 import dynamic from 'next/dynamic';
 import BottomNav from './BottomNav';
 import MenuItem from './MenuItem';
-import SplashScreen from './screens/SplashScreen'; // SplashScreen is directly imported as it's the initial fallback
-import ScreenTransitionWrapper from './ScreenTransitionWrapper'; // Updated to default import
+import SplashScreen from './screens/SplashScreen';
+import ScreenTransitionWrapper from './ScreenTransitionWrapper';
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
 import { supabase } from '@/integrations/supabase/client';
 import localforage from 'localforage';
 import { useSupabaseMutation } from '@/hooks/use-supabase-mutation';
 
-// Define TypeScript interfaces for data structures (copied from use-app-data.tsx for consistency)
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  last_seen: string | null; // Assuming this is the field for last activity
-  show_welcome_flyer: boolean;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
+import {
+  Profile, Startup, Chat, Message, CommunityPost, Notification, ActivityLog, ScreenParams, MaintenanceModeSettings
+} from '@/types'; // Import all types from the shared file
+
+// Prop interfaces for screens (defined here for dynamic imports)
+interface OnboardingScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  onOnboardingComplete?: () => void; // Renamed to match usage
 }
 
-interface Startup {
-  id: string;
-  name: string;
-  logo: string;
-  tagline: string;
-  pitch: string;
-  description: string | null;
-  category: string;
-  room_members: number;
-  active_chats: number;
-  interests: number;
-  founder_name: string;
-  location: string;
-  founder_id: string;
-  amount_sought: number | null;
-  currency: string | null;
-  funding_stage: string | null;
-  ai_risk_score: number | null;
-  market_trend_analysis: string | null;
-  amount_raised: number;
+interface AuthScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
 }
 
-interface Chat {
-  id: string;
-  startup_id: string;
-  startup_name: string;
-  startup_logo: string;
-  last_message_text: string;
-  last_message_timestamp: string;
-  unread_count: number;
-  investor_id: string;
-  founder_id: string;
-  user_ids: string[];
-  unread_counts: { [key: string]: number };
+interface RoleSelectorScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setActiveTab: (tab: string) => void;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
+  investorCount: number;
+  founderCount: number;
 }
 
-interface Message {
-  id: string;
-  chat_id: string;
-  sender_id: string;
-  sender_name: string;
-  text: string;
-  created_at: string;
-  read: boolean;
+interface HomeScreenProps {
+  userRole: string | null;
+  startups: Startup[];
+  bookmarkedStartups: string[];
+  interestedStartups: string[];
+  toggleBookmark: (startupId: string) => void;
+  toggleInterest: (startupId: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  loading: boolean;
+  userProfileId: string | null;
+  userProfileName: string | null;
+  userProfileEmail: string | null;
+  handleStartChat: (startup: Startup) => Promise<void>;
+  recentActivities: ActivityLog[];
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
 }
 
-interface CommunityPost {
-  id: string;
-  author_id: string;
-  author_name: string;
-  author_avatar_id: number | null;
-  content: string;
-  image_url: string | null;
-  created_at: string;
-  likes: string[];
-  comments_count: number;
-  is_hidden: boolean;
+interface ChatListScreenProps {
+  chats: Chat[];
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setActiveTab: (tab: string) => void;
+  activeTab: string;
+  userRole: 'investor' | 'founder' | 'admin' | null;
 }
 
-interface Notification {
-  id: string;
-  user_id: string;
-  type: string;
-  message: string;
-  link: string | null;
-  read: boolean;
-  created_at: string;
-  related_entity_id: string | null;
+interface ChatConversationScreenProps {
+  selectedChat: Chat | null;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setActiveTab: (tab: string) => void;
+  userProfile: Profile | null;
+  logActivity: (type: string, description: string, entity_id: string | null, icon: string | null) => Promise<void>;
+  fetchMessagesForChat: (chatId: string) => Promise<Message[] | null>;
 }
 
-interface ActivityLog {
-  id: string;
-  user_id: string;
-  type: string;
-  description: string;
-  timestamp: string;
-  entity_id: string | null;
-  icon: string | null;
+interface ProfileScreenProps {
+  userProfile: Profile | null;
+  userRole: string | null;
+  bookmarkedStartups: string[];
+  interestedStartups: string[];
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setActiveTab: (tab: string) => void;
+  activeTab: string;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  setUserProfile: (profile: Profile | null) => void;
 }
 
-// Define a type for screen parameters for better type safety
-interface ScreenParams {
+interface CommunityFeedScreenProps {
+  communityPosts: CommunityPost[];
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  setActiveTab: (tab: string) => void;
+  activeTab: string;
+  userRole: string | null;
+  userProfileId: string | null;
+  fetchCommunityPosts: () => Promise<void>;
+}
+
+interface EditProfileScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  userProfile: Profile;
+  setUserProfile: (profile: Profile | null) => void;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
+}
+
+interface ManageStartupScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  userProfileId: string;
+  userProfileName: string;
+  userProfileEmail: string;
   startupId?: string;
-  startupName?: string;
-  postId?: string;
-  chat?: Chat;
-  authActionType?: 'forgotPassword' | 'changePassword';
-  startupRoomId?: string;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  userProfileProAccount: boolean;
 }
+
+interface NotificationsScreenProps {
+  notifications: Notification[];
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  fetchNotifications: () => void;
+}
+
+interface StartupListingCelebrationScreenProps {
+  startupName: string;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+interface CreateCommunityPostScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  userProfile: Profile;
+  postId?: string;
+}
+
+interface HelpAndSupportScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+interface MerchStoreScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+interface CommunityPostDetailScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  selectedCommunityPostId: string;
+  userProfile: Profile | null;
+}
+
+interface AdminDashboardScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  maintenanceMode: MaintenanceModeSettings;
+  fetchAppSettings: () => void;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+}
+
+interface SavedStartupsScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  userProfileId: string | null; // Changed to string | null
+  bookmarkedStartups: string[];
+  interestedStartups: string[];
+  toggleBookmark: (startupId: string) => void;
+  toggleInterest: (startupId: string) => void;
+  handleStartChat: (startup: Startup) => Promise<void>;
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  startups: Startup[];
+}
+
+interface SettingsScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+interface TermsAndPrivacyScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+interface StartupRoomScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  selectedStartup: Startup;
+}
+
+interface AuthActionScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  authActionType: 'forgotPassword' | 'changePassword';
+}
+
+interface NewChatScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  userProfile: Profile;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+}
+
+interface StartupDetailScreenProps {
+  selectedStartup: Startup;
+  bookmarkedStartups: string[];
+  interestedStartups: string[];
+  toggleBookmark: (startupId: string) => void;
+  toggleInterest: (startupId: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  activeTab: string;
+  userRole: string | null;
+  setActiveTab: (tab: string) => void;
+  handleStartChat: (startup: Startup) => Promise<void>;
+  logActivity: (type: string, description: string, entity_id?: string, icon?: string) => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>;
+  userProfile: Profile | null;
+  fetchStartups: () => Promise<void>;
+  handleJoinStartupRoom: (startup: Startup) => Promise<void>;
+  userProfileId: string | null;
+}
+
+interface WelcomeFlyerProps {
+  userName: string;
+  onDismiss: () => void;
+}
+
+interface UpgradeToProScreenProps {
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+}
+
+
+// Dynamic imports for screens
+const DynamicOnboardingScreen = dynamic<OnboardingScreenProps>(() => import('./screens/OnboardingScreen'), { ssr: false });
+const DynamicAuthScreen = dynamic<AuthScreenProps>(() => import('@/components/screens/AuthScreen'), { ssr: false });
+const DynamicRoleSelectorScreen = dynamic<RoleSelectorScreenProps>(() => import('./screens/RoleSelectorScreen'), { ssr: false });
+const DynamicHomeScreen = dynamic<HomeScreenProps>(() => import('./screens/HomeScreen'), { ssr: false });
+const DynamicChatListScreen = dynamic<ChatListScreenProps>(() => import('./screens/ChatListScreen'), { ssr: false });
+const DynamicChatConversationScreen = dynamic<ChatConversationScreenProps>(() => import('./screens/ChatConversationScreen'), { ssr: false });
+const DynamicProfileScreen = dynamic<ProfileScreenProps>(() => import('./screens/ProfileScreen'), { ssr: false });
+const DynamicCommunityFeedScreen = dynamic<CommunityFeedScreenProps>(() => import('./screens/CommunityFeedScreen'), { ssr: false });
+const DynamicEditProfileScreen = dynamic<EditProfileScreenProps>(() => import('./screens/EditProfileScreen'), { ssr: false });
+const DynamicManageStartupScreen = dynamic<ManageStartupScreenProps>(() => import('./screens/ManageStartupScreen'), { ssr: false });
+const DynamicNotificationsScreen = dynamic<NotificationsScreenProps>(() => import('./screens/NotificationsScreen'), { ssr: false });
+const DynamicStartupListingCelebrationScreen = dynamic<StartupListingCelebrationScreenProps>(() => import('./screens/StartupListingCelebrationScreen'), { ssr: false });
+const DynamicCreateCommunityPostScreen = dynamic<CreateCommunityPostScreenProps>(() => import('./screens/CreateCommunityPostScreen'), { ssr: false });
+const DynamicHelpAndSupportScreen = dynamic<HelpAndSupportScreenProps>(() => import('./screens/HelpAndSupportScreen'), { ssr: false });
+const DynamicMerchStoreScreen = dynamic<MerchStoreScreenProps>(() => import('./screens/MerchStoreScreen'), { ssr: false });
+const DynamicCommunityPostDetailScreen = dynamic<CommunityPostDetailScreenProps>(() => import('./screens/CommunityPostDetailScreen'), { ssr: false });
+const DynamicAdminDashboardScreen = dynamic<AdminDashboardScreenProps>(() => import('./screens/AdminDashboardScreen'), { ssr: false });
+const DynamicSavedStartupsScreen = dynamic<SavedStartupsScreenProps>(() => import('./screens/SavedStartupsScreen'), { ssr: false });
+const DynamicSettingsScreen = dynamic<SettingsScreenProps>(() => import('./screens/SettingsScreen'), { ssr: false });
+const DynamicMaintenanceModeScreen = dynamic<MaintenanceModeScreenProps>(() => import('./screens/MaintenanceModeScreen'), { ssr: false });
+const DynamicTermsAndPrivacyScreen = dynamic<TermsAndPrivacyScreenProps>(() => import('./screens/TermsAndPrivacyScreen'), { ssr: false });
+const DynamicStartupRoomScreen = dynamic<StartupRoomScreenProps>(() => import('./screens/StartupRoomScreen'), { ssr: false });
+const DynamicAuthActionScreen = dynamic<AuthActionScreenProps>(() => import('./screens/AuthActionScreen'), { ssr: false });
+const DynamicNewChatScreen = dynamic<NewChatScreenProps>(() => import('./screens/NewChatScreen'), { ssr: false });
+const DynamicStartupDetailScreen = dynamic<StartupDetailScreenProps>(() => import('./screens/StartupDetailScreen'), { ssr: false });
+const DynamicWelcomeFlyer = dynamic<WelcomeFlyerProps>(() => import('./WelcomeFlyer'), { ssr: false });
+const DynamicUpgradeToProScreen = dynamic<UpgradeToProScreenProps>(() => import('./screens/UpgradeToProScreen'), { ssr: false });
+
 
 interface SeedstreetAppContentProps {
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   loadingSession: boolean;
-  maintenanceMode: { enabled: boolean; message: string };
+  maintenanceMode: MaintenanceModeSettings;
   fetchAppSettings: () => void;
   currentScreen: string;
-  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated type for params
-  currentScreenParams: ScreenParams; // NEW: Prop for current screen parameters
-  onboardingComplete: () => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void;
+  currentScreenParams: ScreenParams;
+  onOnboardingComplete: () => void; // Renamed prop
   userProfile: Profile | null;
-  setUserProfile: (profile: Profile | null) => void;
+  setUserProfile: React.Dispatch<React.SetStateAction<Profile | null>>; // Explicitly type setUserProfile
   startups: Startup[];
   chats: Chat[];
   communityPosts: CommunityPost[];
   notifications: Notification[];
   recentActivities: ActivityLog[];
   loadingData: boolean;
-  fetchUserProfile: (userId: string) => Promise<Profile | null>;
+  fetchUserProfile: (userId: string) => Promise<Profile | null>; // Corrected return type
   investorCount: number;
   founderCount: number;
   fetchCommunityPosts: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
-  fetchStartups: () => Promise<void>; // NEW: Add fetchStartups prop
+  fetchStartups: () => Promise<void>;
 }
-
-// Dynamic imports for screens
-const DynamicOnboardingScreen = dynamic(() => import('./screens/OnboardingScreen'), { ssr: false });
-const DynamicAuthScreen = dynamic(() => import('@/components/screens/AuthScreen'), { ssr: false });
-const DynamicRoleSelectorScreen = dynamic(() => import('./screens/RoleSelectorScreen'), { ssr: false });
-const DynamicHomeScreen = dynamic(() => import('./screens/HomeScreen'), { ssr: false });
-const DynamicChatListScreen = dynamic(() => import('./screens/ChatListScreen'), { ssr: false });
-const DynamicChatConversationScreen = dynamic(() => import('./screens/ChatConversationScreen'), { ssr: false });
-const DynamicProfileScreen = dynamic(() => import('./screens/ProfileScreen'), { ssr: false });
-const DynamicCommunityFeedScreen = dynamic(() => import('./screens/CommunityFeedScreen'), { ssr: false });
-const DynamicEditProfileScreen = dynamic(() => import('./screens/EditProfileScreen'), { ssr: false });
-const DynamicManageStartupScreen = dynamic(() => import('./screens/ManageStartupScreen'), { ssr: false });
-const DynamicNotificationsScreen = dynamic(() => import('./screens/NotificationsScreen'), { ssr: false });
-const DynamicStartupListingCelebrationScreen = dynamic(() => import('./screens/StartupListingCelebrationScreen'), { ssr: false });
-const DynamicCreateCommunityPostScreen = dynamic(() => import('./screens/CreateCommunityPostScreen'), { ssr: false });
-const DynamicHelpAndSupportScreen = dynamic(() => import('./screens/HelpAndSupportScreen'), { ssr: false });
-const DynamicMerchStoreScreen = dynamic(() => import('./screens/MerchStoreScreen'), { ssr: false });
-const DynamicCommunityPostDetailScreen = dynamic(() => import('./screens/CommunityPostDetailScreen'), { ssr: false });
-const DynamicAdminDashboardScreen = dynamic(() => import('./screens/AdminDashboardScreen'), { ssr: false });
-const DynamicSavedStartupsScreen = dynamic(() => import('./screens/SavedStartupsScreen'), { ssr: false });
-const DynamicSettingsScreen = dynamic(() => import('./screens/SettingsScreen'), { ssr: false });
-const DynamicMaintenanceModeScreen = dynamic(() => import('./screens/MaintenanceModeScreen'), { ssr: false });
-const DynamicTermsAndPrivacyScreen = dynamic(() => import('./screens/TermsAndPrivacyScreen'), { ssr: false });
-const DynamicStartupRoomScreen = dynamic(() => import('./screens/StartupRoomScreen'), { ssr: false });
-const DynamicAuthActionScreen = dynamic(() => import('./screens/AuthActionScreen'), { ssr: false });
-const DynamicNewChatScreen = dynamic(() => import('./screens/NewChatScreen'), { ssr: false });
-const DynamicStartupDetailScreen = dynamic(() => import('./screens/StartupDetailScreen'), { ssr: false });
-const DynamicWelcomeFlyer = dynamic(() => import('./WelcomeFlyer'), { ssr: false });
-const DynamicUpgradeToProScreen = dynamic(() => import('./screens/UpgradeToProScreen'), { ssr: false }); // NEW: Dynamic import for UpgradeToProScreen
-
 
 const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   isLoggedIn,
@@ -194,8 +289,8 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   fetchAppSettings,
   currentScreen,
   setCurrentScreen,
-  currentScreenParams, // NEW: Destructure currentScreenParams
-  onboardingComplete,
+  currentScreenParams,
+  onOnboardingComplete, // Renamed prop
   userProfile,
   setUserProfile,
   startups,
@@ -209,27 +304,24 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   founderCount,
   fetchCommunityPosts,
   fetchNotifications,
-  fetchStartups, // Destructure fetchStartups prop
+  fetchStartups,
 }) => {
   const [screenHistory, setScreenHistory] = useState<string[]>([currentScreen]);
   const [activeTab, setActiveTab] = useState('home');
 
   const userRole = userProfile?.role || null;
-  const userProfileId = userProfile?.id || null; // Derive userProfileId here
-  const userProfileProAccount = userProfile?.pro_account || false; // NEW: Derive pro_account
+  const userProfileId = userProfile?.id || null;
+  const userProfileProAccount = userProfile?.pro_account || false;
 
-  // Integrate network status hook
   useNetworkStatus();
 
-  // NEW: Derive values directly from currentScreenParams
   const selectedStartupId = currentScreenParams.startupId;
   const listedStartupName = currentScreenParams.startupName;
   const selectedCommunityPostId = currentScreenParams.postId;
-  const selectedChat = currentScreenParams.chat; // Directly use the chat object
+  const selectedChat = currentScreenParams.chat;
   const authActionType = currentScreenParams.authActionType;
   const selectedStartupRoomId = currentScreenParams.startupRoomId;
 
-  // NEW: Derive selectedStartup from startups array and selectedStartupId using useMemo
   const selectedStartup = useMemo(() => {
     if (selectedStartupId && startups.length > 0) {
       return startups.find(s => s.id === selectedStartupId) || null;
@@ -237,7 +329,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     return null;
   }, [selectedStartupId, startups]);
 
-  // Update screen history when currentScreen prop changes
   useEffect(() => {
     console.log("SeedstreetAppContent: currentScreen changed to:", currentScreen);
     setScreenHistory(prev => {
@@ -248,17 +339,15 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     });
   }, [currentScreen]);
 
-  // Modified handleSetCurrentScreen to simply call the parent's setCurrentScreen
-  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => { // Updated type for params
+  const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => {
     console.log("SeedstreetAppContent: handleSetCurrentScreen called with screen:", screen, "params:", params);
-    setCurrentScreen(screen, params); // Pass both screen and params to the parent handler
-  }, [setCurrentScreen]); // Dependency on parent's setCurrentScreen
+    setCurrentScreen(screen, params);
+  }, [setCurrentScreen]);
 
   const goBack = useCallback(() => {
     setScreenHistory(prev => {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
-        // When going back, we don't have specific params, so pass an empty object
         handleSetCurrentScreen(newHistory[newHistory.length - 1], {});
         return newHistory;
       }
@@ -284,7 +373,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   };
 
   const bookmarkedStartups = userProfile?.bookmarked_startups || [];
-  const interestedStartups = userProfile?.interested_startups || []; // Correctly derive here
+  const interestedStartups = userProfile?.interested_startups || [];
 
   const { mutate: toggleBookmarkMutation, loading: bookmarkLoading } = useSupabaseMutation(
     async ({ userId, newBookmarks }: { userId: string; newBookmarks: string[] }) => {
@@ -315,7 +404,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
-    // Prevent founder from bookmarking their own startup
     if (userProfile.id === startups.find(s => s.id === startupId)?.founder_id) {
       toast.info("You cannot bookmark your own startup.");
       return;
@@ -351,14 +439,13 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         throw profileError;
       }
 
-      // Call the Edge Function to update startup interests and send notification
       const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('update-startup-interest', {
         body: {
           startupId,
           newInterestsCount,
           founderId,
           startupName,
-          isInterested, // Pass this to the edge function to determine if notification is needed
+          isInterested,
           investorName,
           investorEmail,
         },
@@ -375,7 +462,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         setUserProfile((prev: Profile | null) => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
-        fetchStartups(); // NEW: Re-fetch startups to update counts
+        fetchStartups();
       },
       onError: (error) => {
         console.error("Error updating interest:", error);
@@ -390,7 +477,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
-    // Prevent founder from signaling interest in their own startup
     if (userProfile.id === startups.find(s => s.id === startupId)?.founder_id) {
       toast.info("You cannot signal interest in your own startup.");
       return;
@@ -440,7 +526,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
-    // Prevent founder from starting chat with their own startup
     if (userProfile.id === startup.founder_id) {
       toast.info("You cannot start a chat with your own startup. Use the 'Manage Startup' option.");
       return;
@@ -517,7 +602,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       toast.success("New chat started!");
       logActivity('chat_started', `Started a chat with ${founderName} about ${startup.name}`, chatToOpen.id, 'MessageCircle');
 
-      // Increment active_chats and room_members for the startup using Edge Function
       try {
         const { data: updatedStartupMetrics, error: updateMetricsError } = await supabase.functions.invoke('update-startup-chat-metrics', {
           body: {
@@ -532,20 +616,16 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           toast.error("Failed to update startup chat metrics.");
         } else {
           console.log("Startup chat metrics updated via Edge Function:", updatedStartupMetrics);
-          fetchStartups(); // Re-fetch startups to update counts
+          fetchStartups();
         }
       } catch (invokeError: any) {
         console.error("Unexpected error during update-startup-chat-metrics invocation:", invokeError);
         toast.error("An unexpected error occurred while updating startup chat metrics.");
       }
-
-      // Notification for new chat is now handled by a database trigger on the 'messages' table
-      // when the 'Chat initiated!' message is inserted.
-      // No need for client-side notification insert here.
     }
 
     if (chatToOpen) {
-      handleSetCurrentScreen('chat', { chat: chatToOpen }); // Pass the full chat object
+      handleSetCurrentScreen('chat', { chat: chatToOpen });
       setActiveTab('chats');
     }
   };
@@ -556,7 +636,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       return;
     }
 
-    // Prevent founder from joining their own startup room
     if (userProfile.id === startup.founder_id) {
       toast.info("You are the founder of this startup. You can manage it from your dashboard.");
       handleSetCurrentScreen('manageStartup', { startupId: startup.id });
@@ -567,7 +646,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       const { data, error } = await supabase.functions.invoke('join-startup-room', {
         body: {
           startupId: startup.id,
-          userId: userProfile.id, // Pass user ID to the edge function
+          userId: userProfile.id,
         },
       });
 
@@ -577,11 +656,9 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         return;
       }
 
-      // Assuming the edge function returns a success message and updated startup data
       toast.success(`You've joined the ${startup.name} room!`);
       logActivity('joined_room', `Joined startup room: ${startup.name}`, startup.id, 'Users');
-      fetchStartups(); // Re-fetch startups to update counts in the UI
-      // FIX: Pass startupId here so selectedStartup can be derived
+      fetchStartups();
       handleSetCurrentScreen('startupRoom', { startupRoomId: startup.id, startupId: startup.id });
 
     } catch (invokeError: any) {
@@ -628,18 +705,14 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     return data as Message[];
   }, []);
 
-  // If not logged in and on a protected screen, redirect to auth
   useEffect(() => {
     console.log("SeedstreetAppContent: Checking protected screen. isLoggedIn:", isLoggedIn, "currentScreen:", currentScreen, "loadingSession:", loadingSession);
     const isProtectedScreen = !['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen);
     if (!isLoggedIn && isProtectedScreen && !loadingSession) {
       console.log("SeedstreetAppContent: Redirecting to auth due to protected screen access.");
-      setCurrentScreen('auth', {}); // Corrected: Use setCurrentScreen with empty params
+      setCurrentScreen('auth', {});
     }
   }, [isLoggedIn, currentScreen, loadingSession, setCurrentScreen]);
-
-  // Removed console.log("SeedstreetAppContent: recentActivities before passing to FounderDashboard:", recentActivities);
-
 
   if (maintenanceMode.enabled) {
     return (
@@ -657,7 +730,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
   return (
     <ScreenTransitionWrapper currentScreen={currentScreen} screenVariants={screenVariants}>
       {currentScreen === 'onboarding' && (
-        <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onboardingComplete={onboardingComplete} />
+        <DynamicOnboardingScreen setCurrentScreen={handleSetCurrentScreen} onOnboardingComplete={onOnboardingComplete} />
       )}
       {currentScreen === 'auth' && <DynamicAuthScreen setCurrentScreen={handleSetCurrentScreen} setIsLoggedIn={setIsLoggedIn} fetchUserProfile={fetchUserProfile} />}
       {currentScreen === 'roleSelector' && <DynamicRoleSelectorScreen setCurrentScreen={handleSetCurrentScreen} setActiveTab={setActiveTab} logActivity={logActivity} fetchUserProfile={fetchUserProfile} investorCount={investorCount} founderCount={founderCount} />}
@@ -670,12 +743,11 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
             interestedStartups={interestedStartups}
             toggleBookmark={toggleBookmark}
             toggleInterest={toggleInterest}
-            // Removed setSelectedStartup and setSelectedChat props
             setCurrentScreen={handleSetCurrentScreen}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             loading={loadingData || bookmarkLoading || interestLoading}
-            userProfileId={userProfileId} // Pass userProfileId
+            userProfileId={userProfileId}
             userProfileName={userProfile?.name || userProfile?.first_name || null}
             userProfileEmail={userProfile?.email || null}
             handleStartChat={handleStartChat}
@@ -695,7 +767,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         <DynamicChatListScreen
           chats={chats}
           setCurrentScreen={handleSetCurrentScreen}
-          // Removed setSelectedChat prop
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
@@ -708,7 +779,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           setActiveTab={setActiveTab}
           activeTab={activeTab}
           userRole={userRole}
-          userProfileId={userProfileId} // Pass userProfileId
+          userProfileId={userProfileId}
           fetchCommunityPosts={fetchCommunityPosts}
         />
       )}
@@ -733,7 +804,6 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           toggleBookmark={toggleBookmark}
           toggleInterest={toggleInterest}
           setCurrentScreen={handleSetCurrentScreen}
-          // Removed setSelectedChat prop
           activeTab={activeTab}
           userRole={userRole}
           setActiveTab={setActiveTab}
@@ -743,7 +813,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userProfile={userProfile}
           fetchStartups={fetchStartups}
           handleJoinStartupRoom={handleJoinStartupRoom}
-          userProfileId={userProfileId} // NEW: Pass userProfileId
+          userProfileId={userProfileId}
         />
       )}
       {currentScreen === 'chat' && selectedChat && (
@@ -773,7 +843,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           userProfileEmail={userProfile.email}
           startupId={selectedStartupId}
           logActivity={logActivity}
-          userProfileProAccount={userProfileProAccount} // NEW: Pass pro_account
+          userProfileProAccount={userProfileProAccount}
         />
       )}
       {currentScreen === 'createCommunityPost' && userProfile && (
@@ -824,17 +894,15 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
       {currentScreen === 'savedStartups' && userProfile && (
         <DynamicSavedStartupsScreen
           setCurrentScreen={handleSetCurrentScreen}
-          userProfileId={userProfile.id}
+          userProfileId={userProfileId}
           bookmarkedStartups={bookmarkedStartups}
           toggleBookmark={toggleBookmark}
           toggleInterest={toggleInterest}
-          // Removed setSelectedStartup prop
           handleStartChat={handleStartChat}
           interestedStartups={interestedStartups}
           fetchStartups={fetchStartups}
           handleJoinStartupRoom={handleJoinStartupRoom}
-          startups={startups} // Pass all startups to SavedStartupsScreen
-          userProfileId={userProfileId} // NEW: Pass userProfileId
+          startups={startups}
         />
       )}
       {currentScreen === 'settings' && (
@@ -866,12 +934,11 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
           logActivity={logActivity}
         />
       )}
-      {currentScreen === 'upgradeToPro' && ( // NEW: Render UpgradeToProScreen
+      {currentScreen === 'upgradeToPro' && (
         <DynamicUpgradeToProScreen
           setCurrentScreen={handleSetCurrentScreen}
         />
       )}
-      {/* Fallback for unhandled screens */}
       {!Object.values({
         onboarding: currentScreen === 'onboarding',
         auth: currentScreen === 'auth',
@@ -894,7 +961,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
         startupRoom: currentScreen === 'startupRoom' && selectedStartupRoomId && selectedStartup,
         authAction: currentScreen === 'authAction' && authActionType,
         newChat: currentScreen === 'newChat' && userProfile,
-        upgradeToPro: currentScreen === 'upgradeToPro', // NEW: Add upgradeToPro to handled screens
+        upgradeToPro: currentScreen === 'upgradeToPro',
       }).some(Boolean) && (
         <div className="fixed inset-0 flex items-center justify-center bg-red-100 text-red-800 text-lg font-bold p-4 z-50">
           Error: Unknown Screen "{currentScreen}"

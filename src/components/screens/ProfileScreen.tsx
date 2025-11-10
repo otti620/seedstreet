@@ -2,38 +2,20 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag, ShieldCheck, DollarSign } from 'lucide-react'; // Import ShieldCheck and DollarSign
+import { User, Bell, Bookmark, Settings, MessageCircle, LogOut, ShoppingBag, ShieldCheck, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import BottomNav from '../BottomNav';
 import MenuItem from '../MenuItem';
 import { supabase } from '@/integrations/supabase/client';
 import { getAvatarUrl } from '@/lib/default-avatars';
-
-// Define TypeScript interfaces for data structures (copied from SeedstreetApp for consistency)
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_id: number | null;
-  email: string | null;
-  name: string | null;
-  role: 'investor' | 'founder' | 'admin' | null;
-  onboarding_complete: boolean;
-  bookmarked_startups: string[];
-  interested_startups: string[];
-  bio: string | null;
-  location: string | null;
-  phone: string | null;
-  total_committed: number;
-  pro_account: boolean; // NEW: Add pro_account
-}
+import { Profile, ScreenParams } from '@/types'; // Import types from the shared file
 
 interface ProfileScreenProps {
   userProfile: Profile | null;
   userRole: string | null;
   bookmarkedStartups: string[];
   interestedStartups: string[];
-  setCurrentScreen: (screen: string) => void;
+  setCurrentScreen: (screen: string, params?: ScreenParams) => void; // Updated to accept params
   setActiveTab: (tab: string) => void;
   activeTab: string;
   setIsLoggedIn: (loggedIn: boolean) => void;
@@ -56,7 +38,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-8 pb-16 relative overflow-hidden"> {/* Reduced pt and pb */}
+      <div className="bg-gradient-to-br from-purple-700 to-teal-600 px-6 pt-8 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl animate-float" />
           <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-teal-400 rounded-full filter blur-3xl animate-float-delay-2s" />
@@ -67,16 +49,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </button>
         </div>
         <div className="flex flex-col items-center text-white relative z-10">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-3xl font-bold mb-2 shadow-xl relative overflow-hidden border-4 border-white ring-4 ring-purple-300/50 dark:ring-teal-300/50"> {/* Reduced w, h, and text size */}
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-3xl font-bold mb-2 shadow-xl relative overflow-hidden border-4 border-white ring-4 ring-purple-300/50 dark:ring-teal-300/50">
             {userProfile?.avatar_id ? (
               <Image src={getAvatarUrl(userProfile.avatar_id)} alt="User Avatar" layout="fill" objectFit="cover" className="rounded-full" />
             ) : (
               userProfile?.name?.[0] || userProfile?.email?.[0]?.toUpperCase() || 'U'
             )}
           </div>
-          <h2 className="text-xl font-bold mb-0.5">{userProfile?.name || userProfile?.email || 'User Name'}</h2> {/* Reduced text size */}
-          <p className="text-white/80 text-xs mb-2">{userProfile?.email || 'user@email.com'}</p> {/* Reduced text size */}
-          <span className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold"> {/* Reduced padding and text size */}
+          <h2 className="text-xl font-bold mb-0.5">{userProfile?.name || userProfile?.email || 'User Name'}</h2>
+          <p className="text-white/80 text-xs mb-2">{userProfile?.email || 'user@email.com'}</p>
+          <span className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold">
             {userRole === 'investor' ? '💰 Investor' : userRole === 'founder' ? '💡 Founder' : '👤 User'}
           </span>
         </div>
@@ -119,7 +101,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Logout */}
-        <button 
+        <button
           onClick={async () => {
             const { error } = await supabase.auth.signOut();
             if (error) {
