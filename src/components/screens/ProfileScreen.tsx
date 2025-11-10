@@ -25,6 +25,7 @@ interface Profile {
   location: string | null;
   phone: string | null;
   total_committed: number;
+  pro_account: boolean; // NEW: Add pro_account
 }
 
 interface ProfileScreenProps {

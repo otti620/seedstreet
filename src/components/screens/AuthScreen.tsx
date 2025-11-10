@@ -37,6 +37,7 @@ interface Profile {
   last_seen: string | null;
   show_welcome_flyer: boolean;
   total_committed: number;
+  pro_account: boolean; // NEW: Add pro_account
 }
 
 interface ScreenParams {
