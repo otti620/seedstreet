@@ -130,7 +130,7 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
             logo: startupData.logo,
             tagline: startupData.tagline,
             pitch: startupData.pitch,
-            description: startupData.description || undefined,
+            description: startupData.description || undefined, // Convert null to undefined for optional fields
             category: startupData.category,
             location: startupData.location,
             amount_sought: startupData.amount_sought ?? undefined, // Use nullish coalescing
@@ -160,12 +160,12 @@ const ManageStartupScreen: React.FC<ManageStartupScreenProps> = ({
       logo: values.logo,
       tagline: values.tagline,
       pitch: values.pitch,
-      description: values.description || null,
+      description: values.description || null, // Can be null
       category: values.category,
       location: values.location,
-      amount_sought: values.amount_sought || null,
-      currency: values.currency || null,
-      funding_stage: values.funding_stage || null,
+      amount_sought: values.amount_sought || null, // Can be null
+      currency: values.currency || null, // Can be null
+      funding_stage: values.funding_stage || null, // Can be null
       founder_id: userProfileId,
       founder_name: userProfileName,
       status: 'Pending',
