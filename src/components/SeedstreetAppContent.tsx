@@ -297,7 +297,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     },
     {
       onSuccess: (data, variables) => {
-        setUserProfile(prev => prev ? { ...prev, bookmarked_startups: variables.newBookmarks } : null);
+        setUserProfile((prev: Profile | null) => prev ? { ...prev, bookmarked_startups: variables.newBookmarks } : null);
         const isBookmarked = variables.newBookmarks.includes(selectedStartupId || '');
         toast.success(isBookmarked ? "Startup bookmarked!" : "Bookmark removed!");
         logActivity(isBookmarked ? 'bookmark_added' : 'bookmark_removed', `${isBookmarked ? 'Added' : 'Removed'} a startup to bookmarks`, selectedStartupId, 'Bookmark');
@@ -372,7 +372,7 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
     },
     {
       onSuccess: (data, variables) => {
-        setUserProfile(prev => prev ? { ...prev, interested_startups: variables.newInterests } : null);
+        setUserProfile((prev: Profile | null) => prev ? { ...prev, interested_startups: variables.newInterests } : null);
         toast.success(variables.isInterested ? "Interest removed!" : "Interest signaled!");
         logActivity(variables.isInterested ? 'interest_removed' : 'interest_added', `${variables.isInterested ? 'Removed' : 'Signaled'} interest in a startup`, variables.startupId, 'Eye');
         fetchStartups(); // NEW: Re-fetch startups to update counts
