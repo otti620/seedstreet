@@ -53,6 +53,8 @@ const formSchema = z.object({
   location: z.string().min(2, { message: "Location is required." }),
   amount_sought: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
+    z.any() // Preprocess returns any, then pipe to the actual schema
+  ).pipe(
     z.number().min(0, { message: "Amount must be a positive number." }).nullable()
   ).optional(),
   currency: z.enum(currencies as [string, ...string[]], { message: "Please select a valid currency." }).nullable().optional(),

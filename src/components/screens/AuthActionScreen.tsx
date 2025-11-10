@@ -41,13 +41,19 @@ const changePasswordSchema = z.object({
 type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
 type ChangePasswordFormInputs = z.infer<typeof changePasswordSchema>;
 
+// Define a union type for the form data
+type AuthFormInputs = ForgotPasswordFormInputs | ChangePasswordFormInputs;
+
 const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, authActionType }) => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Use 'any' for the form's generic parameter to simplify complex conditional typing
-  const form = useForm<any>({
-    resolver: zodResolver(authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema) as any, // Explicitly cast resolver to any
+  // Determine the current schema
+  const currentSchema = authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema;
+
+  // Use the union type for useForm and cast the resolver to any
+  const form = useForm<AuthFormInputs>({
+    resolver: zodResolver(currentSchema) as any, // Explicitly cast the resolver result to any
     defaultValues: {
       ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
     },
@@ -85,7 +91,7 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
     setLoading(false);
   };
 
-  const onSubmit = (values: any) => { // Use 'any' here for simplicity due to conditional types
+  const onSubmit = (values: AuthFormInputs) => { // Use the union type here
     if (authActionType === 'forgotPassword') {
       handleForgotPassword(values as ForgotPasswordFormInputs);
     } else {
