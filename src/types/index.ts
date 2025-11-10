@@ -118,11 +118,27 @@ export interface ActivityLog {
   icon: string | null;
 }
 
+export interface FlaggedMessage { // Added FlaggedMessage interface
+  id: string;
+  message_id: string;
+  original_message_id: string | null;
+  chat_id: string;
+  sender: string;
+  sender_id: string | null;
+  chat_type: 'DM' | 'Community';
+  startup_name: string | null;
+  reason: string;
+  timestamp: string;
+  status: 'Pending' | 'Resolved' | 'Dismissed';
+  reported_by: string;
+}
+
 export interface ScreenParams {
   startupId?: string;
   startupName?: string;
   postId?: string;
   chat?: Chat;
+  chatId?: string; // Added chatId for direct chat navigation
   authActionType?: 'forgotPassword' | 'changePassword';
   startupRoomId?: string;
 }

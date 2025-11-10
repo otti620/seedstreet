@@ -225,6 +225,8 @@ interface UpgradeToProScreenProps {
   setCurrentScreen: (screen: string, params?: ScreenParams) => void;
 }
 
+import { MaintenanceModeScreenProps } from './screens/MaintenanceModeScreen'; // Import MaintenanceModeScreenProps
+
 
 // Dynamic imports for screens
 const DynamicOnboardingScreen = dynamic<OnboardingScreenProps>(() => import('./screens/OnboardingScreen'), { ssr: false });

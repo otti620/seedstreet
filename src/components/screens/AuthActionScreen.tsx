@@ -45,12 +45,12 @@ const AuthActionScreen: React.FC<AuthActionScreenProps> = ({ setCurrentScreen, a
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Use a conditional type for the form's generic parameter
-  const form = useForm<typeof authActionType extends 'forgotPassword' ? ForgotPasswordFormInputs : ChangePasswordFormInputs>({
+  // Use 'any' for the form's generic parameter to simplify complex conditional typing
+  const form = useForm<any>({
     resolver: zodResolver(authActionType === 'forgotPassword' ? forgotPasswordSchema : changePasswordSchema),
     defaultValues: {
       ...(authActionType === 'forgotPassword' ? { email: '' } : { password: '', confirmPassword: '' }),
-    } as any, // Type assertion needed here due to conditional default values
+    },
   });
 
   const handleForgotPassword = async (values: ForgotPasswordFormInputs) => {

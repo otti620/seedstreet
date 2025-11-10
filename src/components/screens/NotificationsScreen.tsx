@@ -33,7 +33,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     }
   };
 
-  const handleViewDetails = (notification: Notification) => {
+  const handleViewDetails = async (notification: Notification) => {
     if (!notification.related_entity_id) {
       toast.info("No specific details available for this notification.");
       return;
@@ -47,7 +47,19 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         setCurrentScreen('startupDetail', { startupId: notification.related_entity_id });
         break;
       case 'new_chat':
-        setCurrentScreen('chat', { chatId: notification.related_entity_id });
+        // Fetch the chat object using related_entity_id (which is chat_id)
+        const { data: chatData, error: chatError } = await supabase
+          .from('chats')
+          .select('*')
+          .eq('id', notification.related_entity_id)
+          .single();
+
+        if (chatError || !chatData) {
+          console.error("Error fetching chat for notification:", chatError);
+          toast.error("Failed to load chat details.");
+          return;
+        }
+        setCurrentScreen('chat', { chat: chatData }); // Pass the full chat object
         break;
       case 'new_comment':
       case 'post_liked':
