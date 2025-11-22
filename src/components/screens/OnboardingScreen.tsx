@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion'; // Import motion
 import localforage from 'localforage'; // Import localforage
 
@@ -32,6 +32,10 @@ const slides = [
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ setCurrentScreen, onOnboardingComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    console.log("DEBUG: OnboardingScreen is rendering.");
+  }, []);
 
   const handleGetStarted = async () => {
     await localforage.setItem('hasSeenOnboarding', true); // Mark as seen locally

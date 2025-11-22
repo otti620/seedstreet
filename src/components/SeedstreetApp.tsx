@@ -67,51 +67,51 @@ const SeedstreetApp: React.FC = () => {
   useEffect(() => {
     const checkInitialSession = async () => {
       if (!splashTimerComplete) {
-        console.log("checkInitialSession: Splash timer not complete, returning.");
+        console.log("DEBUG: checkInitialSession: Splash timer not complete, returning.");
         return;
       }
 
       setLoadingSession(true);
-      console.log("checkInitialSession: Starting session check.");
+      console.log("DEBUG: checkInitialSession: Starting session check.");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
-      console.log("checkInitialSession: Session:", session ? "exists" : "none", "Error:", sessionError, "Onboarding seen locally:", onboardingSeenLocally);
+      console.log("DEBUG: checkInitialSession: Session exists:", !!session, "Error:", sessionError?.message, "Onboarding seen locally:", onboardingSeenLocally);
 
       if (sessionError || !session) {
         setIsLoggedIn(false);
-        console.log("checkInitialSession: User NOT logged in.");
+        console.log("DEBUG: checkInitialSession: User NOT logged in.");
         if (!onboardingSeenLocally) {
-          console.log("checkInitialSession: Onboarding NOT seen locally. Setting screen to 'onboarding'.");
+          console.log("DEBUG: checkInitialSession: Onboarding NOT seen locally. Setting screen to 'onboarding'.");
           setCurrentScreen('onboarding');
         } else {
-          console.log("checkInitialSession: Onboarding SEEN locally. Setting screen to 'auth'.");
+          console.log("DEBUG: checkInitialSession: Onboarding SEEN locally. Setting screen to 'auth'.");
           setCurrentScreen('auth');
         }
       } else {
         setIsLoggedIn(true);
-        console.log("checkInitialSession: User IS logged in. Fetching profile for user ID:", session.user.id);
+        console.log("DEBUG: checkInitialSession: User IS logged in. Fetching profile for user ID:", session.user.id);
         const fetchedProfile = await fetchUserProfile(session.user.id);
         if (fetchedProfile) {
-          console.log("checkInitialSession: Fetched profile:", fetchedProfile);
+          console.log("DEBUG: checkInitialSession: Fetched profile. Role:", fetchedProfile.role, "Onboarding complete:", fetchedProfile.onboarding_complete);
           if (!fetchedProfile.role) {
-            console.log("checkInitialSession: Profile role NOT set. Setting screen to 'roleSelector'.");
+            console.log("DEBUG: checkInitialSession: Profile role NOT set. Setting screen to 'roleSelector'.");
             setCurrentScreen('roleSelector');
           } else if (!fetchedProfile.onboarding_complete) {
-            console.log("checkInitialSession: Profile onboarding NOT complete. Setting screen to 'onboarding'.");
+            console.log("DEBUG: checkInitialSession: Profile onboarding NOT complete. Setting screen to 'onboarding'.");
             setCurrentScreen('onboarding');
           } else {
-            console.log("checkInitialSession: Profile role SET and onboarding COMPLETE. Setting screen to 'home'.");
+            console.log("DEBUG: checkInitialSession: Profile role SET and onboarding COMPLETE. Setting screen to 'home'.");
             setCurrentScreen('home');
           }
         } else {
-          console.log("checkInitialSession: Logged in, but profile NOT found. Setting screen to 'roleSelector'.");
+          console.log("DEBUG: checkInitialSession: Logged in, but profile NOT found. Setting screen to 'roleSelector'.");
           setCurrentScreen('roleSelector');
         }
       }
       setLoadingSession(false);
       setCurrentScreenParams({});
       // Note: currentScreen might not be updated immediately in this log, but the state update is scheduled.
-      console.log("checkInitialSession: Session check complete. Next screen determined."); 
+      console.log("DEBUG: checkInitialSession: Session check complete. Final currentScreen state will be determined by the above logic.");
     };
 
     if (splashTimerComplete && currentScreen === 'splash') {
