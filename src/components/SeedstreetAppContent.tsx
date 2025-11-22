@@ -709,7 +709,10 @@ const SeedstreetAppContent: React.FC<SeedstreetAppContentProps> = ({
 
   useEffect(() => {
     console.log("SeedstreetAppContent: Checking protected screen. isLoggedIn:", isLoggedIn, "currentScreen:", currentScreen, "loadingSession:", loadingSession);
-    const isProtectedScreen = !['splash', 'onboarding', 'auth', 'roleSelector'].includes(currentScreen);
+    // Define screens that are accessible even when not logged in
+    const publicScreens = ['splash', 'onboarding', 'auth', 'authAction', 'termsAndPrivacy'];
+    const isProtectedScreen = !publicScreens.includes(currentScreen);
+
     if (!isLoggedIn && isProtectedScreen && !loadingSession) {
       console.log("SeedstreetAppContent: Redirecting to auth due to protected screen access.");
       setCurrentScreen('auth', {});
