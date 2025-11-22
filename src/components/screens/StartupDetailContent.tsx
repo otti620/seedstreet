@@ -75,10 +75,10 @@ const StartupDetailContent = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6"> {/* Adjusted padding and spacing */}
           {/* Startup Header */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-            <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-4"> {/* Responsive flex direction */}
               <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-700 to-teal-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg flex-shrink-0 relative overflow-hidden">
                 {selectedStartup.logo.startsWith('http') ? (
                   <Image src={selectedStartup.logo} alt={`${selectedStartup.name} logo`} layout="fill" objectFit="cover" className="rounded-xl" />
@@ -86,10 +86,10 @@ const StartupDetailContent = ({
                   selectedStartup.logo
                 )}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-center sm:text-left"> {/* Responsive text alignment */}
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{selectedStartup.name}</h3>
                 <p className="text-gray-600 dark:text-gray-300">{selectedStartup.tagline}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2"> {/* Responsive badge alignment */}
                   <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">{selectedStartup.category}</Badge>
                   {selectedStartup.ai_risk_score !== null && (
                     <Badge
@@ -111,7 +111,7 @@ const StartupDetailContent = ({
           </div>
 
           {/* Funding & Engagement */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
             <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Funding & Engagement</h3>
             <div className="space-y-4">
               {selectedStartup.amount_sought && (
@@ -139,7 +139,7 @@ const StartupDetailContent = ({
           </div>
 
           {/* Key Metrics */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
             <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">Key Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
@@ -206,7 +206,7 @@ const StartupDetailContent = ({
 
           {/* Description */}
           {selectedStartup.description && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <h3 className="font-bold text-gray-900 mb-4 dark:text-gray-50">About {selectedStartup.name}</h3>
               <p className="text-gray-700 dark:text-gray-200">{selectedStartup.description}</p>
             </div>
@@ -214,7 +214,7 @@ const StartupDetailContent = ({
 
           {/* AI Market Trend Analysis */}
           {selectedStartup.market_trend_analysis && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-gray-50">
                 <BrainCircuit className="w-5 h-5 text-purple-700 dark:text-purple-400" /> AI Market Trend Analysis
               </h3>
@@ -223,19 +223,19 @@ const StartupDetailContent = ({
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pb-4">
+          <div className="flex flex-col sm:flex-row gap-3 pb-4"> {/* Changed to flex-col on mobile, flex-row on sm and up */}
             {userRole === 'investor' && (
               <>
                 <Button
                   onClick={() => handleStartChat(selectedStartup)}
-                  className="flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 h-12 bg-gradient-to-r from-purple-700 to-teal-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Slide in 💬
                 </Button>
                 <Button
                   onClick={() => setIsCommitmentDialogOpen(true)}
-                  className="flex-1 h-12 bg-gradient-to-r from-green-600 to-blue-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 h-12 bg-gradient-to-r from-green-600 to-blue-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                   aria-label="Make a commitment"
                 >
                   <DollarSign className="w-4 h-4" />
@@ -245,7 +245,7 @@ const StartupDetailContent = ({
             )}
             <Button
               onClick={() => toggleInterest(selectedStartup.id)}
-              className={`flex-1 h-12 rounded-xl font-semibold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 ${
+              className={`w-full sm:flex-1 h-12 rounded-xl font-semibold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 ${
                 isInterested
                   ? 'bg-teal-50 text-teal-700 border-2 border-teal-600 hover:bg-teal-100 dark:bg-teal-900 dark:text-teal-200 dark:border-teal-700 dark:hover:bg-teal-800'
                   : 'bg-purple-50 text-purple-700 border-2 border-purple-600 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-800'
@@ -256,7 +256,7 @@ const StartupDetailContent = ({
             </Button>
             <Button
               onClick={() => handleJoinStartupRoom(selectedStartup)}
-              className="flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
+              className="w-full sm:flex-1 h-12 border-2 border-purple-700 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-50 active:scale-95 transition-all flex items-center justify-center gap-2 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-gray-700"
               aria-label={`Join room for ${selectedStartup.name}`}
             >
               <Rocket className="w-4 h-4" />
