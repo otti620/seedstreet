@@ -7,7 +7,7 @@ import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import SeedstreetAppContent from './SeedstreetAppContent';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/integrations/supabase/client';
-import localforage from 'localforage';
+import localforage from 'localforage'; // Keep localforage import for now, but its usage for 'hasSeenOnboarding' will be removed.
 import MaintenanceModeScreen from './screens/MaintenanceModeScreen';
 import { Profile, ScreenParams, MaintenanceModeSettings } from '@/types'; // Import types from the shared file
 
@@ -67,51 +67,36 @@ const SeedstreetApp: React.FC = () => {
   useEffect(() => {
     const checkInitialSession = async () => {
       if (!splashTimerComplete) {
-        console.log("DEBUG: checkInitialSession: Splash timer not complete, returning.");
         return;
       }
 
       setLoadingSession(true);
-      console.log("DEBUG: checkInitialSession: Starting session check.");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const onboardingSeenLocally = await localforage.getItem('hasSeenOnboarding');
-      console.log("DEBUG: checkInitialSession: Session exists:", !!session, "Error:", sessionError?.message, "Onboarding seen locally:", onboardingSeenLocally);
+      // Removed localforage.getItem('hasSeenOnboarding') as it's no longer used for initial navigation.
 
       if (sessionError || !session) {
+        // If not logged in, always show onboarding.
         setIsLoggedIn(false);
-        console.log("DEBUG: checkInitialSession: User NOT logged in.");
-        if (!onboardingSeenLocally) {
-          console.log("DEBUG: checkInitialSession: Onboarding NOT seen locally. Setting screen to 'onboarding'.");
-          setCurrentScreen('onboarding');
-        } else {
-          console.log("DEBUG: checkInitialSession: Onboarding SEEN locally. Setting screen to 'auth'.");
-          setCurrentScreen('auth');
-        }
+        setCurrentScreen('onboarding');
       } else {
         setIsLoggedIn(true);
-        console.log("DEBUG: checkInitialSession: User IS logged in. Fetching profile for user ID:", session.user.id);
         const fetchedProfile = await fetchUserProfile(session.user.id);
         if (fetchedProfile) {
-          console.log("DEBUG: checkInitialSession: Fetched profile. Role:", fetchedProfile.role, "Onboarding complete:", fetchedProfile.onboarding_complete);
           if (!fetchedProfile.role) {
-            console.log("DEBUG: checkInitialSession: Profile role NOT set. Setting screen to 'roleSelector'.");
             setCurrentScreen('roleSelector');
           } else if (!fetchedProfile.onboarding_complete) {
-            console.log("DEBUG: checkInitialSession: Profile onboarding NOT complete. Setting screen to 'onboarding'.");
+            // If logged in but onboarding not complete in profile, show onboarding.
             setCurrentScreen('onboarding');
           } else {
-            console.log("DEBUG: checkInitialSession: Profile role SET and onboarding COMPLETE. Setting screen to 'home'.");
             setCurrentScreen('home');
           }
         } else {
-          console.log("DEBUG: checkInitialSession: Logged in, but profile NOT found. Setting screen to 'roleSelector'.");
+          // Logged in but no profile found - inconsistent state, direct to role selector to create/update profile.
           setCurrentScreen('roleSelector');
         }
       }
       setLoadingSession(false);
       setCurrentScreenParams({});
-      // Note: currentScreen might not be updated immediately in this log, but the state update is scheduled.
-      console.log("DEBUG: checkInitialSession: Session check complete. Final currentScreen state will be determined by the above logic.");
     };
 
     if (splashTimerComplete && currentScreen === 'splash') {
@@ -169,7 +154,6 @@ const SeedstreetApp: React.FC = () => {
   }, [loadingData, currentScreen, loadingSession]);
 
   const handleSetCurrentScreen = useCallback((screen: string, params?: ScreenParams) => {
-    console.log("SeedstreetAppContent: handleSetCurrentScreen called with screen:", screen, "params:", params);
     setCurrentScreen(screen);
     setCurrentScreenParams(prevParams => {
       const newParams = params || {};
@@ -181,11 +165,9 @@ const SeedstreetApp: React.FC = () => {
   }, [setCurrentScreen, setCurrentScreenParams]);
 
   const handleOnboardingComplete = useCallback(async () => {
-    console.log("handleOnboardingComplete: Marking onboarding as seen locally.");
-    await localforage.setItem('hasSeenOnboarding', true);
+    // Removed localforage.setItem('hasSeenOnboarding', true); as it's no longer used for initial navigation.
 
     if (userProfile?.id) {
-      console.log("handleOnboardingComplete: User is logged in, updating Supabase profile onboarding_complete for user:", userProfile.id);
       const { error } = await supabase.from('profiles')
         .update({ onboarding_complete: true })
         .eq('id', userProfile.id);
@@ -196,10 +178,9 @@ const SeedstreetApp: React.FC = () => {
       } else {
         setUserProfile(prev => prev ? { ...prev, onboarding_complete: true } : null);
         toast.success("Onboarding complete! Welcome to Seedstreet.");
-        console.log("handleOnboardingComplete: Supabase profile updated. User profile state updated.");
       }
     } else {
-      console.log("handleOnboardingComplete: User NOT logged in. Redirecting to auth.");
+      // If not logged in, just navigate to auth. Onboarding will show again if they revisit unauthenticated.
       setCurrentScreen('auth');
       setCurrentScreenParams({});
     }
